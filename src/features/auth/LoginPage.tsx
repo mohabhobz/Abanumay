@@ -185,7 +185,6 @@ export default function LoginPage() {
             >
               تسجيل جهة جديدة
             </button>
-            <p className="lnote sub">للجهات التي لم تسجّل في بوابة المنح بعد</p>
           </div>
     </AuthShell>
   )

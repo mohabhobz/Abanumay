@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { optLabel, optValue, type SelectOption } from './filters'
+import { Face } from './Person'
 import { MenuOpt, MenuPanel, useMenuSearch } from './menu'
 import { Icon } from './Icon'
 import { icons } from './icons'
@@ -96,8 +97,13 @@ export function FieldSelect({
 
 /* 24 Oct · on the client's comment · a multiple choice inside a form · the same field trigger as
    `FieldSelect`, and the toolbar's multi panel: each option carries a checkbox and the panel stays
-   open while picking. The trigger reads the first pick and «+N» for the rest, so the field keeps its
-   one-line height whatever is chosen. */
+   open while picking.
+
+   26 Oct · on the client's comment · what's picked shows under the field as chips, each with its ×,
+   so a pick is seen and removed without opening the list again · the trigger keeps the field's one
+   size whatever is chosen (it says how many) · «أخرى», when the field takes one, is an option like
+   the others: checked, it opens its name's input at the foot of the open list, and its chip reads
+   «أخرى: <name>» · never a second field dropped under the form. */
 
 export interface FieldMultiSelectProps {
   values: string[]
@@ -108,51 +114,91 @@ export interface FieldMultiSelectProps {
   label?: string
   searchAt?: number
   end?: boolean
+  /** No chips under the field · a narrow cell */
+  noChips?: boolean
+  /** An «أخرى» option with its own name · `text` is the typed name */
+  other?: { label?: string; text: string; onText: (t: string) => void; placeholder?: string }
+  /** The options are people · each chip carries the face */
+  people?: boolean
 }
 
 export function FieldMultiSelect({
-  values, options, onChange, placeholder = 'اختر', disabled, label, searchAt = 9, end,
+  values, options, onChange, placeholder = 'اختر', disabled, label, searchAt = 9, end, noChips, other, people,
 }: FieldMultiSelectProps) {
   const { open, setOpen, box, pop } = useMenu<HTMLSpanElement>()
-  const { needle, setNeedle, search } = useMenuSearch(open, searchAt, options.length)
+  const OTHER = other?.label ?? 'أخرى'
+  const all: readonly SelectOption[] = other ? [...options, OTHER] : options
+  const { needle, setNeedle, search } = useMenuSearch(open, searchAt, all.length)
   const id = useId()
-  const labelOf = (v: string) => optLabel(options.find((o) => optValue(o) === v) ?? v)
-  const summary = !values.length ? placeholder : values.length === 1 ? labelOf(values[0]) : `${labelOf(values[0])} +${values.length - 1}`
-  const shown = needle ? options.filter((o) => optLabel(o).includes(needle.trim())) : options
-  const toggle = (v: string) => onChange(values.includes(v) ? values.filter((x) => x !== v) : [...values, v])
+  const labelOf = (v: string) => optLabel(all.find((o) => optValue(o) === v) ?? v)
+  const chipOf = (v: string) => (other && v === OTHER ? (other.text.trim() ? `${OTHER}: ${other.text.trim()}` : OTHER) : labelOf(v))
+  const summary = !values.length ? placeholder : noChips
+    ? (values.length === 1 ? chipOf(values[0]) : `${chipOf(values[0])} +${values.length - 1}`)
+    : `${placeholder} · ${values.length} ${values.length === 1 ? 'مختار' : 'مختارة'}`
+  const shown = needle ? all.filter((o) => optLabel(o).includes(needle.trim())) : all
+  const drop = (v: string) => { onChange(values.filter((x) => x !== v)); if (other && v === OTHER) other.onText('') }
+  const toggle = (v: string) => (values.includes(v) ? drop(v) : onChange([...values, v]))
+  const otherOn = Boolean(other) && values.includes(OTHER)
 
   return (
-    <span className={`fldsel${end ? ' end' : ''}`} ref={box}>
-      <button
-        type="button"
-        id={`${id}-b`}
-        className={`fld fldsel-b${disabled ? ' off' : ''}`}
-        disabled={disabled}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={label}
-        title={values.length > 1 ? values.map(labelOf).join('، ') : undefined}
-        onClick={() => setOpen((x) => !x)}
-      >
-        <span className={`fldsel-t${values.length ? '' : ' ph'}`}>{summary}</span>
-        <Icon name={icons.chevronDown} size="sm" />
-      </button>
-
-      {open && (
-        <MenuPanel
-          end={end}
-          float={{ anchor: box, pop }}
-          search={search}
-          needle={needle}
-          onNeedle={setNeedle}
-          empty={shown.length === 0}
+    <span className="fmsel">
+      <span className={`fldsel${end ? ' end' : ''}`} ref={box}>
+        <button
+          type="button"
+          id={`${id}-b`}
+          className={`fld fldsel-b${disabled ? ' off' : ''}`}
+          disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-label={label}
+          title={values.length > 1 ? values.map(chipOf).join('، ') : undefined}
+          onClick={() => setOpen((x) => !x)}
         >
-          {shown.map((o) => (
-            <MenuOpt key={optValue(o)} on={values.includes(optValue(o))} onPick={() => toggle(optValue(o))}>
-              {optLabel(o)}
-            </MenuOpt>
-          ))}
-        </MenuPanel>
+          <span className={`fldsel-t${values.length && noChips ? '' : ' ph'}`}>{summary}</span>
+          <Icon name={icons.chevronDown} size="sm" />
+        </button>
+
+        {open && (
+          <MenuPanel
+            end={end}
+            float={{ anchor: box, pop }}
+            search={search}
+            needle={needle}
+            onNeedle={setNeedle}
+            empty={shown.length === 0}
+            foot={otherOn && other ? (
+              <label className="fmsel-o">
+                <span className="lb">اسم {OTHER === 'أخرى' ? 'الخيار الآخر' : OTHER}</span>
+                <span className="fld">
+                  <input autoFocus value={other.text} onChange={(e) => other.onText(e.target.value)} aria-label={`اسم ${OTHER}`} placeholder={other.placeholder ?? 'اكتب ما ليس في القائمة'} />
+                </span>
+              </label>
+            ) : undefined}
+          >
+            {shown.map((o) => (
+              <MenuOpt key={optValue(o)} on={values.includes(optValue(o))} onPick={() => toggle(optValue(o))}>
+                {optLabel(o)}
+              </MenuOpt>
+            ))}
+          </MenuPanel>
+        )}
+      </span>
+      {!noChips && values.length > 0 && (
+        <span className="fmsel-c" aria-label={`${label ?? 'المختار'} · ${values.length}`}>
+          {values.map((v) => {
+            const empty = other && v === OTHER && !other.text.trim()
+            return (
+              <span key={v} className={`fmsel-chip${empty ? ' warn' : ''}`}>
+                {empty
+                  ? <button type="button" className="fmsel-chip-t lnk" onClick={() => setOpen(true)} title="اكتب اسمه">{OTHER} · اكتب اسمه</button>
+                  : <>{people && <Face name={labelOf(v)} size="sm" />}<span className="fmsel-chip-t">{chipOf(v)}</span></>}
+                <button type="button" className="fmsel-x" aria-label={`أزل ${chipOf(v)}`} disabled={disabled} onClick={() => drop(v)}>
+                  <Icon name={icons.close} size="sm" />
+                </button>
+              </span>
+            )
+          })}
+        </span>
       )}
     </span>
   )

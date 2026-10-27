@@ -1,9 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { FieldSelect, Glass, Head, Icon, MultiSelect, Num, Person, Switch, icons } from '@/components/ui'
+import { FieldMultiSelect, FieldSelect, Glass, Head, Icon, MultiSelect, Num, Person, Switch, icons } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
 import { CfgNum } from '@/features/settings/CfgEdit'
-import { ROUTES } from '@/app/routes'
 import { capOf } from '@/data/approval'
 import { STAFF_ROLES, type RoleKey } from '@/data/roles'
 import { staffNames } from '@/data/people'
@@ -37,28 +35,23 @@ export function ApprovalRulesTab() {
   return (
     <>
       <Glass>
-        <Head title="مدير المنح" meta={<span className="sub"><bdi>{/* doc 4.3.1 · 4.3.2 · 4.4.19 · 4.4.20 */}</bdi></span>} />
+        <Head title="مدير المنح" />
         <Switch
           label="صلاحية الموافقة النهائية لمدير المنح"
-          note={<>عند التفعيل يعتمد نهائيًا حتى <Num>{capOf('manager')}</Num> (حدّه في <Link className="lnk" to={`${ROUTES.projectSettings}?tab=approval`}>مصفوفة الاعتماد</Link>) · وعند الإيقاف أو التجاوز يُخفى الخيار ويُحال المشروع</>}
           on={d.managerFinal}
           onChange={(v) => put('managerFinal', v)}
         />
         <ul className="cfglist">
           <li className="itk-sup">
-            <span className="cfgl"><b>الرفض النهائي</b><span className="sub">{/* v3 · 4.2.17 · decision 2 */}صلاحية عامة لمدير المنح على كل المشاريع · ويمكن تحديد حدّ لمبلغه</span></span>
-          </li>
-          <li className="itk-sup">
             <Switch
               label="حدّ مبلغ الرفض النهائي"
-              note={d.managerRejectCapOn ? <>فوق <Num>{d.managerRejectUpTo}</Num> ريال يُرفع المشروع بتوصية بالرفض بدل الرفض النهائي</> : 'غير مفعّل · يرفض مدير المنح أيًّا كانت القيمة'}
               on={Boolean(d.managerRejectCapOn)}
               onChange={(v) => put('managerRejectCapOn', v)}
             />
             {d.managerRejectCapOn && <CfgNum value={d.managerRejectUpTo} label="حدّ مبلغ الرفض النهائي" suffix="ريال" onChange={(n) => put('managerRejectUpTo', n)} />}
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>يُقترح «يتطلب خطة» من مبلغ</b><span className="sub">أو مدة تتجاوز السنة · ويختار المدير{/* doc 4.4.2 */}</span></span>
+            <span className="cfgl"><b>يُقترح «يتطلب خطة» من مبلغ</b></span>
             <span className="pc-sp" />
             <CfgNum value={d.planFrom} label="مبلغ اقتراح الخطة" suffix="ريال" onChange={(n) => put('planFrom', n)} />
           </li>
@@ -66,10 +59,9 @@ export function ApprovalRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="المدير التنفيذي" meta={<span className="sub"><bdi>{/* doc 5.3.1 · 5.4.27-b · 5.4.28 */}</bdi></span>} />
+        <Head title="المدير التنفيذي" />
         <Switch
           label="إحالة تلقائية للجنة فوق حد المدير التنفيذي"
-          note={/* v3 · 5.2.14 · client 18 Oct · decision 5 */ "مفعّل افتراضيًا · التوصية تصل المدير التنفيذي دائمًا، وفوق حدّه يحيلها المدير التنفيذي إلى اللجنة تلقائيًا وفق مصفوفة الصلاحيات"}
           on={Boolean(d.autoReferAboveExec)}
           onChange={(v) => put('autoReferAboveExec', v)}
         />
@@ -95,12 +87,12 @@ export function ApprovalRulesTab() {
             <CfgNum value={d.execOverPct} label="نسبة التجاوز" suffix="بالمئة" onChange={(n) => put('execOverPct', Math.min(50, n))} />
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>عدد المشاريع المعتمدة للجهة</b><span className="sub">صفر = بلا حد</span></span>
+            <span className="cfgl"><b>عدد المشاريع المعتمدة للجهة</b></span>
             <span className="pc-sp" />
             {limit('execEntity', 'count', 'عدد مشاريع الجهة للمدير التنفيذي', 'مشروع')}
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>إجمالي قيمة مشاريع الجهة</b><span className="sub">صفر = بلا حد</span></span>
+            <span className="cfgl"><b>إجمالي قيمة مشاريع الجهة</b></span>
             <span className="pc-sp" />
             {limit('execEntity', 'total', 'إجمالي قيمة مشاريع الجهة للمدير التنفيذي', 'ريال')}
           </li>
@@ -111,17 +103,17 @@ export function ApprovalRulesTab() {
         <Head title="اللجنة التنفيذية" meta={<span className="sub">{/* doc 6.4.19 – 6.4.21 */}حدّها في المصفوفة <Num>{capOf('committee')}</Num></span>} />
         <ul className="cfglist">
           <li className="itk-sup">
-            <span className="cfgl"><b>عدد المشاريع المعتمدة للجهة</b><span className="sub">صفر = بلا حد</span></span>
+            <span className="cfgl"><b>عدد المشاريع المعتمدة للجهة</b></span>
             <span className="pc-sp" />
             {limit('committeeEntity', 'count', 'عدد مشاريع الجهة للجنة', 'مشروع')}
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>إجمالي قيمة مشاريع الجهة</b><span className="sub">صفر = بلا حد</span></span>
+            <span className="cfgl"><b>إجمالي قيمة مشاريع الجهة</b></span>
             <span className="pc-sp" />
             {limit('committeeEntity', 'total', 'إجمالي قيمة مشاريع الجهة للجنة', 'ريال')}
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>فترة الحساب</b><span className="sub">تُعدّ فيها اعتمادات الجهة</span></span>
+            <span className="cfgl"><b>فترة الحساب</b></span>
             <span className="pc-sp" />
             <CfgNum value={d.periodDays} min={30} label="فترة الحساب" suffix="يومًا" onChange={(n) => put('periodDays', n)} />
           </li>
@@ -129,38 +121,37 @@ export function ApprovalRulesTab() {
       </Glass>
 
       <Glass>
-        <Head title="الجلسات" meta={<span className="sub"><bdi>{/* doc 6.4.6 · 7.4.6 */}</bdi></span>} />
+        <Head title="الجلسات" />
         <ul className="cfglist">
           <li className="itk-sup">
             <span className="cfgl"><b>أعضاء اللجنة التنفيذية</b></span><span className="pc-sp" />
-            <MultiSelect label="أعضاء اللجنة" all="اختر الأعضاء" people values={d.committeeMembers} options={STAFF()} onChange={(v) => put('committeeMembers', v)} />
+            <FieldMultiSelect label="أعضاء اللجنة" placeholder="اختر الأعضاء" people values={d.committeeMembers} options={STAFF()} onChange={(v) => put('committeeMembers', v)} />
           </li>
           <li className="itk-sup">
             <span className="cfgl"><b>أعضاء مجلس الأمناء</b></span><span className="pc-sp" />
-            <MultiSelect label="أعضاء المجلس" all="اختر الأعضاء" people values={d.boardMembers} options={STAFF()} onChange={(v) => put('boardMembers', v)} />
+            <FieldMultiSelect label="أعضاء المجلس" placeholder="اختر الأعضاء" people values={d.boardMembers} options={STAFF()} onChange={(v) => put('boardMembers', v)} />
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>النصاب</b><span className="sub">أقل عدد أعضاء لانعقاد الجلسة</span></span><span className="pc-sp" />
+            <span className="cfgl"><b>النصاب</b></span><span className="pc-sp" />
             <CfgNum value={d.quorum} min={1} label="النصاب" suffix="أعضاء" onChange={(n) => put('quorum', n)} />
           </li>
           {/* Client 18 Oct · decision 14 · no per-member votes · the voting rule is retired · the CEO records
               the body's final decision with the minutes */}
           <li className="itk-sup">
             <span className="cfgl"><b>من يسجّل جلسات اللجنة</b></span><span className="pc-sp" />
-            <MultiSelect all="لا أحد" values={d.committeeBy} options={ROLE_OPTS} onChange={(v) => put('committeeBy', v as RoleKey[])} />
+            <FieldMultiSelect placeholder="لا أحد" values={d.committeeBy} options={ROLE_OPTS} onChange={(v) => put('committeeBy', v as RoleKey[])} />
           </li>
           <li className="itk-sup">
             <span className="cfgl"><b>من يسجّل جلسات المجلس</b></span><span className="pc-sp" />
-            <MultiSelect all="لا أحد" values={d.boardBy} options={ROLE_OPTS} onChange={(v) => put('boardBy', v as RoleKey[])} />
+            <FieldMultiSelect placeholder="لا أحد" values={d.boardBy} options={ROLE_OPTS} onChange={(v) => put('boardBy', v as RoleKey[])} />
           </li>
         </ul>
       </Glass>
 
       <Glass>
-        <Head title="الاستراتيجية" meta={<span className="sub"><bdi>{/* doc 5.4.4 */}</bdi></span>} />
+        <Head title="الاستراتيجية" />
         <Switch
           label="لا يُعتمد مشروع خارج المجالات الممولة والتوجهات النشطة"
-          note="يُقرأ من ميزانية السنة المعتمدة وتوجهاتها الاستراتيجية في إعدادات الميزانية"
           on={d.requireStrategy}
           onChange={(v) => put('requireStrategy', v)}
         />
@@ -188,19 +179,17 @@ export function ApprovalRulesTab() {
             <Icon name={icons.plus} size="sm" />أضف
           </button>
         </div>
-        <p className="sub cnote">صاحب التعارض لا يتخذ القرار على مشاريع الجهة · يظهر له زر التحويل لصاحب الصلاحية التالي.</p>
       </Glass>
 
       <Glass>
         <Head title="بيانات العرض التجريبي" />
-        <p className="sub cnote">يُعيد قرارات مسار الاعتماد والجلسات والشروط والملاحظات إلى بداية العرض · ولا تتغيّر الإعدادات.</p>
         <button type="button" className="btn btn-2" onClick={resetApprovals}>أعد ضبط بيانات الاعتماد</button>
       </Glass>
 
       {dirty && (
         <SaveBar
           count={1}
-          sentence={<>تعديل قواعد مسار الاعتماد<span className="decsep" /><span className="sub">تسري على القرارات فور الحفظ</span></>}
+          sentence="تعديل قواعد مسار الاعتماد"
           onSave={() => { saveApprovalRules(d); setSaved(structuredClone(d)) }}
           onDiscard={() => setD(structuredClone(saved))}
         />

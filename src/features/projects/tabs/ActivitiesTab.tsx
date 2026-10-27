@@ -83,7 +83,7 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
     <>
       {adding && (
       <Glass>
-        <Head title="فعالية جديدة" meta="تظهر في سجل المشروع بمصدرها" />
+        <Head title="فعالية جديدة" />
 
         <div className="regfields">
           <label className="regf regf-w">
@@ -170,15 +170,11 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
                 label="ارفع مرفقًا للفعالية"
                 onPick={(file) => setFiles((xs) => (xs.includes(file.name) ? xs : [...xs, file.name]))}
               />
-              <span className="sub">pdf · jpg · png</span>
             </span>
           </div>
         </div>
 
         <div className="acts-foot">
-          <span className="sub">
-            يُسجَّل باسم <Person name={me} quiet={false} />
-          </span>
           <span className="pc-sp" />
           {tried && missing.length > 0 && (
             <span className="sub">ناقص: {missing.join('، ')}</span>
@@ -213,7 +209,6 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
         {list.length === 0 ? (
           <Empty
             title="لم تُسجَّل فعاليات على هذا المشروع بعد."
-            note="الزيارة الميدانية والاجتماع والورشة والاتصال تُضاف من هنا، وتظهر في سجل المشروع مع مصدر المعلومة."
           />
         ) : (
           <ol className="acts">

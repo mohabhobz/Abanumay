@@ -1,3 +1,4 @@
+import { demoIban } from '@/lib/iban'
 import { BANKS } from './registration'
 import type { PayRequest, PayState } from '@/types/domain'
 
@@ -136,9 +137,8 @@ export const banksOf = (entityId: string): EntityBank[] => {
     id: `${entityId}-${i + 1}`,
     bank: BANKS[(seed + i) % BANKS.length],
     purpose: purposes[i % purposes.length],
-    /* A fully obfuscated IBAN · this is a mock, no need for a number resembling a real one in a
-       file readable in an open repo */
-    iban: `SA•• •••• •••• ${String(1000 + ((seed * (i + 7)) % 9000))}`,
+    /* A well-formed fictional IBAN · full digits, valid check digits */
+    iban: demoIban(`${entityId}-b${i + 1}`, BANKS[(seed + i) % BANKS.length]),
     active: i !== n - 1 || n === 2,
   }))
 }

@@ -74,22 +74,10 @@ export function DocPreview({ name, meta, src, mime, onClose }: DocPreviewProps) 
           {!view && (
             <div className="fppage">
               <DocThumb name={name} size="lg" />
-              <div className="fpnote sub">
-                تُعرض المعاينة من مخزن المرفقات مباشرة دون تنزيل.
-              </div>
             </div>
           )}
         </div>
 
-        {scan && (
-          <div className="fpfoot">
-            <span className="tag warn">صورة</span>
-            <span className="sub">
-              الملف صورة، فلا يمكن مقارنة بنود الموازنة آليًا بالمبلغ المطلوب. ولهذا
-              يطلب طلب الاستكمال الحالي نسخة قابلة للقراءة.
-            </span>
-          </div>
-        )}
       </div>
     </>,
     document.body,

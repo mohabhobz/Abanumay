@@ -58,7 +58,6 @@ export default function ReportView() {
             <Glass>
               <Empty
                 title="التقرير غير موجود."
-                note="عُد إلى لوحة التقارير واختر تقريرًا منها."
                 actions={<Link className="btn btn-2" to={ROUTES.reportTab('board')}>العودة إلى لوحة التقارير</Link>}
               />
             </Glass>
@@ -126,7 +125,7 @@ export default function ReportView() {
 
           <Glass className="tblcard">
             {table.rows.length === 0 ? (
-              <Empty title="لا توجد صفوف في هذه الفترة." note="جرّب سنة أو مصدر تمويل آخر." />
+              <Empty title="لا توجد صفوف في هذه الفترة." />
             ) : (
               <div className="tblwrap">
                 <div className="tblock">
@@ -176,7 +175,7 @@ export default function ReportView() {
           {table.rows.length > 200 && (
             <p className="sub" style={{ textAlign: 'center' }}>
               تُعرض أول <span className="num">200</span> صف من{' '}
-              <span className="num">{nf.format(table.rows.length)}</span> · يشمل التصدير جميع الصفوف
+              <span className="num">{nf.format(table.rows.length)}</span>
             </p>
           )}
         </div>

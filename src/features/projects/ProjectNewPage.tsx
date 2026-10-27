@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { textIssues } from '@/lib/textCheck'
 import { useNavigate } from 'react-router-dom'
 import {
-  DateField, DateText, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, DockWhy, blockerCount, CheckChip, FieldMultiSelect } from '@/components/ui'
+  DateField, DateText, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, DockWhy, blockerCount, FieldMultiSelect } from '@/components/ui'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { blockerReadings } from '@/features/shared/blockerReadings'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -71,9 +71,12 @@ function PField({
   /* Client 24 Oct (#86) · the field and goal lists follow the budget · an option without an allocation
      stays listed, disabled with its reason, and a thin one carries a hint (`supportOption`) */
   const budgetOpts = opts.map((x) => supportOption(f.key, parent, x))
+  const Wrap = f.kind === 'multi' ? 'div' : 'label'
 
   return (
-    <label className={`regf${f.kind === 'long' || f.kind === 'multi' || f.kind === 'outputs' || f.kind === 'weekdays' || f.kind === 'stages' ? ' regf-w' : ''}`}>
+    /* 26 Oct · the multiple choice takes one column like its neighbours (it spanned the row) · and is a
+       block, not a label, so a click on a chip never opens the list */
+    <Wrap className={`regf${f.kind === 'long' || f.kind === 'outputs' || f.kind === 'weekdays' || f.kind === 'stages' ? ' regf-w' : ''}`}>
       <span className="lb">
         {f.label}
         {f.req && <b className="regf-r" aria-label="إلزامي">*</b>}
@@ -105,67 +108,52 @@ function PField({
         /* 24 Oct · on the client's comment · the target categories are a dropdown list with a
            checkbox per option (they were a row of tags) · «أخرى» stays one of the options and opens
            a field for a category the list doesn't have, stored as «أخرى: <name>» beside the others */
-        <span className="pmulti-w">
-          {(() => {
-            const cur = value.split('،').filter(Boolean)
-            const picked = cur.map((x) => (x.startsWith(OTHER) ? OTHER : x))
-            return (
-              <FieldMultiSelect
-                values={picked}
-                options={[...opts, OTHER]}
-                label={f.label}
-                placeholder="اختر الفئات"
-                onChange={(next) => {
-                  const keep = cur.find((x) => x.startsWith(OTHER))
-                  onChange(next.map((x) => (x === OTHER ? keep ?? OTHER : x)).join('،'))
-                }}
-              />
-            )
-          })()}
-          {(() => {
-            const cur = value.split('،').filter(Boolean)
-            const other = cur.find((x) => x.startsWith(OTHER))
-            if (other === undefined) return null
-            const name = other.replace(OTHER, '').replace(/^:\s*/, '')
-            return (
-              <span className="pmulti-o">
-                <span className="fld">
-                  <input
-                    autoFocus
-                    value={name}
-                    placeholder="اكتب اسم الفئة"
-                    aria-label="اسم الفئة الأخرى"
-                    onChange={(e) => {
-                      /* The list separator can't appear inside a name. */
-                      const typed = e.target.value.replace(/،/g, ' ')
-                      const item = typed.trim() ? `${OTHER}: ${typed}` : OTHER
-                      onChange(cur.map((x) => (x.startsWith(OTHER) ? item : x)).join('،'))
-                    }}
-                  />
-                </span>
-                {!name.trim() && <span className="sub regf-h">اكتب اسم الفئة غير الموجودة في القائمة</span>}
-              </span>
-            )
-          })()}
-        </span>
+        /* 26 Oct · the picks show as chips under the field, each with its × · «أخرى» types its name at
+           the foot of the open list, stored as «أخرى: <name>» beside the others */
+        (() => {
+          const cur = value.split('،').filter(Boolean)
+          const picked = cur.map((x) => (x.startsWith(OTHER) ? OTHER : x))
+          const otherItem = cur.find((x) => x.startsWith(OTHER))
+          const name = otherItem ? otherItem.replace(OTHER, '').replace(/^:\s*/, '') : ''
+          return (
+            <FieldMultiSelect
+              values={picked}
+              options={opts}
+              label={f.label}
+              placeholder="اختر الفئات"
+              other={{
+                text: name,
+                placeholder: 'اسم الفئة غير الموجودة في القائمة',
+                /* The list separator can't appear inside a name. */
+                onText: (t) => {
+                  const typed = t.replace(/،/g, ' ')
+                  const item = typed.trim() ? `${OTHER}: ${typed}` : OTHER
+                  onChange(cur.map((x) => (x.startsWith(OTHER) ? item : x)).join('،'))
+                },
+              }}
+              onChange={(next) => onChange(next.map((x) => (x === OTHER ? otherItem ?? OTHER : x)).join('،'))}
+            />
+          )
+        })()
       ) : f.kind === 'outputs' ? (
         <OutputsEditor list={parseOutputs(value)} onChange={(x) => onChange(JSON.stringify(x))} />
       ) : f.kind === 'stages' ? (
         <StagesEditor list={stagesOf(value)} from={bounds?.from} to={bounds?.to} onChange={(x) => onChange(JSON.stringify(x))} />
       ) : f.kind === 'weekdays' ? (
         /* v3 · 3.4.15 · the project's own execution days · the foundation's week until the entity picks */
-        <span className="pmulti">
-          {WEEKDAYS.map((w, i) => {
-            const cur = workDaysOf(value) ?? foundationWeek()
-            const on = cur.includes(i)
-            return (
-              <CheckChip key={w} on={on}
-                onToggle={() => { const next = on ? cur.filter((n) => n !== i) : [...cur, i].sort(); if (next.length) onChange(next.join(',')) }}>
-                {w}
-              </CheckChip>
-            )
-          })}
-        </span>
+        /* Client 26 Oct · one multi-choice control everywhere · the menu with chips under it */
+        (() => {
+          const cur = workDaysOf(value) ?? foundationWeek()
+          return (
+            <FieldMultiSelect
+              values={cur.map((i) => WEEKDAYS[i]!)}
+              options={WEEKDAYS}
+              label={f.label}
+              placeholder="أيام التنفيذ"
+              onChange={(xs) => { const next = xs.map((x) => WEEKDAYS.indexOf(x as (typeof WEEKDAYS)[number])).filter((n) => n >= 0).sort(); if (next.length) onChange(next.join(',')) }}
+            />
+          )
+        })()
       ) : f.kind === 'long' ? (
         <span className="fld fld-a">
           <textarea
@@ -201,7 +189,7 @@ function PField({
       {(() => {
         const issues = !entitySlot && (f.kind === 'text' || f.kind === 'long') ? textIssues(value) : []
         const x = issues[0]
-        if (!x) return f.hint ? <span className="sub regf-h regf-1">{f.hint}</span> : null
+        if (!x) return null
         return (
           <span className="sub regf-h regf-1 warn" title={issues.map((y) => y.say).join(' · ')}>
             {x.say}{issues.length > 1 && <> · +<Num>{issues.length - 1}</Num></>}
@@ -209,7 +197,7 @@ function PField({
           </span>
         )
       })()}
-    </label>
+    </Wrap>
   )
 }
 
@@ -282,7 +270,6 @@ export default function ProjectNewPage() {
      domain's rule assigns it (#89) */
   const selfOwner = !asEntity && role.key === 'supervisor' ? user.name : ''
   const assignee = selfOwner || (val.field ? pickSupervisor(val.field, val.goal ?? '') : null)
-  const rule = val.field ? CYCLE.domains[val.field]?.distribution : undefined
   const portalOpen = inPeriod()
   const missing = Object.values(shortBy).flat()
   const canSend = missing.length === 0 && issues.length === 0
@@ -322,7 +309,7 @@ export default function ProjectNewPage() {
   const steps: StepItem[] = [
     { label: 'تعبئة الطلب', note: asEntity ? 'الجهة من البوابة' : 'مشرف المنح نيابةً عن الجهة', state: sent ? 'done' : 'now' },
     { label: 'الدراسة والتوصية', note: /* doc step 11 · 15 */ '', state: sent ? 'now' : 'todo' },
-    { label: 'الاعتماد', note: 'حسب مصفوفة السقوف', state: 'todo' },
+    { label: 'الاعتماد', state: 'todo' },
   ]
 
   return (
@@ -336,10 +323,10 @@ export default function ProjectNewPage() {
               <h1 className="ptitle">{asEntity ? 'طلب دعم مشروع' : 'مشروع جديد'}</h1>
               <p className="sub mt-1">
                 {CYCLE.name} · من <DateText>{CYCLE.from}</DateText> إلى <DateText>{CYCLE.to}</DateText> ·{' '}
-                <span className="num">{openFields().length}</span> مجالات مفتوحة · والمبلغ المعتمد يُحدَّد في الدراسة لا هنا
+                <span className="num">{openFields().length}</span> مجالات مفتوحة
               </p>
               {!portalOpen && (
-                <p className="sub cnote"><Tag tone="warn">البوابة مغلقة</Tag> لا يُقبل طلب جديد خارج فترة التقديم.</p>
+                <p className="sub cnote"><Tag tone="warn">البوابة مغلقة</Tag></p>
               )}
             </div>
             {/* Note: `pct` comes from the shared library, not a hand-written mark.
@@ -373,7 +360,6 @@ export default function ProjectNewPage() {
                       : <Tag tone="ok">مكتمل</Tag>
                   }
                 />
-                <p className="sub cnote">{stage.note}</p>
 
                 {tab === DOCS_STAGE && (
                   <ul className="regdocs">
@@ -436,10 +422,9 @@ export default function ProjectNewPage() {
                 </div>
 
                 {/* Client 20 Oct (#42) · the external type switches to the simplified form */}
-                {tab === 'who' && val.ptype === EXT_TYPE && (
+                {tab === 'who' && val.ptype === EXT_TYPE && !asEntity && (
                   <div className="apv-row mt-3">
-                    <span className="sub">{asEntity ? 'المشروع لجهة خارجية يُنشئه مشرف المنح أو مدير المنح من داخل النظام' : 'نموذج مبسّط · الإلزامي: الاسم والجهة الخارجية والمجال والمسار والهدف والمبلغ وطريقة التحويل'}</span>
-                    {!asEntity && <button type="button" className="btn btn-p btn-sm" onClick={() => navigate(ROUTES.externalNew)}>افتح النموذج المبسّط</button>}
+                    <button type="button" className="btn btn-p btn-sm" onClick={() => navigate(ROUTES.externalNew)}>افتح النموذج المبسّط</button>
                   </div>
                 )}
 
@@ -447,17 +432,10 @@ export default function ProjectNewPage() {
                   /* Client 21 Oct (#28) · the duration is counted from the two dates · the week is information */
                   <p className="sub cnote">
                     المدة <b><Num>{daysOf(val)}</Num> يومًا</b> من <DateText>{val.startAt}</DateText> إلى <DateText>{endAt}</DateText>
-                    {' '}· تُحسب من التاريخين، وأيام التنفيذ المختارة{workDaysOf(val.execDays) ? ` (${workDaysOf(val.execDays)!.map((d) => WEEKDAYS[d]).join('، ')})` : ''} للعلم ولا تغيّر المدة.
                   </p>
                 )}
-                {tab === 'what' && (val.field || selfOwner) && (
-                  <p className="sub cnote">
-                    {selfOwner
-                      ? <>تسجّله أنت من داخل النظام · فتكون <b>مالك المشروع</b> تلقائيًا.</>
-                      : assignee
-                        ? <>يُسند الطلب عند إرساله إلى <b>{assignee}</b> · {rule === 'fixed' ? 'المشرف المحدّد لمجال' : 'بقاعدة توزيع مجال'} «{val.field}».</>
-                        : <>توزيع المجال يدوي · يُسند مدير المنح الطلب بعد إرساله.</>}
-                  </p>
+                {tab === 'what' && val.field && !selfOwner && assignee && (
+                  <p className="sub cnote">يُسند الطلب عند إرساله إلى <b>{assignee}</b></p>
                 )}
 
                 {/* The rule is stated at its own stage, not in a message after submission. */}
@@ -506,14 +484,8 @@ export default function ProjectNewPage() {
 
               {/* The path, the entity and the checks · in the main column, the end column is the assistant's alone */}
               <Glass>
-                <Head title="مسار الطلب" meta={<span className="sub">ثلاث محطات</span>} />
+                <Head title="مسار الطلب" />
                 <Steps items={steps} flow="ladder" />
-                {/* Rule 24 - a supervisor's recommendation isn't a decision - this line prevents a
-                    wrong expectation from the first screen. */}
-                <p className="sub cnote">
-                  توصية المشرف بالموافقة <b>لا يترتّب عليها</b> اعتماد ولا صرف ·
-                  القرار النهائي حسب مصفوفة السقوف.
-                </p>
               </Glass>
 
               {ent && (
@@ -530,16 +502,12 @@ export default function ProjectNewPage() {
                     قدّمت «{ent.name}» <b className="num">{ent.open}</b> {nounAfter(ent.open, NOUN.sentRequest)} في هذه الدورة ·
                     والحدّ <b className="num">{entityCap()}</b>.
                   </p>
-                  <p className="sub cnote">
-                    الحدّ من الإعدادات («الحدود المالية والزمنية») ويُحتسب على الطلبات المقدَّمة
-                    داخل فترة الدورة ().
-                  {/* doc 3.4.12 */}</p>
                 </Glass>
               )}
 
               {asked > 0 && reach > 0 && (
                 <Glass>
-                  <Head title="تكلفة المستفيد" meta={<Tag tone="mute">محسوبة</Tag>} />
+                  <Head title="تكلفة المستفيد" />
                   <p className="sub">
                     <Money>{asked}</Money> على <b className="num">{nf.format(reach)}</b>{' '}
                     مستفيد = <b><Money>{Math.round(asked / reach)}</Money></b> للمستفيد.

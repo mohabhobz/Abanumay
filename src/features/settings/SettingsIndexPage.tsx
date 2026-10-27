@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Glass, Head, Icon, icons, Num, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
-import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { SETTING_MODULES } from '@/data/mock/settings'
 import { TestDataCard } from './TestDataCard'
@@ -42,8 +41,7 @@ export default function SettingsIndexPage() {
                   direction-neutral, so it sticks to the Latin numeral and reads as if
                   it were a zero ("· 7" reads as "70"). A word separates them instead. */}
               <p className="sub mt-1">
-                القيم والقواعد التي تُبنى عليها جميع الوحدات ·
-                وتضم <Num>{master}</Num> مجموعة بيانات أساسية
+                <Num>{master}</Num> مجموعة بيانات أساسية
                 و<Num>{rules}</Num> مجموعة قواعد عمل
               </p>
             </div>
@@ -69,7 +67,6 @@ export default function SettingsIndexPage() {
                         {g.kind === 'master' ? 'بيانات أساسية' : 'قاعدة عمل'}
                       </Tag>
                     </span>
-                    <span className="sub cfgg-w">{g.where}</span>
                     <span className="cfgg-f">
                       <span className="sub">{g.owner}</span>
                       <span className="pc-sp" />
@@ -88,34 +85,6 @@ export default function SettingsIndexPage() {
           {/* v3 · 2.4.35 · the environment and the test-data flags */}
           <TestDataCard />
 
-          {/* These two distinctions are deliberately placed last — the page opens
-              onto what the user came here to do, and the rules explain themselves
-              after they see it. */}
-          <div className="g2">
-            {/* Personal preferences aren't here — theme and density live under the
-                user's account, and mixing the two is what makes someone go looking
-                for "cities" in their preferences. */}
-            <Glass>
-              <Head title="ما لا تجده هنا" meta={<Tag tone="mute">توضيح</Tag>} />
-              <p className="sub">
-                المظهر والكثافة واللغة <b>تفضيلات شخصية</b> لا إعدادات نظام ·
-                تجدها في{' '}
-                <Link className="tlink" to={ROUTES.preferences}>تفضيلات الحساب</Link>.
-                أما ما هنا فيغيّر سلوك النظام لجميع المستخدمين.
-              </p>
-            </Glass>
-
-            {/* The rule that surfaces gaps — written down so whoever comes after us
-                knows how to tell something is missing. */}
-            <Glass>
-              <Head title="كيف يُكتشف الإعداد الناقص" meta={<Tag tone="mute">قاعدة</Tag>} />
-              <p className="sub">
-                كل قائمة منسدلة في أي نموذج = <b>بيانات أساسية</b> لها مكان هنا ·
-                فإن وُجدت قائمة مكتوبة في الكود، فهي مجموعة ناقصة في
-                الإعدادات لا اختصار مقصود.
-              </p>
-            </Glass>
-          </div>
         </div>
       </div>
     </AppLayout>

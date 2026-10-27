@@ -1,6 +1,6 @@
 import { accountEvents } from '@/data/entities/auth'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Icon, KV, Mono, Num, OrgName, Person, Tabs, Tag, icons } from '@/components/ui'
+import { BankGrid, BankCard, DateText, Empty, Glass, Head, Icon, KV, Mono, Num, Person, Tabs, Tag, icons } from '@/components/ui'
 import { DataTable, nextSort, readCols, sortRows, type ColSort } from '@/components/table'
 import { COLS, rowHref } from '@/features/projects/list/columns'
 import { DONE, DROPPED, LIVE } from '@/data/status'
@@ -35,7 +35,6 @@ export function ExternalRecordTab({ e }: { e: EntityRow }) {
           { k: 'تاريخ الإنشاء', v: <DateText>{x.at}</DateText> },
         ]}
       />
-      <p className="sub mt-3">لا حساب بوابة ولا مستخدمين ولا ممثل مسجّل · تُدار مشاريعها داخليًا عبر إجراء الجهات الخارجية.</p>
     </Glass>
   )
 }
@@ -53,7 +52,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
   return (
     <>
       <Glass>
-        <Head title="التعريف" meta={<span className="rowf gp-2"><span className="sub">من سجل الجهة في النظام</span><EntityEdit e={e} d={d} section="id" /></span>} />
+        <Head title="التعريف" meta={<EntityEdit e={e} d={d} section="id" />} />
         <KV
           rows={[
             /* Client 24 Oct · what the header already shows (name, code, classification, licence,
@@ -118,7 +117,7 @@ export function EntityDataTab({ e, d }: { e: EntityRow; d: EntityDetail }) {
       </Glass>
 
       <Glass>
-        <Head title="الأشخاص" meta={<span className="rowf gp-2"><span className="sub">المدير التنفيذي ومدخل البيانات</span><EntityEdit e={e} d={d} section="people" /></span>} />
+        <Head title="الأشخاص" meta={<EntityEdit e={e} d={d} section="people" />} />
         <KV
           rows={[
             /* A card titled "People" - the avatar here isn't decoration, it is the card's content.
@@ -186,8 +185,7 @@ export function EntityDocsTab({ d, entityId }: { d: EntityDetail; entityId: stri
           <Icon name={icons.alert} size="sm" />
           <div>
             <b><Num>{expired}</Num> {expired === 1 ? 'وثيقة منتهية' : 'وثائق منتهية'}</b>
-            <p>يتحول حساب الجهة إلى «غير نشط» عند انتهاء الترخيص أو قرار تكليف المجلس، فلا يُقبل منها طلب مشروع ولا تُصرف لها دفعة حتى تُعتمد النسخة السارية بطلب تحديث من بوابتها.{' '}
-              <Link className="lnk" to={`${ROUTES.entityUpdate}?entity=${entityId}`}>نموذج التحديث كما تراه الجهة</Link></p>
+            <p><Link className="lnk" to={`${ROUTES.entityUpdate}?entity=${entityId}`}>نموذج التحديث كما تراه الجهة</Link></p>
           </div>
         </div>
       )}
@@ -218,7 +216,7 @@ export function EntityDocsTab({ d, entityId }: { d: EntityDetail; entityId: stri
  */
 export function EntityBanksTab({ d, entityId }: { d: EntityDetail; entityId: string }) {
   if (d.banks.length === 0) {
-    return <Glass><Empty art={{ done: 0, total: 2 }} title="لا توجد حسابات بنكية مسجّلة." note="الصرف موقوف حتى تسجّل الجهة حسابًا بنكيًا ويُفعَّل." actions={<AddBank entityId={entityId} />} /></Glass>
+    return <Glass><Empty art={{ done: 0, total: 2 }} title="لا توجد حسابات بنكية مسجّلة." actions={<AddBank entityId={entityId} />} /></Glass>
   }
 
   const on = d.banks.filter((b) => b.status === 'مفعل').length
@@ -228,40 +226,34 @@ export function EntityBanksTab({ d, entityId }: { d: EntityDetail; entityId: str
       <Glass>
         <Head title="الحسابات البنكية" meta={<span className="sub"><Num>{d.banks.length}</Num> {nounAfter(d.banks.length, { one: 'حساب', few: 'حسابات', many: 'حسابًا' })} · <Num>{on}</Num> مفعّل</span>} />
         <AddBank entityId={entityId} />
+      {/* Client 27 Oct · the accounts as bank cards · one grid in the same card, each with its
+          certificate and its actions under it */}
+      {d.banks.length > 0 && (
+          <BankGrid>
+            {d.banks.map((b) => (
+              <BankCard
+                key={b.id}
+                bank={b.bank}
+                iban={b.iban}
+                holder={b.accountName}
+                purpose={b.shortName}
+                status={b.status}
+                off={b.status !== 'مفعل'}
+                actions={<><BankCertReplace entityId={entityId} b={b} /><BankEdit entityId={entityId} b={b} /><BankActions entityId={entityId} b={b} /></>}
+              >
+                {b.reason && (
+                  <div className="lastact">
+                    <span className="sub">سبب التعطيل</span>
+                    <p>{b.reason}</p>
+                  </div>
+                )}
+                <DocFile name={b.certificate} meta="الشهادة البنكية" />
+                {b.attachment && <DocFile name={b.attachment} meta="المرفق" />}
+              </BankCard>
+            ))}
+          </BankGrid>
+      )}
       </Glass>
-      {d.banks.map((b) => (
-        <Glass key={b.id}>
-          <Head
-            title={b.bank}
-            meta={<span className="rowf gp-2">
-              <Tag tone={b.status === 'مفعل' ? 'ok' : b.status === 'غير مفعل' ? 'no' : 'warn'}>
-                {b.status}
-              </Tag>
-              <BankEdit entityId={entityId} b={b} />
-            </span>}
-          />
-          <KV
-            rows={[
-              { k: 'الاسم المختصر', v: b.shortName },
-              { k: 'اسم الحساب البنكي', v: <OrgName name={b.accountName} /> },
-              { k: 'رقم الآيبان', v: <Mono>{b.iban}</Mono> },
-            ]}
-          />
-
-          {b.reason && (
-            <div className="lastact">
-              <span className="sub">سبب التعطيل</span>
-              <p>{b.reason}</p>
-            </div>
-          )}
-
-          <div className="col-s flush mt-3">
-            <span className="rowf gp-2"><DocFile name={b.certificate} meta="الشهادة البنكية" /><BankCertReplace entityId={entityId} b={b} /></span>
-            {b.attachment && <DocFile name={b.attachment} meta="المرفق" />}
-          </div>
-          <BankActions entityId={entityId} b={b} />
-        </Glass>
-      ))}
     </div>
   )
 }
@@ -360,11 +352,10 @@ export function EntityEvalCard({ entityId }: { entityId: string }) {
   const may = ['supervisor', 'grants-manager', 'ceo'].includes(role.key)
   return (
     <Glass id="ent-evals">
-      <Head title="تقييمات مشاريع الجهة" meta={sum.avg !== null ? <span className="sub">المتوسط <Num>{sum.avg}</Num> من 100 · <Num>{sum.n}</Num> {nounAfter(sum.n, NOUN.project)}</span> : <span className="sub">لا مشاريع مقيّمة مغلقة بعد</span>} />
+      <Head title="تقييمات مشاريع الجهة" hint="متوسط بسيط استرشادي، لا يُقرّر وحده." meta={sum.avg !== null ? <span className="sub">المتوسط <Num>{sum.avg}</Num> من 100 · <Num>{sum.n}</Num> {nounAfter(sum.n, NOUN.project)}</span> : <span className="sub">لا مشاريع مقيّمة مغلقة بعد</span>} />
       {sum.projects.length > 0 && (
         <KV rows={sum.projects.map((x) => ({ k: x.name, v: <><Num>{x.score}</Num> <span className="sub">من 100</span></> }))} />
       )}
-      <p className="sub cnote">متوسط بسيط استرشادي{/* doc 10.4.30 */} · لا يُقرّر وحده في دراسة مشاريع الجهة القادمة.</p>
       <label className="regf">
         <span className="lb">الدروس المستفادة على مستوى الجهة</span>
         <span className="fld"><textarea rows={2} value={text} disabled={!may} onChange={(e) => setText(e.target.value)} aria-label="الدروس المستفادة على مستوى الجهة" placeholder="ما تعلّمته المؤسسة من العمل مع هذه الجهة" /></span>
@@ -395,7 +386,7 @@ export function EntityProjectsTab({ rows }: { rows: ProjectRow[] }) {
   const [cols, setCols] = useState<string[]>(() => readCols('projects', COLS))
   const [sort, setSort] = useState<ColSort | null>(null)
   if (rows.length === 0) {
-    return <Glass id="ent-projects"><Empty art={{ done: 0 }} title="لا توجد مشاريع لهذه الجهة." note="الجهة مسجّلة، لكنها لم تتقدّم بأي مشروع في هذا النموذج." /></Glass>
+    return <Glass id="ent-projects"><Empty art={{ done: 0 }} title="لا توجد مشاريع لهذه الجهة." /></Glass>
   }
   const of = (has: readonly string[]) => rows.filter((r) => has.includes(r.statusGroup))
   const items = [

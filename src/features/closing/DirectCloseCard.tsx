@@ -53,9 +53,8 @@ export function DirectCloseCard({ projectId }: { projectId: string }) {
       )}
       <KV rows={[
         { k: 'مسار الاعتماد', v: DIRECT_PATH.join(' ← ') },
-        { k: 'غير المصروف من المنحة', v: <><Money sm>{unpaid}</Money> <span className="sub">· يعود إلى بند الميزانية عند الإغلاق</span></> },
+        { k: 'غير المصروف من المنحة', v: <Money sm>{unpaid}</Money> },
       ]} />
-      <p className="sub cnote">يُغلق المشروع دون دورة التقرير الختامي والتقييم · تعتمد الإدارة المالية التسوية في آخر المسار، فتُغلق طلبات الصرف المفتوحة وتُوقف الدفعات القادمة ويُحرَّر المحجوز غير المصروف، ويصبح المشروع «مكتملًا».</p>
       {!p?.closedDirect && (
         <div className="rowf gp-2 mt-3">
           {can

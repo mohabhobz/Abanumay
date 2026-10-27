@@ -43,7 +43,7 @@ export function EntityReasonsTab() {
             const list = d[kind]
             return (
               <Glass className="tblcard" key={kind}>
-                <Head title={`أسباب ${k.label}`} meta={<span className="sub"><Num>{list.length}</Num> سببًا · ومعها «أخرى» بنص</span>} />
+                <Head title={`أسباب ${k.label}`} meta={<span className="sub"><Num>{list.length}</Num> سببًا</span>} />
                 <ul className="cfglist cfglist-w">
                   {list.map((r, i) => (
                     <li key={i}>
@@ -65,7 +65,6 @@ export function EntityReasonsTab() {
                     </button>
                   </li>
                 </ul>
-                <p className="sub cnote">{k.hint} · يظهر في نافذة القرار ويُسجَّل في سجل الطلب أو الحساب.</p>
               </Glass>
             )
           })}

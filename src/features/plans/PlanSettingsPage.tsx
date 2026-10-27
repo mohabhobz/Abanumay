@@ -72,10 +72,6 @@ export default function PlanSettingsPage() {
           <header>
             <div>
               <h1 className="ptitle">إعدادات الخطط</h1>
-              <p className="sub mt-1">
-                أنواع الشواهد التي تطلبها الأنشطة، وحدود المحطات التي
-                تُحدّد متى تُعدّ الخطة متأخّرة
-              </p>
             </div>
             <Tag tone="mute">قيم افتراضية</Tag>
           </header>
@@ -92,11 +88,6 @@ export default function PlanSettingsPage() {
                 title="أنواع الشواهد"
                 meta={<span className="sub"><Num>{EVIDENCE_KINDS.length}</Num> {nounAfter(EVIDENCE_KINDS.length, NOUN.kind)}</span>}
               />
-              <p className="sub cnote">
-                يطلب النشاط نوعًا أو أكثر من هذه الأنواع، ولا تستطيع الجهة إعلان
-                اكتمال النشاط قبل رفعها · وبها تصبح مراجعة مشرف المنح
-                ممكنة أصلًا{/* doc rule 14 */}.
-              </p>
               {/* Note: the "note" column used to be all dots - a note is only written for a type no
                   plan has requested, so the column renders only when one exists. */}
               {/* Note: a name/value table sized to its content, not the card width - at full card
@@ -138,16 +129,7 @@ export default function PlanSettingsPage() {
             <Glass className="tblcard">
               <Head
                 title="حدود المحطات"
-                meta={<Tag tone="warn">لم تحدّد الوثيقة مدة</Tag>}
               />
-              {/* Note: this sentence is what distinguishes "a number we agreed on" from "a number
-                  we set so the screen works" - the latter must stay tagged as such until the
-                  institution settles it. */}
-              <p className="sub cnote">
-                لم تحدّد مدة لأي محطة · هذه الأرقام مؤقتة ليكون
-                لوصف «متأخّرة» معنى في النموذج، ويلزم تأكيدها مع
-                المؤسسة، مثل الحدود المالية للاعتماد تمامًا.
-              {/* doc BPD-012 */}</p>
               <StageLimits
                 stages={PLAN_STAGES.map((x) => ({ key: x.key, label: x.label, who: x.who }))}
                 limits={PLAN_LIMIT}
@@ -156,10 +138,6 @@ export default function PlanSettingsPage() {
                 countAt={(k) => atStage(k as PlanStage)}
                 unitLabel="الخطط فيها الآن"
               />
-              <p className="sub cnote">
-                مدة التنفيذ نفسها ليست إعدادًا · تُؤخذ من تواريخ المراحل في
-                النسخة المرجعية لكل خطة، ويُقاس التأخير عليها.
-              </p>
             </Glass>
           )}
         </div>
@@ -184,11 +162,6 @@ function ActTimingTab() {
   return (
     <Glass>
       <Head title="تأخّر الأنشطة وتعثّرها" meta={<span className="sub">الافتراضي <Num>{ACT_TIMING_DEFAULT.delayDays}</Num> و<Num>{ACT_TIMING_DEFAULT.stallDays}</Num> أيام</span>} />
-      <p className="sub cnote">
-        تُقرأ حالة إنجاز النشاط من تواريخه: «لم يحن وقته» قبل تاريخ بدئه، و«جاري التنفيذ» حتى تاريخ انتهائه،
-        ثم «متأخر» إذا تجاوزه بأكثر من مدة التأخير، و«متعثر» إذا تجاوزه بأكثر من مدة التعثّر · و«مكتمل» حين تعلن الجهة
-        اكتماله فيذهب لمشرف المنح للتحقق.
-      </p>
       <div className="actcfg">
         <label className="regf">
           <span className="lb">مدة التأخير · بالأيام بعد تاريخ الانتهاء<b className="regf-r" aria-label="إلزامي">*</b></span>

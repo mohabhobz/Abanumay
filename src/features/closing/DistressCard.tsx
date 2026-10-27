@@ -3,7 +3,7 @@ import { DateText, Glass, Head, Icon, Money, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import {
-  CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, casesOfProject, grantOf, paidToDate, stopPhase, useClosing,
+  CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, casesOfProject, grantOf, paidToDate, useClosing,
 } from '@/data/closing/store'
 
 /* «حالات التعثر» on the project · 10.9.
@@ -19,7 +19,6 @@ export function DistressCard({ projectId }: { projectId: string }) {
   /* #27 · the direct closing has its own card */
   const list = casesOfProject(projectId).filter((c) => c.kind !== 'direct')
   const open = casesOfProject(projectId).some((c) => c.stage !== 'closed' && c.stage !== 'rejected')
-  const phase = stopPhase(projectId)
   return (
     <Glass>
       <Head title="حالات التعثر وتعديل القيمة" meta={<span className="sub">قيمة المنحة <Money sm>{grantOf(projectId)}</Money> · المصروف <Money sm>{paidToDate(projectId)}</Money></span>} />
@@ -37,7 +36,7 @@ export function DistressCard({ projectId }: { projectId: string }) {
           ))}
         </ul>
       ) : (
-        <p className="sub cnote">لا حالات على المشروع · لو أُوقف الآن: {phase.say}.</p>
+        <p className="sub cnote">لا حالات على المشروع.</p>
       )}
       {role.key === 'supervisor' && !open && (
         <div className="rowf gp-2 mt-3">
@@ -46,7 +45,6 @@ export function DistressCard({ projectId }: { projectId: string }) {
           <Link className="btn btn-2 btn-sm" to={ROUTES.distressNew(projectId, 'increase')}>زيادة القيمة</Link>
         </div>
       )}
-      <p className="sub cnote">يرفع المشرف القرار، ويوافق مدير المنح، ويعتمده صاحب الصلاحية وفق المصفوفة · ولا يتغيّر المشروع قبل اعتماده.{/* doc 10.9 */}</p>
     </Glass>
   )
 }

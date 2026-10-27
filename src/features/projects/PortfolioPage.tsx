@@ -1,10 +1,10 @@
-import { holds, holdersSay } from '@/data/shared/decisions'
+import { holds } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { payBlock } from '@/data/entities/store'
 import { portfolioAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import {
-  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Steps, Tabs, Tag, icons, type StepItem, CheckChip, MultiSelect } from '@/components/ui'
+import { FieldMultiSelect,
+  BackTo, DateText, DockActions, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Steps, Tabs, Tag, icons, type StepItem, MultiSelect } from '@/components/ui'
 import { CHART_COLORS, Legend, RankBars, StackBar, type Slice } from '@/components/charts'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -15,7 +15,6 @@ import { assistFor } from '@/data/mock/assistant'
 import { REGIONS } from '@/data/mock/taxonomy'
 import { entityById } from '@/data/mock/entities'
 import { isolate, nf, pct } from '@/lib/format'
-import { noteFirst } from '@/lib/dock'
 import { HOLD_STAGE_SAY, linkOf, usableLines } from '@/data/budget/store'
 import {
   PF_STAGE_SAY, PF_STAGE_TONE, SUB_STATE_SAY, SUB_STATE_TONE, actOnPfAgreement, actOnPortfolio, addSub, capIssue,
@@ -61,7 +60,6 @@ export default function PortfolioPage() {
   usePartners()
   const { role, user } = useRole()
   const pf = id ? pfById(id) : undefined
-  const [note, setNote] = useState('')
   const [line, setLine] = useState('')
   const [split, setSplit] = useState<{ key: string; amount: string }[]>([])
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
@@ -71,7 +69,7 @@ export default function PortfolioPage() {
       <AppLayout assistantContext={assistFor.page('المحافظ')}>
         <div className="viewstack"><div className="screen col">
           <BackTo label="المشاريع" onClick={() => navigate(ROUTES.projects)} />
-          <Glass><Empty title="المحفظة غير موجودة." note="تُسجَّل المحافظ للشركاء الاستراتيجيين المعتمدين." /></Glass>
+          <Glass><Empty title="المحفظة غير موجودة." /></Glass>
         </div></div>
       </AppLayout>
     )
@@ -80,7 +78,6 @@ export default function PortfolioPage() {
   const m = pfMoney(pf)
   const gate = subsGate(pf)
   const actions = pfActions(pf, role.key, asPartner)
-  const needNote = actions.some((a) => a.needsNote)
   const lines = usableLines('fy-2026')
   /* the partners' portfolios allocation first · then the partnerships' other allocation · then any line that covers it */
   const preferred = lines.find((l) => l.node.id === 'tPg2' && l.free >= pf.total) ?? lines.find((l) => l.node.id === 'tPg1' && l.free >= pf.total) ?? lines.find((l) => l.free >= pf.total)
@@ -93,18 +90,13 @@ export default function PortfolioPage() {
   const link = linkOf(pf.id)
   const partner = pf.entityId
 
-  const act = (a: (typeof actions)[number]) => {
-    const out = actOnPortfolio(pf.id, a.act, note, user.name, a.act === 'recommend' ? shares : undefined)
-    setSaid(out.length ? { bad: out } : { ok: a.label })
-    if (!out.length) setNote('')
-  }
 
   const steps: StepItem[] = [
     { label: 'الطلب', note: pf.origin === 'partner' ? 'من بوابة الشريك' : 'مشرف المنح', state: pf.stage === 'draft' || pf.stage === 'returned' ? 'now' : 'done' },
-    { label: 'الدراسة والاعتماد', note: 'حسب مصفوفة الاعتماد', state: ['supervisor', 'manager', 'ceo', 'committee', 'board'].includes(pf.stage) ? 'now' : ['draft', 'returned', 'rejected'].includes(pf.stage) ? 'todo' : 'done' },
-    { label: 'الخطة والاتفاقية', note: 'قبل أي مشروع فرعي', state: pf.stage !== 'approved' && pf.stage !== 'closing' && pf.stage !== 'closed' ? 'todo' : gate.ok || pf.stage !== 'approved' ? 'done' : 'now' },
+    { label: 'الدراسة والاعتماد', state: ['supervisor', 'manager', 'ceo', 'committee', 'board'].includes(pf.stage) ? 'now' : ['draft', 'returned', 'rejected'].includes(pf.stage) ? 'todo' : 'done' },
+    { label: 'الخطة والاتفاقية', state: pf.stage !== 'approved' && pf.stage !== 'closing' && pf.stage !== 'closed' ? 'todo' : gate.ok || pf.stage !== 'approved' ? 'done' : 'now' },
     { label: 'المشاريع الفرعية', note: `${m.approvedCount} معتمد`, state: gate.ok ? 'now' : pf.stage === 'closing' || pf.stage === 'closed' ? 'done' : 'todo' },
-    { label: pf.stage === 'cancelled' ? 'ملغاة' : 'الإغلاق', note: pf.stage === 'cancelled' ? 'استرداد على مستوى المحفظة' : 'التقرير الشامل والتقييم', state: pf.stage === 'closed' || pf.stage === 'cancelled' ? 'done' : pf.stage === 'closing' ? 'now' : 'todo' },
+    { label: pf.stage === 'cancelled' ? 'ملغاة' : 'الإغلاق', state: pf.stage === 'closed' || pf.stage === 'cancelled' ? 'done' : pf.stage === 'closing' ? 'now' : 'todo' },
   ]
 
   /* The tabs open with the portfolio's life · the plan, agreement, indicators, payments and closing
@@ -159,7 +151,6 @@ export default function PortfolioPage() {
                 <Tag tone={PF_STAGE_TONE[pf.stage]}>{PF_STAGE_SAY[pf.stage]}</Tag>
                 {/* Client sheet 24 Oct (#95) · the portfolio's outcome once it ends */}
                 <OutcomeTag outcome={portfolioOutcome(pf.stage)} />
-                <Tag tone="mute">دفعات على مستوى المحفظة</Tag>
               </div>
             </div>
           </header>
@@ -180,7 +171,7 @@ export default function PortfolioPage() {
               {on('data') && (
                 <>
                   <Glass>
-                    <Head title="مسار المحفظة" meta={<span className="sub">المسار المعتاد والصلاحيات المالية</span>} />
+                    <Head title="مسار المحفظة" />
                     <Steps items={steps} flow="ladder" />
                   </Glass>
 
@@ -189,7 +180,7 @@ export default function PortfolioPage() {
                     <KV rows={[
                       { k: 'الشريك', v: entityName(pf) },
                       { k: 'قيمة المحفظة', v: <Money>{pf.total}</Money> },
-                      { k: 'المسار والمجال', v: `${pf.track} · ${pf.field} · يرثهما كل مشروع فرعي` },
+                      { k: 'المسار والمجال', v: `${pf.track} · ${pf.field}` },
                       { k: 'الأهداف', v: isolate(pf.goals) },
                       { k: 'المرفقات', v: pf.files.join(' · ') || '—' },
                       { k: 'مشرف المنح', v: <Person name={pf.owner} /> },
@@ -202,7 +193,7 @@ export default function PortfolioPage() {
 
               {on('study') && (
                 <>
-                  {(pf.stage === 'supervisor' || pf.study) ? <StudyCard pf={pf} /> : <Glass><Head title="دراسة المحفظة بمعايير التقييم" /><p className="sub cnote">يدرسها مشرف المنح بمعايير التقييم عند وصولها إليه.</p></Glass>}
+                  {(pf.stage === 'supervisor' || pf.study) && <StudyCard pf={pf} />}
                   <HoldCard pf={pf} lineKey={lineKey} setLine={setLine} lines={lines} link={link} split={split} setSplit={setSplit} />
                   {(pf.stage === 'committee' || pf.stage === 'board') && <SessionCard pf={pf} />}
                 </>
@@ -251,23 +242,14 @@ export default function PortfolioPage() {
                 <Person name={user.name} size="lg" quiet={false} />
                 <span className="decsent">قرارك في <b>المحفظة</b><span className="decsep" />{nf.format(pf.total)} ريال</span>
               </div>
+              {/* Client 26 Oct · the bar holds the buttons only · each one confirms in its popup, with the reason there */}
               <div className="payact-g">
-                {needNote && (
-                  <label className="payact-n">
-                    <span className="vis-h">الملاحظة</span>
-                    <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="سبب الإعادة أو الرفض · إلزامي" />
-                  </label>
-                )}
-                <div className="rowf gp-2">
-                  {noteFirst(actions).map((a) => {
-                    const stop = a.needsNote && !note.trim() ? 'اكتب الملاحظة أولًا' : pfStops(pf, a.act, a.act === 'recommend' ? shares : undefined)[0] ?? ''
-                    return (
-                      <button key={a.label} type="button" className={`btn ${a.kind}`} data-needs-note={a.needsNote ? '' : undefined} disabled={Boolean(stop)} title={stop || /* doc 13.2.6 */ ''} onClick={() => act(a)}>
-                        {a.label}
-                      </button>
-                    )
-                  })}
-                </div>
+                <DockActions
+                  actions={actions.map((a) => ({ ...a, stops: pfStops(pf, a.act, a.act === 'recommend' ? shares : undefined), why: /* doc 13.2.6 */ '' }))}
+                  subject={<>المحفظة · {nf.format(pf.total)} ريال</>}
+                  placeholder="سبب الإعادة أو الرفض · يصل مع القرار"
+                  onRun={(a, n) => { const out = actOnPortfolio(pf.id, a.act, n, user.name, a.act === 'recommend' ? shares : undefined); if (!out.length) setSaid({ ok: a.label }); return out }}
+                />
               </div>
             </div>
           </div>
@@ -296,10 +278,11 @@ function StudyCard({ pf }: { pf: PortfolioRec }) {
   return (
     <Glass>
       <Head title="دراسة المحفظة بمعايير التقييم" meta={<Tag tone={score >= 70 ? 'ok' : score >= 50 ? 'warn' : 'mute'}>{score} من 100</Tag>} />
-      <p className="sub cnote">
-        {editable ? 'قيّم كل معيار من 1 إلى 5 · الأوزان من «معايير التقييم» في الإعدادات · التوصية بعد اكتمال الدراسة.'
-          : pf.study ? <>دراسة <Person name={pf.study.by} /> · <DateText>{pf.study.at}</DateText></> : 'لم تُسجَّل دراسة بعد.'}
-      </p>
+      {!editable && (
+        <p className="sub cnote">
+          {pf.study ? <>دراسة <Person name={pf.study.by} /> · <DateText>{pf.study.at}</DateText></> : 'لم تُسجَّل دراسة بعد.'}
+        </p>
+      )}
       {STUDY_GROUPS.map((g) => (
         <div key={g} className="stdy-g">
           <h3 className="stdy-h">الدراسة {GROUP_SAY[g].study}</h3>
@@ -382,13 +365,10 @@ function HoldCard({ pf, lineKey, setLine, lines, link, split, setSplit }: {
         <label className="regf">
           <span className="lb">بند الميزانية</span>
           <FieldSelect value={lineKey} onChange={setLine} label="بند الميزانية" options={lines.filter((l) => l.free >= pf.total).map((l) => ({ value: l.key, label: `${l.node.label} · متاح ${nf.format(l.free)}` }))} />
-          <span className="sub regf-h">تُحجز القيمة كاملةً مرة واحدة مع التوصية · وقيم المشاريع الفرعية توزيع داخلي لا حجز جديد{/* doc 13.2.19 */}</span>
         </label>
         <button type="button" className="btn btn-ghost btn-sm mt-2" onClick={() => setSplit([{ key: lineKey, amount: '' }, { key: '', amount: '' }])}>وزّع الحجز على أكثر من بند أو ميزانية</button>
         </>
-      ) : (
-        <p className="sub cnote">يُحجز إجمالي المحفظة مع توصية المشرف ويُثبَّت بالاعتماد النهائي.</p>
-      )}
+      ) : null}
     </Glass>
   )
 }
@@ -412,13 +392,12 @@ function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
         {pf.plan.phases.map((p) => <li key={p.id}><span>{p.name}</span><span className="sub"><DateText>{p.from}</DateText> – <DateText>{p.to}</DateText>{p.activities?.length ? ` · ${p.activities.map((a) => `${a.name}${a.output ? ` (${a.output})` : ''}`).join('، ')}` : ''}</span><Money sm>{p.cost}</Money></li>)}
         {/* v3 · 12.4.13 · each activity read from the sub-projects that serve it */}
         {pfActivities(pf).filter((a) => pfActivityProgress(pf, a.id).linked > 0).map((a) => <li key={`pr-${a.id}`}><span>{a.label}</span><span className="sub">{pfActivityProgress(pf, a.id).say}</span></li>)}
-        {!pf.plan.phases.length && <li className="sub">{id ? 'يعدّها الشريك أو مشرف المنح في وحدة الخطط.' : 'تُفتح في وحدة الخطط بعد الاعتماد النهائي للمحفظة.'}</li>}
+        {!pf.plan.phases.length && <li className="sub">لا مراحل بعد.</li>}
       </ul>
       {id && (
         <div className="apv-row mt-3">
           {writes && <Link className="btn btn-p btn-sm" to={`${ROUTES.planEdit(id)}${asPartner ? '?as=entity' : ''}`}>{pf.plan.phases.length ? 'أكمل الخطة' : 'أعدّ الخطة'}</Link>}
           <Link className={`btn ${writes ? 'btn-2' : 'btn-p'} btn-sm`} to={`${ROUTES.plan(id)}${asPartner ? '?as=entity' : ''}`}>افتح الخطة · <bdi>{id}</bdi></Link>
-          <span className="sub">المراجعة والاعتماد والتنفيذ وطلبات التعديل في وحدة الخطط (BPD-012)</span>
         </div>
       )}
       {!asPartner && role.key === 'grants-manager' && pfActivities(pf).length > 0 && (
@@ -438,7 +417,7 @@ function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
 /* ── The agreement · drafted, approved, signed by the partner; the payment schedule rides on it (13.2.9 · 13.2.24) ── */
 function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const { role, user } = useRole()
-  const [note, setNote] = useState('')
+
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const a = pf.agreement
   const say = { none: 'لم تُعدّ', draft: 'مسودة · مشرف المنح', manager: 'بانتظار مدير المنح', executive: 'بانتظار المدير التنفيذي', partner: 'بانتظار توقيع الشريك', foundation: 'بانتظار توقيع ممثل المؤسسة', signed: 'موقّعة وسارية', returned: 'معادة' }[a.state]
@@ -447,7 +426,7 @@ function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean
   return (
     <Glass>
       <Head title="اتفاقية المحفظة" meta={<Tag tone={a.state === 'signed' ? 'ok' : a.state === 'none' ? 'mute' : 'warn'}>{say}</Tag>} />
-      <p className="sub cnote">اتفاقية على مستوى المحفظة ككل · تحكم المشاريع الفرعية كلها ولا تتكرر لكل مشروع.{a.file ? ` · ${a.file}` : ''}</p>
+      {a.file && <p className="sub cnote">{a.file}</p>}
       {/* Batch 7 · partners#12 · the agreement's own text, from the template with the portfolio's terms */}
       {a.body && (
         <details className="mt-2">
@@ -466,18 +445,21 @@ function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean
         {sup && (a.state === 'none' || a.state === 'returned') && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'draft', '', user.name), 'مسودة الاتفاقية')}>أعدّ المسودة من النموذج</button>}
         {sup && a.state === 'draft' && <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'send', '', user.name), 'إرسال الاتفاقية')}>أرسل لمدير المنح</button>}
         {!asPartner && ((role.key === 'grants-manager' && a.state === 'manager') || (role.key === 'ceo' && a.state === 'executive')) && (
-          <>
-            <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على الاتفاقية" placeholder="سبب الإعادة" /></span>
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'return', note, user.name), 'إعادة الاتفاقية')}>أعد</button>
-            <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'approve', '', user.name), 'اعتماد الاتفاقية')}>{a.state === 'manager' ? 'اعتمد وأحل للمدير التنفيذي' : 'اعتمد وأرسل للشريك'}</button>
-          </>
+          /* Client 26 Oct · the decision confirms in its popup · the return's reason there */
+          <DockActions
+            actions={[
+              { label: 'أعد', kind: 'btn-2 btn-sm', needsNote: true, act: 'return' as const },
+              { label: a.state === 'manager' ? 'اعتمد وأحل للمدير التنفيذي' : 'اعتمد وأرسل للشريك', kind: 'btn-p btn-sm', act: 'approve' as const },
+            ]}
+            subject={<>اتفاقية المحفظة · {pf.name}</>}
+            placeholder="سبب الإعادة"
+            onRun={(x, n) => { const out = actOnPfAgreement(pf.id, x.act, n, user.name); r(out, x.act === 'return' ? 'إعادة الاتفاقية' : 'اعتماد الاتفاقية'); return out }}
+          />
         )}
         {!asPartner && (role.key === 'grants-manager' || role.key === 'ceo') && a.state === 'foundation' && (
           <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'countersign', '', user.name), 'توقيع ممثل المؤسسة')}>وقّع عن المؤسسة · تسري الاتفاقية</button>
         )}
-        {asPartner && a.state === 'foundation' && <span className="sub">وقّعتها · بانتظار توقيع ممثل المؤسسة</span>}
         {asPartner && a.state === 'partner' && <UploadButton label="الاتفاقية الموقعة" onPick={(f) => r(actOnPfAgreement(pf.id, 'sign', '', user.name, f.name), 'توقيع الاتفاقية')} />}
-        {!asPartner && a.state === 'partner' && <span className="sub">يوقّعها الشريك من بوابته</span>}
       </div>
       <Said said={said} />
     </Glass>
@@ -500,7 +482,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const [d, setD] = useState(EMPTY)
   const [sel, setSel] = useState<string[]>([])
   const [reasons, setReasons] = useState<Record<string, string>>({})
-  const [why, setWhy] = useState('')
+
   const [one, setOne] = useState('')
   const [adding, setAdding] = useState(false)
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
@@ -530,7 +512,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const mixed = new Set(picked.map((x) => x.state)).size > 1
   const cap = capIssue(pf, drafts.map((x) => x.id))
   const req = pf.subFields ?? SUB_FIELDS_DEFAULT
-  const r = (out: string[], ok: string) => { setSaid(out.length ? { bad: out } : { ok }); if (!out.length) { setSel([]); setWhy('') } }
+  const r = (out: string[], ok: string) => { setSaid(out.length ? { bad: out } : { ok }); if (!out.length) setSel([]) }
   const add = () => {
     const out = addSub(pf.id, { name: d.name, region: d.region, city: d.city || undefined, amount: Number(d.amount) || 0, beneficiaries: Number(d.beneficiaries) || 0, outputs: d.outputs, files: d.files, activityId: d.activityId || undefined }, asPartner ? entityName(pf) : user.name)
     if (out.errors.length) { setSaid({ bad: [`ينقص: ${out.errors.join('، ')}`] }); return }
@@ -570,6 +552,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                 <th><span className="th-t">المشروع · المنطقة · المستهدف</span></th>
                 <th className="n"><span className="th-t">القيمة</span></th>
                 <th><span className="th-t">الحالة</span></th>
+                <th><span className="th-t">التوصية والملاحظة</span></th>
                 <th><span className="th-t">النتيجة</span></th>
               </tr>
             </thead>
@@ -585,19 +568,21 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                   <td className="subst">
                     {/* Client 20 Oct (#30) · the state tag stays whole and the seat's note sits under it on one
                         line, cut with its full text on hover · it spilled out of the table beside the tag */}
-                    {(() => {
-                      const why = [
-                        x.rec && x.state === 'pending' ? `توصية المشرف: ${x.rec.outcome === 'approve' ? 'اعتماد' : 'رفض'}${x.rec.note ? ` · ${x.rec.note}` : ''}` : '',
-                        x.reason ?? '', x.note ?? '', x.outcome && (x.state === 'stalled' || x.state === 'excluded') ? x.outcome.note : '',
-                      ].filter(Boolean).join(' · ')
-                      return <span className="tagfit" title={why || undefined}><Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}</Tag>{why && <span className="sub tseat">{why}</span>}</span>
-                    })()}
+                    <span className="tagfit"><Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}</Tag></span>
                     {x.exec && isLiveSub(x) && <div className="sub">إنجاز <span className="num">{pct(x.exec.progress)}</span> · <span className="num">{nf.format(x.exec.reached)}</span> مستفيد</div>}
                     {(mgr || sup) && sel.includes(x.id) && x.state !== 'draft' && (
                       <span className="fld mt-1"><input value={reasons[x.id] ?? ''} onChange={(e) => setReasons((r0) => ({ ...r0, [x.id]: e.target.value }))} aria-label={`ملاحظة على ${x.name}`} placeholder={mgr ? 'سبب الرفض أو ملاحظة الاعتماد' : 'ملاحظة التوصية · إلزامية للرفض'} /></span>
                     )}
                     {dropper && x.state === 'draft' && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { dropSub(pf.id, x.id, asPartner ? entityName(pf) : user.name); r([], 'حذف المسودة') }}>حذف المسودة</button>}
                   </td>
+                  {/* Client sheet 26 Oct (#113) · the recommendation and the note in their own column */}
+                  <td>{(() => {
+                    const why = [
+                      x.rec && x.state === 'pending' ? `توصية المشرف: ${x.rec.outcome === 'approve' ? 'اعتماد' : 'رفض'}${x.rec.note ? ` · ${x.rec.note}` : ''}` : '',
+                      x.reason ?? '', x.note ?? '', x.outcome && (x.state === 'stalled' || x.state === 'excluded') ? x.outcome.note : '',
+                    ].filter(Boolean).join(' · ')
+                    return why ? <span className="sub trim1" title={why}>{why}</span> : <span className="sub">—</span>
+                  })()}</td>
                   <td><OutcomeTag outcome={subOutcome(x.state)} pending /></td>
                 </tr>
               ))}
@@ -624,12 +609,19 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
       {(sup || mgr) && pf.items.some((x) => ['pending', 'approved', 'closing', 'stalled'].includes(x.state)) && (
         <div className="apv-row mt-3">
           <FieldSelect value={one} onChange={setOne} label="مشروع فرعي للاستبعاد أو التعثر" placeholder="اختر مشروعًا فرعيًّا" options={pf.items.filter((x) => ['pending', 'approved', 'closing', 'stalled'].includes(x.state)).map((x) => ({ value: x.id, label: `${x.name} · ${SUB_STATE_SAY[x.state]}` }))} />
-          <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب الاستبعاد أو التعثر" placeholder="السبب · إلزامي" /></span>
-          {['approved', 'closing'].includes(pf.items.find((x) => x.id === one)?.state ?? '') && <button type="button" className="btn btn-2 btn-sm" onClick={() => { r(stallSub(pf.id, one, why, user.name, role.key), 'متعثر'); setOne('') }}>متعثر</button>}
-          <button type="button" className="btn btn-d btn-sm" disabled={!one} onClick={() => { r(excludeSub(pf.id, one, why, user.name, role.key), 'استبعاد المشروع الفرعي'); setOne('') }}>استبعد · تعود القيمة للرصيد</button>
+          {/* Client 26 Oct · the reason in the decision's popup */}
+          <DockActions
+            actions={[
+              ...(['approved', 'closing'].includes(pf.items.find((x) => x.id === one)?.state ?? '') ? [{ label: 'متعثر', kind: 'btn-2 btn-sm', needsNote: true, act: 'stall' as const }] : []),
+              { label: 'استبعد · تعود القيمة للرصيد', kind: 'btn-d btn-sm', needsNote: true, act: 'exclude' as const, stops: one ? [] : ['اختر المشروع الفرعي أولًا'] },
+            ]}
+            subject={<>{pf.items.find((x) => x.id === one)?.name ?? 'المشروع الفرعي'} · {pf.name}</>}
+            placeholder="سبب الاستبعاد أو التعثر"
+            onRun={(x, n) => { const out = x.act === 'stall' ? stallSub(pf.id, one, n, user.name, role.key) : excludeSub(pf.id, one, n, user.name, role.key); r(out, x.act === 'stall' ? 'متعثر' : 'استبعاد المشروع الفرعي'); if (!out.length) setOne(''); return out }}
+          />
         </div>
       )}
-      {adder && !adding && <div className="apv-row mt-3"><button type="button" className="btn btn-2 btn-sm" onClick={() => setAdding(true)}>أضف مشروعًا فرعيًّا</button><span className="sub">الرصيد المتاح <span className="num">{nf.format(Math.max(0, pfMoney(pf).available))}</span> · المسودات قد تتجاوزه</span></div>}
+      {adder && !adding && <div className="apv-row mt-3"><button type="button" className="btn btn-2 btn-sm" onClick={() => setAdding(true)}>أضف مشروعًا فرعيًّا</button><span className="sub">الرصيد المتاح <span className="num">{nf.format(Math.max(0, pfMoney(pf).available))}</span></span></div>}
       {adder && adding && (
         <div className="ptn-form mt-3">
           <div className="regfields">
@@ -650,7 +642,6 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setD(EMPTY) }}>إلغاء</button>
             <button type="button" className="btn btn-p btn-sm" onClick={add}>احفظ مسودة</button>
           </div>
-          <p className="sub cnote">يرث المسار والمجال من المحفظة ({pf.track} · {pf.field}) · يُرفع للمراجعة وحده أو مع غيره · يدرسه المشرف ويوصي، ويقرّه مدير المنح.</p>
         </div>
       )}
       <Said said={said} />
@@ -667,13 +658,13 @@ function SettingsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean 
   const r = (out: string[], ok: string) => setSaid(out.length ? { bad: out } : { ok })
   return (
     <Glass>
-      <Head title="إعدادات المحفظة" meta={<span className="sub">نموذج المشروع الفرعي · المعايير · موثوقية القيم</span>} />
+      <Head title="إعدادات المحفظة" />
       <KV rows={[
-        { k: 'حقول المشروع الفرعي الإلزامية', v: <span className="rowf gp-2">{(Object.keys(SUB_FIELD_SAY) as SubField[]).map((f) => <CheckChip key={f} disabled={!may} on={fields.includes(f)} onToggle={() => setFields((x) => (x.includes(f) ? x.filter((y) => y !== f) : [...x, f]))}>{SUB_FIELD_SAY[f]}</CheckChip>)}</span> },
-        { k: 'معايير المحفظة المعتمدة', v: <span className="rowf gp-2">{pf.criteria ? <Tag tone="ok"><Icon name={icons.clip} size="sm" /> {pf.criteria.file}</Tag> : <span className="sub">لم تُحفظ · يُتفق عليها خارج النظام</span>}{may && <UploadButton label="احفظ المعايير (PDF)" onPick={(f) => r(attachPfCriteria(pf.id, f.name, user.name, role.key), 'معايير المحفظة')} />}</span> },
+        { k: 'حقول المشروع الفرعي الإلزامية', v: <FieldMultiSelect disabled={!may} values={fields} options={(Object.keys(SUB_FIELD_SAY) as SubField[]).map((f) => ({ value: f, label: SUB_FIELD_SAY[f] }))} label="حقول المشروع الفرعي الإلزامية" placeholder="الحقول الإلزامية" onChange={(xs) => setFields(xs as SubField[])} /> },
+        { k: 'معايير المحفظة المعتمدة', v: <span className="rowf gp-2">{pf.criteria ? <Tag tone="ok"><Icon name={icons.clip} size="sm" /> {pf.criteria.file}</Tag> : <span className="sub">لم تُحفظ</span>}{may && <UploadButton label="احفظ المعايير (PDF)" onPick={(f) => r(attachPfCriteria(pf.id, f.name, user.name, role.key), 'معايير المحفظة')} />}</span> },
         { k: 'قيم المشاريع الفرعية للتوزيع الجغرافي للتكلفة', v: may ? <button type="button" className={`btn btn-sm ${pf.reliable ? 'btn-2' : 'btn-ghost'}`} aria-pressed={Boolean(pf.reliable)} onClick={() => { setPfReliable(pf.id, !pf.reliable, user.name); setSaid({ ok: 'موثوقية القيم' }) }}>{pf.reliable ? 'موثوقة · تُستخدم' : 'غير موثوقة · لا تُستخدم'}</button> : <span className="sub">{pf.reliable ? 'موثوقة' : 'لا تُستخدم للتكلفة'}</span> },
       ]} />
-      {may && <div className="apv-row mt-3"><button type="button" className="btn btn-p btn-sm" onClick={() => r(savePfForm(pf.id, fields, user.name, role.key), 'نموذج المشروع الفرعي')}>احفظ النموذج</button><span className="sub">الاسم والمنطقة والقيمة إلزامية دائمًا · ولا يلزم المشروع الفرعي حقول المشروع العادي{/* doc 13.4.16 */}</span></div>}
+      {may && <div className="apv-row mt-3"><button type="button" className="btn btn-p btn-sm" onClick={() => r(savePfForm(pf.id, fields, user.name, role.key), 'نموذج المشروع الفرعي')}>احفظ النموذج</button></div>}
       <Said said={said} />
     </Glass>
   )
@@ -693,12 +684,12 @@ function SessionCard({ pf }: { pf: PortfolioRec }) {
     <Glass>
       <Head title={body === 'committee' ? 'جلسة اللجنة التنفيذية' : 'جلسة مجلس الأمناء'} meta={it ? <Tag tone="teal">{it.id}</Tag> : <Tag tone="warn">لم تُدرج</Tag>} />
       {!it ? (
-        secretary ? (
+        secretary && (
           <div className="apv-row">
             <FieldSelect value={sid} onChange={setSid} label="الجلسة" placeholder="اختر جلسة قادمة" options={pfSessions(pf).map((x) => ({ value: x.id, label: `${x.title} · ${x.date}` }))} />
             <button type="button" className="btn btn-p btn-sm" onClick={() => r(pfToSession(pf.id, sid, user.name, role.key), 'الإدراج على الجلسة')}>أدرج على الجلسة</button>
           </div>
-        ) : <p className="sub cnote">يُدرجها أمين الجلسة على جدول جلسة قادمة.</p>
+        )
       ) : (
         <>
           <KV rows={[
@@ -708,7 +699,6 @@ function SessionCard({ pf }: { pf: PortfolioRec }) {
           {secretary && !it.minutes && <div className="apv-row mt-2"><UploadButton label="محضر الجلسة" onPick={(f) => r(attachPfMinutes(pf.id, f.name, user.name), 'المحضر')} /></div>}
         </>
       )}
-      <p className="sub cnote">تخضع المحفظة لمسار الاعتماد نفسه · يسجّل المدير التنفيذي قرار الجهة النهائي من شريط القرار بعد إرفاق المحضر · لا تصويت للأعضاء{/* doc 13.2.6 · client 18 Oct */}.</p>
       <Said said={said} />
     </Glass>
   )
@@ -721,7 +711,7 @@ function SessionCard({ pf }: { pf: PortfolioRec }) {
 function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   return (
     <Glass>
-      <Head title="دفعات المحفظة" meta={<span className="sub">على مستوى المحفظة وفق الجدول · للعرض</span>} />
+      <Head title="دفعات المحفظة" />
       <ul className="ptn-slots">
         {pf.schedule.map((s) => {
           const rq = pf.requests.filter((r) => r.no === s.no).at(-1)
@@ -734,15 +724,15 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
             </li>
           )
         })}
-        {!pf.schedule.length && <li className="sub">يُحدَّد الجدول مع الاتفاقية.</li>}
+        {!pf.schedule.length && <li className="sub">لا جدول دفعات بعد.</li>}
       </ul>
       {/* v3 · 0.ent.8 · 2.4.22 · the partner's account decides whether its portfolio is paid */}
       {payBlock(entityById(pf.entityId)) && <p className="bad cnote">{payBlock(entityById(pf.entityId))}</p>}
-      <div className="apv-row mt-3">
-        {!asPartner && <Link className="btn btn-2 btn-sm" to={ROUTES.partnersTab('finance')}>افتح إجراء الصرف</Link>}
-        <span className="sub">تُطلب الدفعة وتُعتمد وتُصرف في إجراء صرف الدفعات · وتنعكس هنا</span>
-      </div>
-      <p className="sub cnote">لا يُشترط توزيع الدفعة على المشاريع الفرعية ولا ربطها بتفاصيلها المالية · قيمها توزيع داخلي ومتابعة لا أساس للصرف{/* doc 13.4.37 · 13.4.38 */}.</p>
+      {!asPartner && (
+        <div className="apv-row mt-3">
+          <Link className="btn btn-2 btn-sm" to={ROUTES.partnersTab('finance')}>افتح إجراء الصرف</Link>
+        </div>
+      )}
     </Glass>
   )
 }
@@ -776,14 +766,14 @@ function IndicatorsCards({ pf }: { pf: PortfolioRec }) {
   return (
     <>
       <Glass>
-        <Head title="الموقف المالي" meta={<span className="sub">المحفظة ككل</span>} />
+        <Head title="الموقف المالي" />
         <div className="pfi-kpi">
           <Stat label="قيمة المحفظة المعتمدة" value={<Money>{m.total}</Money>} note={`${m.approvedCount} مشروع فرعي معتمد`} />
           <Stat label="المعتمد للمشاريع الفرعية" value={<Money>{m.approved}</Money>} note={`${pct(m.total ? Math.round((m.approved / m.total) * 100) : 0)} من المحفظة`} />
-          <Stat label="قيد الاعتماد" value={<Money>{m.pending}</Money>} note="محجوز داخل المحفظة" />
-          <Stat label="الرصيد المتاح" value={<Money>{Math.max(0, m.available)}</Money>} note="لمشاريع فرعية جديدة" />
-          <Stat label="المصروف" value={<Money>{m.confirmed}</Money>} note="دفعات أكدتها المالية" />
-          <Stat label="المتبقي" value={<Money>{m.remaining}</Money>} note="من قيمة المحفظة" />
+          <Stat label="قيد الاعتماد" value={<Money>{m.pending}</Money>} />
+          <Stat label="الرصيد المتاح" value={<Money>{Math.max(0, m.available)}</Money>} />
+          <Stat label="المصروف" value={<Money>{m.confirmed}</Money>} />
+          <Stat label="المتبقي" value={<Money>{m.remaining}</Money>} />
         </div>
         <h4 className="ptn-sub">توزيع قيمة المحفظة</h4>
         <StackBar parts={split} total={m.total} />
@@ -799,12 +789,11 @@ function IndicatorsCards({ pf }: { pf: PortfolioRec }) {
           {STATES.map((s) => <div key={s.key}><dt>{s.label}</dt><dd className="num">{live.filter((x) => x.state === s.key).length}</dd></div>)}
         </dl>
         <div className="pfi-two mt-3">
-          <Stat label="متوسط الإنجاز" value={<span className="num">{pct(ind.progress)}</span>} bar={{ w: `${ind.progress}%`, c: CHART_COLORS[0] }} note="من إنجاز المشاريع الفرعية المعتمدة" />
+          <Stat label="متوسط الإنجاز" value={<span className="num">{pct(ind.progress)}</span>} bar={{ w: `${ind.progress}%`, c: CHART_COLORS[0] }} />
           <Stat label="المستفيدون الفعليون من المستهدف" value={<span className="num">{nf.format(ind.reached)}</span>} unit={`من ${nf.format(ind.target)}`} bar={{ w: `${reach}%`, c: CHART_COLORS[1] }} note={`${pct(reach)} من المستهدف`} />
         </div>
         <h4 className="ptn-sub">التوزيع الجغرافي لقيم المشاريع الفرعية</h4>
         {geo.length ? <RankBars rows={geo} total={m.approved} hue="c1" /> : <p className="sub cnote">لا مشاريع فرعية معتمدة بعد.</p>}
-        <p className="sub cnote">كل مشروع فرعي يُعتمد يُحدّث المؤشرات مباشرةً · وعند إغلاق المحفظة يجمع النظام قيم مؤشرات التنفيذ من مشاريعها الفرعية.</p>
       </Glass>
     </>
   )
@@ -815,13 +804,13 @@ function CloseCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) 
   const { role, user } = useRole()
   const [report, setReport] = useState(pf.close.report)
   const [evidence, setEvidence] = useState<string[]>(pf.close.evidence)
-  const [note, setNote] = useState('')
+
   const [crit, setCrit] = useState(() => pf.close.evaluation?.criteria ?? [])
   const [evNotes, setEvNotes] = useState(pf.close.evaluation?.notes ?? '')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const checks = pfCloseChecks(pf)
   const st = pf.close.stage
-  const r = (out: string[], ok: string) => { setSaid(out.length ? { bad: out } : { ok }); if (!out.length) setNote('') }
+  const r = (out: string[], ok: string) => { setSaid(out.length ? { bad: out } : { ok }) }
   const seat = st === 'supervisor' || st === 'evalDraft' ? 'supervisor' : st === 'manager' || st === 'evalManager' ? 'grants-manager' : st === 'executive' || st === 'evalExecutive' ? 'ceo' : ''
   const mine = !asPartner && role.key === seat
   const evalStage = st === 'evalDraft' || st === 'evalManager' || st === 'evalExecutive'
@@ -844,9 +833,16 @@ function CloseCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) 
       {!asPartner && pf.close.report && <p className="prose mt-2">{isolate(pf.close.report)}{pf.close.evidence.length ? ` · ${pf.close.evidence.join('، ')}` : ''}</p>}
       {mine && !evalStage && st && st !== 'returned' && (
         <div className="apv-row mt-3">
-          <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على التقرير الشامل" placeholder="سبب الإعادة" /></span>
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => r(actOnPfClose(pf.id, 'return', note, user.name, role.key), 'إعادة التقرير للشريك')}>أعده للشريك</button>
-          <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfClose(pf.id, 'approve', '', user.name, role.key), 'اعتماد التقرير الشامل')}>اعتمد التقرير الشامل</button>
+          {/* Client 26 Oct · the decision confirms in its popup · the return's reason there */}
+          <DockActions
+            actions={[
+              { label: 'أعده للشريك', kind: 'btn-2 btn-sm', needsNote: true, act: 'return' as const },
+              { label: 'اعتمد التقرير الشامل', kind: 'btn-p btn-sm', act: 'approve' as const },
+            ]}
+            subject={<>التقرير الشامل · {pf.name}</>}
+            placeholder="سبب الإعادة"
+            onRun={(x, n) => { const out = actOnPfClose(pf.id, x.act, n, user.name, role.key); r(out, x.act === 'return' ? 'إعادة التقرير للشريك' : 'اعتماد التقرير الشامل'); return out }}
+          />
         </div>
       )}
       {/* v3 · 13.2.30 · the portfolio's evaluation · the closing procedure's questions and weights, out of 100 */}
@@ -867,14 +863,22 @@ function CloseCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) 
             <div className="apv-row mt-3">
               {st === 'evalDraft' && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(savePfEval(pf.id, crit.length ? crit : criteria, evNotes, user.name, role.key), 'حفظ التقييم')}>احفظ التقييم</button>}
               {st === 'evalDraft' && <button type="button" className="btn btn-p btn-sm" onClick={() => { savePfEval(pf.id, crit.length ? crit : criteria, evNotes, user.name, role.key); r(actOnPfEval(pf.id, 'send', '', user.name, role.key), 'إرسال التقييم لمدير المنح') }}>أرسل لمدير المنح</button>}
-              {st !== 'evalDraft' && <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على التقييم" placeholder="سبب الإعادة" /></span>}
-              {st !== 'evalDraft' && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(actOnPfEval(pf.id, 'return', note, user.name, role.key), 'إعادة التقييم')}>أعد التقييم</button>}
-              {st !== 'evalDraft' && <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfEval(pf.id, 'approve', '', user.name, role.key), 'اعتماد التقييم')}>{st === 'evalManager' && pfApproverOf(pf, 'eval') === 'ceo' ? 'اعتمد وأحل للمدير التنفيذي' : 'اعتمد التقييم والإغلاق النهائي'}</button>}
+              {/* Client 26 Oct · the decision confirms in its popup · the return's reason there */}
+              {st !== 'evalDraft' && (
+                <DockActions
+                  actions={[
+                    { label: 'أعد التقييم', kind: 'btn-2 btn-sm', needsNote: true, act: 'return' as const },
+                    { label: st === 'evalManager' && pfApproverOf(pf, 'eval') === 'ceo' ? 'اعتمد وأحل للمدير التنفيذي' : 'اعتمد التقييم والإغلاق النهائي', kind: 'btn-p btn-sm', act: 'approve' as const },
+                  ]}
+                  subject={<>تقييم المحفظة · {pf.name}</>}
+                  placeholder="سبب الإعادة"
+                  onRun={(x, n) => { const out = actOnPfEval(pf.id, x.act, n, user.name, role.key); r(out, x.act === 'return' ? 'إعادة التقييم' : 'اعتماد التقييم'); return out }}
+                />
+              )}
             </div>
           )}
         </>
       )}
-      <p className="sub cnote">يُعتمد التقرير الشامل والتقييم وفق مصفوفة صلاحيات الإغلاق · ثم تُغلق المحفظة مع حفظ بياناتها ومشاريعها الفرعية ونتائجها{/* doc 13.2.30 · 13.2.31 */}.</p>
       <Said said={said} />
     </Glass>
   )
@@ -883,7 +887,7 @@ function CloseCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) 
 /* ── v3 · 13.4.43 · cancelling an approved portfolio · its recovery on the portfolio's relationship ── */
 function CancelCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
   const { role, user } = useRole()
-  const [reason, setReason] = useState('')
+
   const [recover, setRecover] = useState('')
   const [amount, setAmount] = useState('')
   const [ref, setRef] = useState('')
@@ -895,7 +899,7 @@ function CancelCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean })
   const got = rc ? rc.receipts.reduce((n, x) => n + x.amount, 0) : 0
   return (
     <Glass>
-      <Head title="إلغاء المحفظة والاسترداد" meta={pf.cancel ? <Tag tone="no">ملغاة</Tag> : <span className="sub">لـ{holdersSay('portfolioCancelBy')}</span>} />
+      <Head title="إلغاء المحفظة والاسترداد" meta={pf.cancel ? <Tag tone="no">ملغاة</Tag> : undefined} />
       {pf.cancel ? (
         <KV rows={[
           { k: 'السبب', v: pf.cancel.reason },
@@ -904,9 +908,14 @@ function CancelCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean })
         ]} />
       ) : (
         <div className="apv-row">
-          <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب إلغاء المحفظة" placeholder="سبب الإلغاء" /></span>
           <MoneyField value={recover} onChange={setRecover} label="المبلغ المطلوب استرداده" placeholder="0" />
-          <button type="button" className="btn btn-d btn-sm" onClick={() => { const out = cancelPortfolio(pf.id, reason, Number(recover) || 0, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'إلغاء المحفظة' }) }}>ألغِ المحفظة</button>
+          {/* Client 26 Oct · the reason in the decision's popup */}
+          <DockActions
+            actions={[{ label: 'ألغِ المحفظة', kind: 'btn-d btn-sm', needsNote: true }]}
+            subject={<>{pf.name} · الاسترداد المطلوب {nf.format(Number(recover) || 0)} ريال</>}
+            placeholder="سبب الإلغاء"
+            onRun={(_x, n) => { const out = cancelPortfolio(pf.id, n, Number(recover) || 0, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'إلغاء المحفظة' }); return out }}
+          />
         </div>
       )}
       {rc && got < rc.due && !asPartner && (role.key === 'finance' || role.key === 'supervisor') && (
@@ -917,7 +926,6 @@ function CancelCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean })
           <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = recordPfReceipt(pf.id, Number(amount) || 0, ref, file, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'استلام المبلغ' }) }}>سجّل الاستلام</button>
         </div>
       )}
-      <p className="sub cnote">الإلغاء والاسترداد على مستوى العلاقة المالية للمحفظة الرئيسية · لا استرداد مستقل لكل مشروع فرعي{/* doc 13.4.43 */}.</p>
       <Said said={said} />
     </Glass>
   )

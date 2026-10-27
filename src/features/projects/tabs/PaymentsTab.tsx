@@ -1,6 +1,6 @@
 import { hasLegacy, legacyOf } from '@/data/payments/legacy'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Money, Num, Riyal, Stat, Steps, Tag } from '@/components/ui'
+import { StatRow, DateText, Empty, Glass, Head, Money, Num, Riyal, Stat, Steps, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { sequence } from '@/lib/steps'
 import { DocFile } from '@/components/docs'
@@ -42,7 +42,7 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
         <Head title="جدول الدفعات" meta="صُرف قبل النظام" />
         <Empty
           title={<>صُرفت المنحة في النظام السابق · <Money>{paidBefore}</Money></>}
-          note={projectId && hasLegacy(projectId) ? `من سندات النظام السابق المستوردة: ${legacyOf(projectId!).map((v) => `${v.voucher} (${v.amount.toLocaleString('en-US')} · ${v.paidAt})`).join('، ')}` : 'لا جدول دفعات ولا سجلات صرف لهذا المشروع في النظام · المصروف يُقرأ من قيمة المنحة، وهو ما يعتمده الإغلاق والتقارير.'}
+          note={projectId && hasLegacy(projectId) ? `من سندات النظام السابق المستوردة: ${legacyOf(projectId!).map((v) => `${v.voucher} (${v.amount.toLocaleString('en-US')} · ${v.paidAt})`).join('، ')}` : undefined}
         />
       </Glass>
     )
@@ -50,11 +50,10 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
   if (payments.length === 0) {
     return (
       <Glass>
-        <Head title="جدول الدفعات" meta="يُفتح بعد اعتماد الاتفاقية" />
+        <Head title="جدول الدفعات" />
         <Empty
           art={{ done: 2 }}
-          title="لا توجد دفعات بعد، فالمشروع لم يصل إلى مرحلة الصرف."
-          note="عند الوصول إليها يُصدر المشرف إذن الصرف، ثم تُصدر الإدارة المالية سند الصرف وتحوّل المبلغ، ثم ترفع الجهة سند القبض والقيد، وتعتمده الإدارة المالية."
+          title="لا توجد دفعات بعد."
           actions={
             example && onOpenExample ? (
               <button className="btn btn-2" onClick={() => onOpenExample(example.id)}>
@@ -73,7 +72,7 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
 
   return (
     <>
-      <div className="stats4">
+      <StatRow title="دفعات المشروع">
         <Stat
           label="المعتمد"
           value={<Num>{granted}</Num>}
@@ -99,9 +98,8 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
           value={payments.find((p) => p.status !== 'مدفوع')
             ? <DateText>{payments.find((p) => p.status !== 'مدفوع')!.date}</DateText>
             : 'لا توجد'}
-          note={payments.find((p) => p.status !== 'مدفوع') ? 'حسب جدول الاتفاقية' : 'لا توجد'}
         />
-      </div>
+      </StatRow>
 
       <Glass>
         <Head
@@ -192,16 +190,6 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
           ))}
         </div>
 
-        {/* The cycle drawn above matches the current system's four steps
-            (disbursement authorization · disbursement voucher · receipt voucher ·
-            its acceptance), while the spec describes four stages ending at transfer
-            with no receipt voucher. That discrepancy is recorded and awaiting the
-            client's response, so the tab follows what the system actually does until
-            then — what's in the system is evidence, what's in the spec is a
-            proposal, and evidence isn't removed before it's confirmed. */}
-        <div className="sub mt-4">
-          «إذن الصرف» مستند مستقل قابل للطباعة، يتضمن بيانات الجهة وحسابها البنكي والمبلغ كتابةً، وعلى أساسه تحوّل الإدارة المالية المبلغ.
-        </div>
       </Glass>
     </>
   )

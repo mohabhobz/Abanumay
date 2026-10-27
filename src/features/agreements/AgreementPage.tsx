@@ -3,10 +3,11 @@ import { suggestNext } from '@/data/shared/agent'
 import { Related } from '@/components/related/Related'
 import { useState } from 'react'
 import { readClauses } from '@/data/shared/ai'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { createPortal } from 'react-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { HEAT_TONE } from '@/lib/tone'
-import {
-  BackTo, CheckMark, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
+import { EditButton, type TabItem, Tabs, DockActions,
+  BackTo, CheckMark, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person,
   StepArc, Tag, type GateStep,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -22,7 +23,7 @@ import {
   HOLDER_SAY, actOnAgreement, agrActions, agrFlowOf, agrHolder, agrIssues, agrReview, agrStageSay, agreementText,
   issuesOfRow, mayEdit, openNewVersion, reservedOf, saveAgreement, submitAgreement, useAgreements,
   type AgrAction, type Clause,
-signHash, projectCancelled } from '@/data/agreements/store'
+signHash } from '@/data/agreements/store'
 import type { AgreementKind, AgreementRow, PayDoc } from '@/types/domain'
 import { AgrActionDock } from './AgrActionDock'
 import { OtpPanel } from '@/features/entities/OtpPanel'
@@ -108,7 +109,6 @@ export default function AgreementPage() {
             <Glass>
               <Empty
                 title="الاتفاقية غير موجودة."
-                note="ربما أُلغيت، أو أن الرابط قديم."
                 actions={<button className="btn btn-2" onClick={() => navigate(ROUTES.agreements)}>ارجع إلى الصندوق</button>}
               />
             </Glass>
@@ -126,7 +126,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
   const navigate = useNavigate()
   const { role, user } = useRole()
   const mobile = useIsMobile()
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const asEntity = params.get('as') === 'entity'
   const f = agrFlowOf(a.id)
   const edit = mayEdit(a, role.key, asEntity)
@@ -140,7 +140,8 @@ function AgreementView({ a }: { a: AgreementRow }) {
   const [note, setNote] = useState('')
   const [said, setSaid] = useState('')
   const [signing, setSigning] = useState(false)
-  const [reason, setReason] = useState('')
+  /* Client 27 Oct · the draft's data and its schedule are edited in popups */
+  const [pop, setPop] = useState<null | 'data' | 'pay'>(null)
 
   const payments = edit ? toPayments(rows, a.amount) : a.payments
   const live = edit
@@ -160,18 +161,19 @@ function AgreementView({ a }: { a: AgreementRow }) {
   const gap = a.amount - reserved
   const saveDraft = () => saveAgreement(a.id, { payments, clauses, docs, signer, template, kind }, user.name)
 
-  const onAct = (x: AgrAction, file?: string) => {
+  const onAct = (x: AgrAction, file?: string, n?: string): string[] => {
     let out: string[]
     /* Batch 8 · the electronic signature is confirmed with a code on the signer's phone first */
-    if (x.act === 'entitySign') { setSigning(true); setSaid(''); return }
+    if (x.act === 'entitySign') { setSigning(true); setSaid(''); return [] }
     if (x.act === 'submit') {
       if (dirty) saveDraft()
       out = submitAgreement(a.id, user.name)
     } else {
-      out = actOnAgreement(a.id, x.act, note, asEntity ? a.signer.name : user.name, file)
+      out = actOnAgreement(a.id, x.act, n ?? note, asEntity ? a.signer.name : user.name, file)
     }
-    setSaid(out[0] ?? '')
+    setSaid('')
     if (!out.length) setNote('')
+    return out
   }
 
   /* 17 Oct · the assistant suggests the next step from the agreement's own checks · the employee picks */
@@ -188,8 +190,20 @@ function AgreementView({ a }: { a: AgreementRow }) {
       ? { k: 'اكتمل مسار الاعتماد', t: 'الاتفاقية سارية', rest: [a.activeAt ? <>فُعّلت في <DateText>{a.activeAt}</DateText></> : null] }
       : a.stage === 'cancelled'
         ? { k: 'توقّف مسار الاعتماد', t: agrStageSay(a), rest: [] }
-        : { k: 'صاحب القرار الآن', t: holder ? HOLDER_SAY[holder] : '', rest: [agrStageSay(a)] }
+        : { k: 'صاحب القرار الآن', t: holder ? HOLDER_SAY[holder] : '', rest: [] }
   const stop = issues[0]?.say
+  const tabs: TabItem[] = [
+    { slug: 'data', label: 'بيانات الاتفاقية' },
+    { slug: 'pay', label: 'جدول الدفعات', count: payments.length || undefined },
+    { slug: 'versions', label: 'الإصدارات والملاحق', count: (a.docs.length + (asEntity ? 0 : f.versions.length)) || undefined },
+    ...(asEntity ? [] : [{ slug: 'log', label: 'سجل التدقيق', count: a.log.length || undefined }]),
+  ]
+  const tab = tabs.find((t) => t.slug === params.get('tab'))?.slug ?? 'data'
+  const goTab = (slug: string) => {
+    const next = new URLSearchParams(params)
+    if (slug === 'data') next.delete('tab'); else next.set('tab', slug)
+    setParams(next, { replace: true })
+  }
 
   return (
     <AppLayout assistantContext={assistFor.page(`اتفاقية ${a.id}`, a.projectName)}>
@@ -211,8 +225,8 @@ function AgreementView({ a }: { a: AgreementRow }) {
                 <div className="v"><Money sm>{a.amount}</Money></div>
                 <div className="sub">
                   {gap === 0
-                    ? <>مطابقة للمخصص المحجوز في الميزانية · على <Num>{payments.length}</Num> {nounAfter(payments.length, NOUN.payment)}</>
-                    : <span className="bad">المحجوز <Mono>{nf.format(reserved)}</Mono> · فرق <Mono>{nf.format(Math.abs(gap))}</Mono> يمنع الإرسال للاعتماد</span>}
+                    ? <>على <Num>{payments.length}</Num> {nounAfter(payments.length, NOUN.payment)}</>
+                    : <span className="bad">المحجوز <Mono>{nf.format(reserved)}</Mono> · فرق <Mono>{nf.format(Math.abs(gap))}</Mono></span>}
                 </div>
               </div>
             </div>
@@ -229,17 +243,12 @@ function AgreementView({ a }: { a: AgreementRow }) {
             {a.stage === 'active' && a.activeAt && <span className="sub">فُعّلت في <DateText>{a.activeAt}</DateText></span>}
             <span className="pc-sp" />
             <Person name={a.owner} />
-            {!asEntity && (
-              <Link className="btn btn-2 btn-sm" to={ROUTES.project(a.projectId)}>
-                <Icon name={icons.doc} size="sm" />المشروع
-              </Link>
-            )}
           </div>
 
           {asEntity && signing && holder === 'entity' && (
             <Glass>
               <Head title="التوقيع الإلكتروني" meta={<Tag tone="warn">تأكيد الهوية</Tag>} />
-              <p className="sub cnote">يوقّع <b>{a.signer.name}</b> · {a.signer.title} · يُرسل رمز إلى جوال الجهة المسجّل، ويُحفظ مع التوقيع بصمة النص الموقّع (SHA-256) فلا يُقبل أي تعديل لاحق على أنه موقّع.</p>
+              <p className="sub cnote">يوقّع <b>{a.signer.name}</b> · {a.signer.title}</p>
               <OtpPanel
                 purpose="sign"
                 to={[entityById(a.entityId)?.mobile ?? '']}
@@ -254,92 +263,85 @@ function AgreementView({ a }: { a: AgreementRow }) {
             </Glass>
           )}
 
-          {asEntity && (
-            <Glass>
-              <Head title="اتفاقية منحتك" meta={<Tag tone="mute">الجهة المستفيدة</Tag>} />
-              <p className="sub cnote">
-                {holder === 'entity'
-                  ? a.kind === 'إلكترونية'
-                    ? 'راجع نص الاتفاقية وجدول الدفعات، ثم وقّعها إلكترونيًّا باسم ممثلك المخوّل أو أعدها بملاحظاتك إلى مشرف المنح.'
-                    : 'الاتفاقية ورقية · تُسلَّم لك مطبوعة وتوقّعها ثم تُعيدها إلى مشرف المنح ليرفع النسخة الموقّعة.'
-                  : f.entitySign && a.stage === 'entity' ? 'وقّعت الاتفاقية · بانتظار اعتماد ممثل المؤسسة للنسخة النهائية.'
-                    : a.stage === 'active' ? 'الاتفاقية سارية · ترفع متطلبات كل دفعة متى جهزت.' : 'الاتفاقية في مراجعة المؤسسة الداخلية.'}
-              </p>
-              {holder === 'entity' && a.kind === 'إلكترونية' && <p className="sub cnote">الموقّع: <b>{a.signer.name}</b> · {a.signer.title}</p>}
-            </Glass>
-          )}
 
-          {!asEntity && a.stage !== 'active' && (
-            <p className="sub cnote tcen">
-              مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «استكمال متطلبات ما قبل التنفيذ» حتى سريانها، ولا ينتقل للتنفيذ عند إلغائها.
-            {/* doc 8.4.26 · 8.4.27 */}</p>
-          )}
-
-          {edit && (
-            <Glass>
-              <Head title="تعديل المسودة" meta={dirty ? <Tag tone="warn">تعديلات غير محفوظة</Tag> : <Tag tone="mute">محفوظة</Tag>} />
-              <p className="sub cnote">{a.stage === 'returned' ? /* doc 8.2.16 · 8.2.17 */ 'أُعيدت للتعديل · عدّل البنود أو الجدول أو الملاحق ثم أعد الإرسال إلى مدير المنح.' : 'المسودة عند مشرف المنح · تُستكمل هنا ثم تُرسل إلى مدير المنح.'}</p>
-              <div className="regfields">
-                <label className="regf"><span className="lb">اسم الموقّع</span><span className="fld"><input value={signer.name} onChange={(e) => setSigner({ ...signer, name: e.target.value })} aria-label="اسم الموقّع" /></span></label>
-                <label className="regf"><span className="lb">صفة الموقّع</span><span className="fld"><input value={signer.title} onChange={(e) => setSigner({ ...signer, title: e.target.value })} aria-label="صفة الموقّع" /></span></label>
-                {kind === 'إلكترونية' && (
-                  <label className="regf regf-w"><span className="lb">النموذج المعتمد</span>
-                    <FieldSelect value={template} options={TEMPLATES.includes(template as (typeof TEMPLATES)[number]) || !template ? [...TEMPLATES] : [template, ...TEMPLATES]} onChange={setTemplate} label="النموذج المعتمد" placeholder="اختر النموذج" />
-                  </label>
-                )}
-              </div>
-              {!f.submitted ? (
-                <ul className="pkinds mt-3">
-                  {KINDS.map((k) => (
-                    <li key={k.key}>
-                      <label className={`pkind${kind === k.key ? ' on' : ''}`}>
-                        <input type="radio" name="agkind-edit" checked={kind === k.key} onChange={() => setKind(k.key)} />
-                        <span className="pkind-h"><span className="pkind-r" aria-hidden="true">{kind === k.key && <CheckMark />}</span><b>{k.label}</b><span className="sub trim1">· {k.note}</span></span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="sub cnote">النوع <b>{a.kind}</b> ثابت منذ إرسال هذا الإصدار للاعتماد · تغييره بإصدار جديد.{/* doc 8.4.3 */}</p>}
-              <div className="apv-row mt-3">
-                <button type="button" className="btn btn-2" disabled={!dirty} onClick={saveDraft}>احفظ التعديلات</button>
-                {dirty && <button type="button" className="btn btn-ghost" onClick={() => { setRows(asDraft(a.payments)); setClauses(structuredClone(f.clauses)); setDocs(structuredClone(a.docs)); setSigner({ ...a.signer }); setTemplate(a.template); setKind(a.kind) }}>تراجع</button>}
-              </div>
-            </Glass>
-          )}
-
-          {/* The schedule being edited takes the full width · its fields don't fit half a page */}
-          {edit && (
-            <Glass className="tblcard">
-              <Head title="جدول صرف الدفعات" meta={balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن{/* doc 8.2.12 */}</Tag>} />
-              <ScheduleEditor rows={rows} amount={a.amount} onChange={setRows} projectId={a.projectId} />
-            </Glass>
-          )}
+          {/* Client sheet 26 Oct (#105) · the agreement reads in pinned tabs, the project's component */}
+          <Tabs items={tabs} active={tab} onChange={goTab} />
 
           <div className="g2">
             <div className="col">
-              {!edit && (
+              {tab === 'data' && <>
+                {/* Client sheet 26 Oct (#106) · the agreement's own data · its representative here,
+                    the retrieved block that repeated the header is gone */}
+                <Glass>
+                  <Head title="بيانات الاتفاقية" meta={edit ? <span className="rowf gp-2">{dirty && <Tag tone="warn">تعديلات غير محفوظة</Tag>}<EditButton onClick={() => setPop('data')} /></span> : undefined} />
+                  <KV rows={[
+                    { k: 'نوع الاتفاقية', v: a.kind },
+                    { k: 'النموذج', v: a.kind === 'ورقية' ? (f.paperCopy ?? 'نسخة ورقية') : a.template },
+                    { k: 'الإصدار', v: <><Num>{a.version}</Num>{f.inForce !== undefined && <> · النافذ <Num>{f.inForce}</Num></>}</> },
+                    { k: 'بدء الإعداد', v: <DateText>{a.openedAt}</DateText> },
+                    { k: 'ممثل الجهة', v: <>{a.signer.name} <span className="sub">· {a.signer.title}</span></> },
+                  ]} />
+                </Glass>
+
+                {a.note && (
+                  <Glass>
+                    <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">{agrStageSay(a)}</Tag>} />
+                    <div className="payq-note"><Icon name={icons.chat} size="sm" /><span>{isolate(a.note)}</span></div>
+                  </Glass>
+                )}
+
+                <ClausesCard clauses={edit ? clauses : f.clauses} onChange={edit ? setClauses : undefined} />
+
+                {/* What supports the decision */}
+                {!asEntity && a.stage !== 'active' && a.stage !== 'cancelled' && (
+                  <IssuesCard issues={issues} ready="الاتفاقية مكتملة." />
+                )}
+                {!asEntity && a.stage !== 'active' && a.stage !== 'cancelled' && (
+                  <ReviewCard hints={hints} onAdd={edit ? (c) => setClauses((xs) => [...xs, c]) : undefined} onTemplate={edit && kind === 'إلكترونية' ? setTemplate : undefined} />
+                )}
+
+                <AgreementTextCard parts={text} />
+
+                <SignaturesCard a={a} />
+              </>}
+
+              {/* Client 27 Oct · the schedule reads in the page's column like every other tab · it is
+                  edited in a large popup, where its fields have the room they need */}
+              {tab === 'pay' && (
                 <Glass className="tblcard">
-                  <Head title="جدول صرف الدفعات" meta={balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن{/* doc 8.2.12 */}</Tag>} />
-                  <ScheduleEditor rows={asDraft(a.payments)} amount={a.amount} readOnly projectId={a.projectId} />
+                  <Head title="جدول صرف الدفعات" meta={<span className="rowf gp-2">
+                    {balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن{/* doc 8.2.12 */}</Tag>}
+                    {edit && <button type="button" className="btn btn-2 btn-sm" onClick={() => setPop('pay')}><Icon name={icons.edit} size="sm" />عدّل الجدول</button>}
+                  </span>} />
+                  <ScheduleEditor rows={edit ? rows : asDraft(a.payments)} amount={a.amount} readOnly projectId={a.projectId} />
                 </Glass>
               )}
 
-              <ClausesCard clauses={edit ? clauses : f.clauses} onChange={edit ? setClauses : undefined} />
+              {tab === 'versions' && <>
+                <AnnexesCard docs={edit ? docs : a.docs} onChange={edit ? setDocs : undefined} />
+                {!asEntity && (
+                  <VersionsCard a={a} versions={f.versions}>
+                    {a.stage === 'active' && role.key === 'supervisor' && (
+                      <div className="apv-row mt-3">
+                        {/* v3 · 8.3.29 · an amending annex beside the original, or a full replacement · Client 26 Oct · the reason in the popup */}
+                        <DockActions
+                          actions={[
+                            { label: 'ملحق تعديلي', kind: 'btn-2 btn-sm', needsNote: true, mode: 'annex' as const },
+                            { label: 'إصدار كامل بديل', kind: 'btn-2 btn-sm', needsNote: true, mode: 'full' as const },
+                          ]}
+                          subject={<>اتفاقية {a.projectName}</>}
+                          placeholder="سبب التعديل بعد التوقيع"
+                          onRun={(x, n) => { const out = openNewVersion(a.id, n, user.name, x.mode); setSaid(out[0] ?? ''); return out }}
+                        />
+                      </div>
+                    )}
+                  </VersionsCard>
+                )}
+              </>}
 
-              <AgreementTextCard parts={text} note={asEntity ? undefined : 'البيانات مسترجعة من المشروع والجهة والميزانية والخطة · وتُعدَّل في مصدرها لا هنا.'} />
-
-              {a.note && (
+              {tab === 'log' && (
                 <Glass>
-                  <Head title="ملاحظات الإعادة" meta={<Tag tone="warn">{agrStageSay(a)}</Tag>} />
-                  <div className="payq-note"><Icon name={icons.chat} size="sm" /><span>{isolate(a.note)}</span></div>
-                </Glass>
-              )}
-
-              <AnnexesCard docs={edit ? docs : a.docs} onChange={edit ? setDocs : undefined} />
-
-              {!asEntity && (
-                <Glass>
-                  <Head title="سجل التدقيق" meta={<span className="sub">كل انتقال بتاريخه ومنفّذه</span>} />
+                  <Head title="سجل التدقيق" meta={<span className="sub"><Num>{a.log.length}</Num> {nounAfter(a.log.length, NOUN.entry)}</span>} />
                   <ol className="paylog">
                     {[...a.log].reverse().map((e, i) => (
                       <li key={`${e.step}-${i}`}>
@@ -359,60 +361,6 @@ function AgreementView({ a }: { a: AgreementRow }) {
                   </ol>
                 </Glass>
               )}
-
-              {/* What supports the decision · in the main column, the end column is the assistant's alone */}
-              {!asEntity && a.stage !== 'active' && a.stage !== 'cancelled' && (
-                <IssuesCard issues={issues} ready="الاتفاقية مكتملة · البيانات والبنود والملاحق والجدول والقيمة مطابقة." />
-              )}
-              {!asEntity && a.stage !== 'active' && a.stage !== 'cancelled' && (
-                <ReviewCard hints={hints} onAdd={edit ? (c) => setClauses((xs) => [...xs, c]) : undefined} onTemplate={edit && kind === 'إلكترونية' ? setTemplate : undefined} />
-              )}
-              <SignaturesCard a={a} />
-
-              <Glass>
-                <Head title="النموذج والنوع" meta={<span className="sub"><bdi>{/* doc 8.2.4 · 8.2.5 · 8.4.3 */}</bdi></span>} />
-                <KV rows={[
-                  { k: 'نوع الاتفاقية', v: a.kind },
-                  { k: 'النموذج', v: a.kind === 'ورقية' ? (f.paperCopy ?? 'نسخة ورقية') : a.template },
-                  { k: 'الإصدار', v: <><Num>{a.version}</Num>{f.inForce !== undefined && <> · النافذ <Num>{f.inForce}</Num></>}</> },
-                  { k: 'بدء الإعداد', v: <DateText>{a.openedAt}</DateText> },
-                ]} />
-              </Glass>
-
-              {!asEntity && (
-                <Glass>
-                  <Head title="البيانات المسترجعة" /* doc rule 5 */ />
-                  <KV rows={[
-                    { k: 'المشروع', v: <Link className="tlink" to={ROUTES.project(a.projectId)}><Mono>{a.projectId}</Mono></Link> },
-                    { k: 'الجهة المستفيدة', v: <Link className="tlink" to={ROUTES.entity(a.entityId)}>{a.entityName}</Link> },
-                    { k: 'ممثل الجهة', v: a.signer.name },
-                    { k: 'صفة الممثل', v: a.signer.title },
-                    { k: 'المخصص المحجوز', v: <><Num>{reserved}</Num> <Riyal /></> },
-                  ]} />
-                </Glass>
-              )}
-
-              {!asEntity && (
-                <VersionsCard a={a} versions={f.versions}>
-                  {a.stage === 'active' && role.key === 'supervisor' && (
-                    <div className="apv-row mt-3">
-                      <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="سبب التعديل بعد التوقيع" aria-label="سبب الإصدار الجديد" /></span>
-                      {/* v3 · 8.3.29 · an amending annex beside the original, or a full replacement */}
-                      <button type="button" className="btn btn-2 btn-sm" disabled={!reason.trim()} onClick={() => { const out = openNewVersion(a.id, reason, user.name, 'annex'); setSaid(out[0] ?? ''); setReason('') }}>
-                        <Icon name={icons.plus} size="sm" />ملحق تعديلي
-                      </button>
-                      <button type="button" className="btn btn-2 btn-sm" disabled={!reason.trim()} onClick={() => { const out = openNewVersion(a.id, reason, user.name, 'full'); setSaid(out[0] ?? ''); setReason('') }}>
-                        <Icon name={icons.plus} size="sm" />إصدار كامل بديل
-                      </button>
-                    </div>
-                  )}
-                  {a.stage === 'active' && <p className="sub cnote">لا تُعدَّل الاتفاقية بعد التوقيع · الملحق التعديلي يُضاف إلى الأصل ويبقيان معًا المرجع النافذ، والإصدار الكامل البديل يحلّ محله · وكلاهما يمرّ بدورة الاعتماد كاملة ويبقى النافذ ساريًا حتى اعتماده.{/* doc 8.3.29 */}</p>}
-                  {/* v3 · 8.3.26 · not going on is a project cancellation through the closing procedure */}
-                  {a.stage !== 'active' && a.stage !== 'cancelled' && !projectCancelled(a.projectId) && (role.key === 'supervisor' || role.key === 'grants-manager' || role.key === 'ceo') && (
-                    <p className="sub cnote">لا رفض للاتفاقية · الملاحظات تُعاد للتعديل، وعدم الاستمرار في المشروع يكون <Link className="lnk" to={ROUTES.distressNew(a.projectId, 'stop')}>بطلب إلغاء المشروع وفق إجراء الإغلاق</Link> فتتحول حالته إلى «ملغى» ويُحرَّر الحجز.</p>
-                  )}
-                </VersionsCard>
-              )}
             </div>
 
             <AssistantAside
@@ -430,13 +378,58 @@ function AgreementView({ a }: { a: AgreementRow }) {
           </div>
         </div>
 
+        {pop && createPortal(
+          <div className="bmask" role="presentation" onClick={() => setPop(null)}>
+            <div className={`chrome modal ${pop === 'pay' ? 'modal-xl' : 'modal-w'}`} role="dialog" aria-modal="true" aria-label={pop === 'pay' ? 'تعديل جدول صرف الدفعات' : 'تعديل بيانات الاتفاقية'} onClick={(e) => e.stopPropagation()}>
+              <div className="mh"><Icon name={icons.edit} size="md" /><b>{pop === 'pay' ? 'تعديل جدول صرف الدفعات' : 'تعديل بيانات الاتفاقية'}</b>
+                {pop === 'pay' && <span className="pc-sp" />}
+                {pop === 'pay' && (balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن</Tag>)}
+              </div>
+              <div className="mb col">
+                {pop === 'pay'
+                  ? <ScheduleEditor rows={rows} amount={a.amount} onChange={setRows} projectId={a.projectId} />
+                  : <>
+              <div className="regfields">
+                      <label className="regf"><span className="lb">اسم الموقّع</span><span className="fld"><input value={signer.name} onChange={(e) => setSigner({ ...signer, name: e.target.value })} aria-label="اسم الموقّع" /></span></label>
+                      <label className="regf"><span className="lb">صفة الموقّع</span><span className="fld"><input value={signer.title} onChange={(e) => setSigner({ ...signer, title: e.target.value })} aria-label="صفة الموقّع" /></span></label>
+                      {kind === 'إلكترونية' && (
+                        <label className="regf regf-w"><span className="lb">النموذج المعتمد</span>
+                          <FieldSelect value={template} options={TEMPLATES.includes(template as (typeof TEMPLATES)[number]) || !template ? [...TEMPLATES] : [template, ...TEMPLATES]} onChange={setTemplate} label="النموذج المعتمد" placeholder="اختر النموذج" />
+                        </label>
+                      )}
+                    </div>
+                    {!f.submitted ? (
+                      <ul className="pkinds mt-3">
+                        {KINDS.map((k) => (
+                          <li key={k.key}>
+                            <label className={`pkind${kind === k.key ? ' on' : ''}`}>
+                              <input type="radio" name="agkind-edit" checked={kind === k.key} onChange={() => setKind(k.key)} />
+                              <span className="pkind-h"><span className="pkind-r" aria-hidden="true">{kind === k.key && <CheckMark />}</span><b>{k.label}</b></span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+      
+                  </>}
+              </div>
+              <div className="mf">
+                <button type="button" className="btn btn-p" disabled={!dirty} onClick={() => { saveDraft(); setPop(null) }}>احفظ التعديلات</button>
+                <button type="button" className="btn btn-2" onClick={() => {
+                  if (pop === 'pay') setRows(asDraft(a.payments))
+                  else { setSigner({ ...a.signer }); setTemplate(a.template); setKind(a.kind) }
+                  setPop(null)
+                }}>تراجع</button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
         {actions.length > 0 && (
           <AgrActionDock
             who={asEntity ? a.signer.name : user.name}
             agreement={a}
             actions={actions}
-            note={note}
-            onNote={setNote}
             stop={stop}
             said={said}
             onAct={onAct}

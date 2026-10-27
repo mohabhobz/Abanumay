@@ -87,9 +87,6 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
         <Glass>
           <Head title="أعاده مدير المنح" meta={<Tag tone="warn">للتحديث</Tag>} />
           <p className="sub cnote">{f.returnNote}</p>
-          <p className="sub cnote">{f.returnStudied
-            ? 'حُدّثت الدراسة وسُجّل إصدارها الجديد · أعد الإرسال لمدير المنح من شريط القرار.'
-            : 'حدّث الدراسة واحفظها، ثم أعد الإحالة من شريط القرار · يُسجَّل إصدار جديد ويبقى السابق في السجل.'}</p>
         </Glass>
       )}
 
@@ -122,11 +119,6 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
             </li>
           ))}
         </ul>
-        <p className="sub cnote">
-          {excluded.length
-            ? 'المشروع مستبعد بمعيار منطبق · لا توصية بالموافقة، والتوصية المقترحة الرفض مع ذكر السبب.'
-            : isolate('أسئلة نعم أو لا من «معايير الاستبعاد» في الإعدادات · تُحفظ مع الدراسة كما هي.')}
-        </p>
       </Glass>
 
       <Glass>
@@ -134,11 +126,11 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
           title="معايير الدراسة"
           meta={<Tag tone={score >= 70 ? 'ok' : score >= 50 ? 'warn' : 'mute'}><Num>{score}</Num> من <Num>{100}</Num></Tag>}
         />
-        <p className="sub cnote">
-          {editable
-            ? isolate('قيّم كل معيار من 1 إلى 5 · الأوزان من «معايير التقييم» في الإعدادات.')
-            : f.study ? <>دراسة <Person name={f.study.by} /> · الإصدار <Num>{f.study.version}</Num> · <DateText>{f.study.at}</DateText></> : 'لم تُسجَّل دراسة بعد.'}
-        </p>
+        {!editable && (
+          <p className="sub cnote">
+            {f.study ? <>دراسة <Person name={f.study.by} /> · الإصدار <Num>{f.study.version}</Num> · <DateText>{f.study.at}</DateText></> : 'لم تُسجَّل دراسة بعد.'}
+          </p>
+        )}
         {GROUPS.map((g) => (
           <div key={g} className="stdy-g">
             <h3 className="stdy-h">الدراسة {GROUP_SAY[g].study}</h3>
@@ -195,7 +187,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
       <AssistReadingCard row={row} />
 
       <Glass>
-        <Head title="التوصية" meta={<Tag tone="mute">استشارية · لا اعتماد ولا صرف</Tag>} />
+        <Head title="التوصية" />
         {/* #22 · the budget beside the recommendation · no scrolling back up to the domain's card */}
         <BudgetStrip row={row} asked={asked} />
         <div className="cfgchips mt-3" role="radiogroup" aria-label="التوصية">
@@ -224,7 +216,6 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
                 disabled={!editable}
                 onChange={(v) => set('amount', Math.min(row.amountRequested, Number(v) || 0))}
               />
-              <span className="sub regf-h">حتى المبلغ المطلوب <Money>{row.amountRequested}</Money></span>
             </label>
           )}
           {/* v3 · 3.2.19 · 3.4.25 · the reason from the settings list, or «أخرى» with its text */}
@@ -248,7 +239,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
             <FieldSelect value={d.classification ?? 'مشروع عادي'} label="تصنيف المشروع" disabled={!editable}
               options={CLASSES.map((x) => ({ value: x.value, label: x.label }))}
               onChange={(v) => set('classification', v as NonNullable<Study['classification']>)} />
-            <span className="sub regf-h">{CLASSES.find((x) => x.value === (d.classification ?? 'مشروع عادي'))?.hint}{d.classification === 'محفظة' && !isStrategic(row.entityId) ? ' · الجهة ليست شريكًا استراتيجيًا بعد' : ''}</span>
+            {d.classification === 'محفظة' && !isStrategic(row.entityId) && <span className="sub regf-h">الجهة ليست شريكًا استراتيجيًا بعد</span>}
           </label>
           <label className="regf regf-w">
             <span className="lb">المبررات<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -269,7 +260,6 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
           <div className="regf-w">
             <Switch
               label="يحتاج رأي مستشار"
-              note="اختياري · يُختار المستشار من قائمة مستشاري المجال"
               on={Boolean(d.needsConsultant || f.referral)}
               disabled={!editable || Boolean(f.referral)}
               lockNote={f.referral ? 'أُحيل المشروع إلى مستشار' : undefined}
@@ -401,7 +391,6 @@ function AssistReadingCard({ row }: { row: ProjectRow }) {
           </ul>
         </div>
       </div>
-      <p className="sub cnote">قراءة مساندة · لا تقرّر ولا تُلزم.</p>
     </Glass>
   )
 }
@@ -434,7 +423,6 @@ function ConditionsField({ row, me, editable }: { row: ProjectRow; me: string; e
         </div>
       )}
       {!editable && list.length === 0 && <span className="sub">لا شروط خاصة.</span>}
-      <span className="sub regf-h">تظهر لكل من يعتمد المشروع في تبويب الاعتماد · ويُتحقق من استيفائها قبل موعدها.</span>
     </div>
   )
 }
@@ -459,13 +447,12 @@ function ConsultantPick({ row, me, editable }: { row: ProjectRow; me: string; ed
           </p>
           {ref.opinion && <p className="cnote">{ref.opinion}</p>}
           <p className="sub cnote">
-            <Link className="tlink" to={ROUTES.advice(row.id)}>شاشة المستشار</Link> · رمز الوصول المرسل له <b className="num">{adviceCode(row.id, ref)}</b> · الرأي استشاري غير ملزم.
+            <Link className="tlink" to={ROUTES.advice(row.id)}>شاشة المستشار</Link> · رمز الوصول المرسل له <b className="num">{adviceCode(row.id, ref)}</b>
           </p>
         </>
       ) : editable ? (
         options.length ? (
           <>
-            <p className="sub cnote">تُحال إليه بعد تسجيل التوصية، ويرى المشروع وحده خلال مدة وصوله.</p>
             <div className="cfgrow">
               <FieldSelect value={pick} label="المستشار" options={options.map((c) => ({ value: c.key, label: `${c.name} · ${c.accessDays} أيام` }))} onChange={setPick} />
               <button
@@ -480,7 +467,7 @@ function ConsultantPick({ row, me, editable }: { row: ProjectRow; me: string; ed
             </div>
           </>
         ) : (
-          <p className="sub cnote">لا مستشار مرتبط بمجال «{row.field}» · يُضاف من إعدادات المستشارين.</p>
+          <p className="sub cnote">لا مستشار مرتبط بمجال «{row.field}».</p>
         )
       ) : (
         <p className="sub cnote">لم يُطلب رأي مستشار.</p>
@@ -500,7 +487,7 @@ function PriorityCard({ row, me, editable }: { row: ProjectRow; me: string; edit
   return (
     <Glass>
       <Head title="الأولوية" meta={pr.level ? <Tag tone={PRIORITY_TONE[pr.level]}>{pr.say}</Tag> : <span className="sub">{pr.say}</span>} />
-      <p className="sub cnote">{pr.basis} · {pr.mode === 'manual' ? 'تُحدَّد يدويًا' : 'محسوبة من الدراسة'} حسب <Link className="lnk" to={ROUTES.decisions}>قرار المؤسسة</Link></p>
+      {pr.level && <p className="sub cnote">{pr.basis}</p>}
       {pr.mode === 'manual' && editable && (
         <div className="apv-row mt-2">
           <FieldSelect label="الأولوية" value={level} options={(Object.keys(PRIORITY_SAY) as Priority[]).map((k) => ({ value: k, label: PRIORITY_SAY[k] }))} onChange={(v) => setLevel(v as Priority)} />
@@ -536,7 +523,7 @@ function OrgOutputsCard({ row }: { row: ProjectRow }) {
   const mine = f.entityOutputs ?? []
   return (
     <Glass>
-      <Head title="المخرجات" meta={f.orgOutputs ? <Tag tone="teal">مخرجات المؤسسة · المرجع المعتمد</Tag> : <Tag tone="mute">تُنسخ من بيانات المشروع عند بدء الدراسة</Tag>} />
+      <Head title="المخرجات" meta={f.orgOutputs ? <Tag tone="teal">مخرجات المؤسسة</Tag> : undefined} />
       {edit ? (
         <>
           <OutputsEditor list={d} onChange={setD} />
@@ -554,11 +541,10 @@ function OrgOutputsCard({ row }: { row: ProjectRow }) {
       )}
       {mine.length > 0 && (
         <details className="mt-2">
-          <summary className="lnk">مخرجات الجهة كما قدّمتها · للقراءة فقط</summary>
+          <summary className="lnk">مخرجات الجهة كما قدّمتها</summary>
           <ul className="outs-ro mt-1">{mine.map((o, i) => <li key={i} className="sub">{outputLine(o)}</li>)}</ul>
         </details>
       )}
-      <p className="sub cnote">مخرجات المؤسسة تُعدَّل هنا فقط، وهي المرجع في الاعتماد والاتفاقية والمتابعة والتقييم · ومخرجات الجهة تبقى كما قدّمتها · ويُسجَّل كل تعديل في السجل.</p>
     </Glass>
   )
 }
@@ -581,7 +567,6 @@ function OwnerRow({ row }: { row: ProjectRow }) {
       <div className="rowf gp-2">
         <span className="lb">مالك المشروع</span>
         {row.owner ? <Person name={row.owner} /> : <Tag tone="warn">غير مُسنَد</Tag>}
-        <span className="sub">مشرف المنح المسؤول · يدرس المشروع ويتابعه حتى إغلاقه</span>
         {can && (
           <button type="button" className="btn btn-2 btn-sm" onClick={() => setOpen(true)}>
             {row.owner ? 'عدّل المشرف' : 'أسند إلى مشرف'}

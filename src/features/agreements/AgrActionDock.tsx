@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import { Icon, icons, Money, Person } from '@/components/ui'
+import { useRef, useState } from 'react'
+import { DecisionDialog, Icon, icons, Money, Person, Tag } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import type { AgreementRow } from '@/types/domain'
 import type { AgrAction } from '@/data/agreements/store'
@@ -25,19 +25,19 @@ export interface AgrActionDockProps {
   who: string
   agreement: AgreementRow
   actions: AgrAction[]
-  note: string
-  onNote: (v: string) => void
   /** Why the forward action is blocked · the completeness check's first finding */
   stop?: string
   /** The store's answer to the last action · shown in the bar */
   said?: string
-  onAct: (a: AgrAction, file?: string) => void
+  /** Runs the action · returns what refused it, which the popup shows */
+  onAct: (a: AgrAction, file?: string, note?: string) => string[] | void
 }
 
-export function AgrActionDock({ who, agreement, actions, note, onNote, stop, said, onAct }: AgrActionDockProps) {
+export function AgrActionDock({ who, agreement, actions, stop, said, onAct }: AgrActionDockProps) {
   const bar = useRef<HTMLDivElement>(null)
   useProximity(bar)
-  const needNote = actions.some((a) => a.needsNote)
+  const [pick, setPick] = useState<AgrAction | null>(null)
+  const [file, setFile] = useState('')
 
   return (
     <div className="decdock">
@@ -52,29 +52,12 @@ export function AgrActionDock({ who, agreement, actions, note, onNote, stop, sai
           </span>
         </div>
 
-        {/* The field and buttons are one wrapping group, so the field doesn't get separated from
-            the "return" button when the dock wraps onto two lines */}
+        {/* Client 26 Oct · the bar holds the buttons only · each one confirms in its popup, with the
+            reason (a return) or the signed copy (a paper signature) asked there */}
         <div className="payact-g">
-          {needNote && (
-            <label className="payact-n">
-              <span className="vis-h">ملاحظات الإعادة</span>
-              <input value={note} onChange={(e) => onNote(e.target.value)} placeholder="سبب الإعادة · إلزامي" aria-label="ملاحظات الإعادة" />
-            </label>
-          )}
-
           <div className="rowf gp-2">
             {noteFirst(actions).map((x) => {
-              const why = x.needsNote && !note.trim()
-                ? /* doc 8.2.15 */ 'اكتب السبب أولًا'
-                : x.kind === 'btn-p' && !x.needsFile && stop ? stop : ''
-              if (x.needsFile) {
-                return (
-                  <label key={x.label} className={`btn ${x.kind}`} /* doc · step x.step */>
-                    <Icon name={icons.upload} size="sm" />{x.label}
-                    <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label={x.label} onChange={(e) => { const f = e.target.files?.[0]; if (f) onAct(x, f.name); e.target.value = '' }} />
-                  </label>
-                )
-              }
+              const why = x.kind === 'btn-p' && !x.needsFile && stop ? stop : ''
               return (
                 <button
                   key={x.label}
@@ -82,15 +65,40 @@ export function AgrActionDock({ who, agreement, actions, note, onNote, stop, sai
                   data-needs-note={x.needsNote ? '' : undefined}
                   disabled={Boolean(why)}
                   title={why || undefined /* doc · step x.step */}
-                  onClick={() => onAct(x)}
+                  onClick={() => { if (x.act === 'entitySign') { onAct(x); return } setPick(x); setFile('') }}
                 >
-                  {x.label}
+                  {x.needsFile && <Icon name={icons.upload} size="sm" />}{x.label}
                 </button>
               )
             })}
           </div>
         </div>
       </div>
+      {pick && (
+        <DecisionDialog
+          title={pick.label}
+          tone={pick.kind === 'btn-d' ? 'btn-d' : 'btn-p'}
+          subject={<>اتفاقية {agreement.projectName} · <Money>{agreement.amount}</Money></>}
+          note={pick.needsNote ? 'required' : 'optional'}
+          notePlaceholder={pick.needsNote ? /* doc 8.2.15 */ 'سبب الإعادة · يصل مع الاتفاقية إلى صاحب الخطوة السابقة' : undefined}
+          ready={!pick.needsFile || Boolean(file)}
+          onClose={() => setPick(null)}
+          onConfirm={(n) => onAct(pick, file || undefined, n)}
+        >
+          {pick.needsFile && (
+            <div className="regf">
+              <span className="lb">{pick.label}<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <span className="apv-row">
+                <label className="btn btn-2 btn-sm">
+                  <Icon name={icons.upload} size="sm" />{file ? 'استبدل الملف' : 'ارفع الملف'}
+                  <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label={pick.label} onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f.name); e.target.value = '' }} />
+                </label>
+                {file ? <Tag tone="ok">{file}</Tag> : <span className="sub">لا ملف بعد</span>}
+              </span>
+            </div>
+          )}
+        </DecisionDialog>
+      )}
     </div>
   )
 }

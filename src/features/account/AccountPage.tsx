@@ -1,14 +1,12 @@
 import { signOutEverywhere } from '@/data/authGuard'
 import { keepThisSession } from '@/data/session'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   DateText, FieldSelect, Glass, Head, Icon, icons, KV, Money, Num, Person, Switch, Tabs, Tag,
 } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
-import { ROUTES } from '@/app/routes'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
@@ -64,10 +62,6 @@ export default function AccountPage() {
           <header>
             <div>
               <h1 className="ptitle">إعدادات الحساب</h1>
-              <p className="sub mt-1">
-                بياناتك ودخولك وما يُسمح لك به · أما الإشعارات والعرض والتفويض ففي{' '}
-                <Link className="tlink" to={ROUTES.preferences}>التفضيلات</Link>
-              </p>
             </div>
             <Person name={user.name} size="lg" quiet={false} />
           </header>
@@ -155,7 +149,6 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
               : <span className="acc-ph acc-ini" aria-hidden="true">{p.initial}</span>}
             <div className="col gp-2">
               <b>الصورة</b>
-              <span className="sub">تظهر بجانب اسمك في الإسناد والقرارات والسجل</span>
               <span className="acc-act">
                 <UploadButton
                   label="ارفع صورة شخصية"
@@ -185,9 +178,7 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
                   aria-invalid={!mobileOk}
                 />
               </span>
-              <span className="sub">
-                {mobileOk ? 'يصله رمز التحقق والرسائل العاجلة' : 'عشرة أرقام تبدأ بـ 05'}
-              </span>
+              {!mobileOk && <span className="sub">عشرة أرقام تبدأ بـ 05</span>}
             </label>
             <label className="regf">
               <span className="lb">التحويلة</span>
@@ -206,10 +197,7 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
         </Glass>
 
         <Glass>
-          <Head title="التوقيع" meta={<span className="sub">على وثائق الاعتماد</span>} />
-          <p className="sub cnote">
-            يُطبع تحت اسمك في إذن الصرف ومحضر الاعتماد وخطاب الاتفاقية حين تعتمد من النظام.
-          </p>
+          <Head title="التوقيع" />
           <div className="acc-sig">
             {sig || d.signature ? (
               <>
@@ -217,7 +205,7 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
                 <span className="sub">{d.signature}</span>
               </>
             ) : (
-              <span className="sub">لم يُرفع توقيع · تُطبع الوثائق باسمك دون توقيع</span>
+              <span className="sub">لم يُرفع توقيع</span>
             )}
           </div>
           <span className="acc-act mt-3">
@@ -231,12 +219,11 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
                 إزالة
               </button>
             )}
-            <span className="sub">png بخلفية شفافة</span>
           </span>
         </Glass>
 
         <Glass>
-          <Head title="من الموارد البشرية" meta={<Icon name={icons.lock} size="sm" />} />
+          <Head title="من الموارد البشرية" hint="تُقرأ من نظام الموارد البشرية ولا تُعدَّل هنا" meta={<Icon name={icons.lock} size="sm" />} />
           <KV
             rows={[
               { k: 'الاسم', v: name },
@@ -248,9 +235,6 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
               { k: 'تاريخ الالتحاق', v: <DateText>{hr.joined}</DateText> },
             ]}
           />
-          <p className="sub cnote">
-            تُقرأ من نظام الموارد البشرية ولا تُعدَّل هنا · لتصحيح خطأ فيها تواصل مع الموارد البشرية.
-          </p>
         </Glass>
       </div>
       <AssistantAside title="قراءة الحساب" cta="اقرأ الحساب" empty="بياناتك مكتملة · لا ملاحظات." readings={profileReadings} ask={false} />
@@ -360,7 +344,7 @@ function SecurityTab() {
         <Glass>
           <Head title="الدخول" />
           <div className="pf-sw">
-            <Switch label="التحقق بخطوتين" note="رمز إضافي عند الدخول من جهاز جديد" on={s.twoStep}
+            <Switch label="التحقق بخطوتين" on={s.twoStep}
               onChange={(twoStep) => setS((x) => ({ ...x, twoStep }))} />
             {s.twoStep && (
               <div className="seg" role="radiogroup" aria-label="طريقة التحقق">
@@ -399,7 +383,6 @@ function SecurityTab() {
               </li>
             ))}
           </ul>
-          <p className="sub cnote">جلسة لا تعرفها؟ أنهِ الجلسات الأخرى ثم غيّر كلمة المرور.</p>
         </Glass>
       </div>
       <AssistantAside title="قراءة الأمان" cta="اقرأ الأمان" empty="حسابك محمي · لا ملاحظات." readings={secReadings} ask={false} />
@@ -471,7 +454,7 @@ function AccessTab({ name }: { name: string }) {
           <Head title="اطلب صلاحية" meta={admin ? <Person name={admin} /> : undefined} />
           {sent ? (
             <>
-              <p className="cnote">أُرسل طلبك «{sent}» إلى مدير النظام · يصلك الرد في الإشعارات.</p>
+              <p className="cnote">أُرسل طلبك «{sent}» إلى مدير النظام.</p>
               <button type="button" className="btn btn-2 btn-sm" onClick={() => setSent(null)}>طلب آخر</button>
             </>
           ) : (
@@ -530,7 +513,7 @@ function AccessTab({ name }: { name: string }) {
       </div>
 
       <Glass className="tblcard">
-        <Head title="ما تستطيع فعله" meta={<span className="sub">للقراءة · يغيّره مدير النظام</span>} />
+        <Head title="ما تستطيع فعله" />
         <PermMatrix mode="user" role={role} overrides={ov} readOnly />
       </Glass>
     </>

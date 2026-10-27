@@ -77,7 +77,6 @@ export default function ForgotPage() {
     <AuthShell title="استعادة كلمة المرور" sub="لحسابات الجهات في بوابة المنح" err={err}>
       {step === 'who' && (
         <form className="lform" onSubmit={identify} noValidate>
-          <p className="lnote sub lwhy">أدخل اسم المستخدم أو البريد الإلكتروني أو رقم الجوال المسجَّل، ويصلك رمز تحقّق لتعيين كلمة مرور جديدة.</p>
           <AuthField id="fp-who" name="username" label="اسم المستخدم أو البريد أو الجوال" icon={icons.user}
             value={who} onChange={setWho} autoComplete="username" enterKeyHint="go" />
           <button className="btn btn-p btn-full" type="submit">أرسل رمز التحقّق</button>
@@ -111,7 +110,7 @@ export default function ForgotPage() {
 
       {step === 'pass' && (
         <form className="lform" onSubmit={save} noValidate>
-          <p className="lnote sub lwhy">عيّن كلمة مرور جديدة لـ <b>{acct ? mask(acct.email) : ''}</b> · تُلغى بعدها كل الرموز السابقة.</p>
+          <p className="lnote sub lwhy">عيّن كلمة مرور جديدة لـ <b>{acct ? mask(acct.email) : ''}</b></p>
           <AuthField id="fp-pass" name="new-password" label="كلمة المرور الجديدة" icon={icons.lock}
             type={show ? 'text' : 'password'} value={pass} onChange={setPass} autoComplete="new-password" enterKeyHint="next"
             trailing={<button type="button" className="leye" onClick={() => setShow((v) => !v)} aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>
@@ -128,7 +127,7 @@ export default function ForgotPage() {
       {step === 'done' && (
         <div className="lform">
           <p className="lnote sub lwhy">
-            <Icon name={icons.check} size="sm" /> حُفظت كلمة المرور الجديدة وأُلغيت الرموز السابقة · ادخل بها الآن.
+            <Icon name={icons.check} size="sm" /> حُفظت كلمة المرور الجديدة.
           </p>
           <button className="btn btn-p btn-full" type="button"
             onClick={() => navigate(ROUTES.login, { replace: true, state: { user: acct?.username, reset: true } })}>

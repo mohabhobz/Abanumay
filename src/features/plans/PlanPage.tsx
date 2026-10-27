@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { Related } from '@/components/related/Related'
@@ -6,7 +7,7 @@ import { useMemo, useRef, useState } from 'react'
 import { forecastPlan } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TONE } from '@/lib/tone'
-import {
+import { DockActions,
   BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, StepArc, Tabs, Tag,
   icons, type GateStep,
 } from '@/components/ui'
@@ -21,9 +22,8 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import {
   PLAN_LIMIT, PLAN_STAGES, lateActivities,
   planById, planClaimed, planDone, planIssues, planPlanned,
-  planCounts, planExecution, planSpi, planStageLabel, planStageWho, readyToClose, spiSay,
-  waitingReview,
-} from '@/data/mock/plans'
+  planCounts, planExecution, planSpi, planStageLabel, planStageWho, spiSay,
+  waitingReview } from '@/data/mock/plans'
 import {
   acceptActivityBy, claimActivityBy, commentOn, saveActivityData, decideChangeBy, dropEvidence, mayDraft, projectWindow,
   rejectActivityBy, reviewPlan, sendPlanFor, startActivity, stuckActivities, uploadEvidence, usePlans,
@@ -83,7 +83,6 @@ export default function PlanPage() {
   usePlans()
   const [note, setNote] = useState('')
   const [said, setSaid] = useState('')
-  const [chNote, setChNote] = useState<Record<string, string>>({})
   const [focus, setFocus] = useState<string | undefined>()
   const [tick, setTick] = useState(0)
   const [open, setOpen] = useState<Set<string>>(new Set())
@@ -99,7 +98,7 @@ export default function PlanPage() {
   const [cmp, setCmp] = useState<string | null>(null)
 
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
 
   /* Note: a phase with pending work expands on its own - collapsed-by-default is right for tables
      (their question is "how many") and wrong here (the question is "which activity"). */
@@ -136,7 +135,6 @@ export default function PlanPage() {
             <Glass>
               <Empty
                 title="لا توجد خطة بهذا الرقم."
-                note="عُد إلى صندوق الخطط واختر خطة منه."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.plans)}>
                     العودة إلى صندوق الخطط
@@ -220,17 +218,15 @@ export default function PlanPage() {
   const holderRest = [
     live
       ? <>نسبة اكتمال المشروع <b className="num">{pct(done)}</b> · المخطَّط <b className="num">{pct(want)}</b></>
-      : returned
-        ? <>أُعيدت للجهة · تعود للمراجعة بعد التعديل</>
-        : <>الاعتماد يثبّت النسخة المرجعية · وبعده يُقاس الانحراف</>,
+      : null,
     p.baseline > 0
       ? <>النسخة المرجعية <b className="num">{ver(p.baseline)}</b></>
       : null,
   ]
 
-  const take = (x: PlanAction) => {
+  const take = (x: PlanAction, n?: string) => {
     if (x.key === 'send') sendPlanFor(p.id, asEntity ? 'entity' : 'supervisor', who)
-    else if (x.key === 'approve' || x.key === 'toManager' || x.key === 'returnEntity' || x.key === 'managerReturn') reviewPlan(p.id, x.key, note.trim(), who, role.key)
+    else if (x.key === 'approve' || x.key === 'toManager' || x.key === 'returnEntity' || x.key === 'managerReturn') reviewPlan(p.id, x.key, (n ?? note).trim(), who, role.key)
     setNote('')
     setSaid(`سُجّل: ${x.label}`)
     setTick((t) => t + 1)
@@ -266,7 +262,7 @@ export default function PlanPage() {
                   ? <>النسخة المرجعية <Num>{ver(p.baseline)}</Num>{' '}
                     {p.baselineAt && <>من <DateText>{p.baselineAt}</DateText></>}
                     {p.approvedBy && <> · اعتمدها {p.approvedBy}{p.approvedAs ? ` (${p.approvedAs})` : ''}</>}</>
-                  : 'لم تُعتمد بعد · الهيكل مفتوح للتعديل'}
+                  : 'لم تُعتمد بعد'}
               </p>
               {pfT
                 ? <p className="sub mt-2">خطة محفظة · {asEntity ? p.projectName : <Link className="lnk" to={ROUTES.portfolio(pfT.id)}>{p.projectName}</Link>} · {p.entityName}</p>
@@ -304,11 +300,6 @@ export default function PlanPage() {
           {/* re-audit 17 Oct · 12.2.12 · an approved plan waits for its agreement before it runs */}
           {p.stage === 'active' && execStop(p.id) && <p className="sub cnote tcen">{execStop(p.id)}</p>}
 
-          {/* Note: the entity needs to know that "done" isn't "counted". This is the biggest
-              possible misunderstanding on this screen: the entity uploads evidence, marks it done,
-              and assumes the percentage went up - but rule 14 says it doesn't rise until the
-              supervisor accepts it. The sentence is stated up top, not left to be inferred from a
-              small badge next to the activity. */}
           {p.stage === 'cancelled' && (
             <Glass>
               <Head title="الخطة ملغاة" meta={<Tag tone="no">ملغاة</Tag>} />
@@ -327,22 +318,6 @@ export default function PlanPage() {
             <Glass>
               <Head title={p.stage === 'returned' ? 'الخطة مُعادة للتعديل' : 'مسودة الخطة'} meta={<Link className="btn btn-p btn-sm" to={`${ROUTES.planEdit(p.id)}${asEntity ? '?as=entity' : ''}`}>{p.stage === 'returned' ? 'عدّل الخطة' : 'حرّر الخطة'}</Link>} />
               {p.note && <p className="sub cnote">{isolate(p.note)}</p>}
-              <p className="sub cnote">{asEntity ? 'تكتب الجهة المراحل والأنشطة والشواهد ثم ترسلها لمشرف المنح.' : 'يكتبها المشرف بالنيابة عن الجهة عند الحاجة.'}</p>
-            </Glass>
-          )}
-
-          {asEntity && (
-            <Glass>
-              <Head
-                title="صفحة خطة الجهة"
-                meta={<Tag tone="mute">الجهة المستفيدة</Tag>}
-              />
-              <p className="sub cnote">
-                ترفع الجهة الشواهد وتعلن اكتمال النشاط، فيتحوّل إلى
-                «بانتظار قبول المشرف»، ولا يُحتسب في نسبة الإنجاز قبل أن
-                يراجعه مشرف المنح ويقبله{/* doc rule 14 */}.
-                وإن أُعيد النشاط، يظهر سبب الإعادة مكتوبًا تحته.
-              </p>
             </Glass>
           )}
 
@@ -354,10 +329,10 @@ export default function PlanPage() {
                   title="حالة التنفيذ"
                   meta={live
                     ? <Tag tone={say.tone === 'mute' ? 'mute' : say.tone}>{say.say}</Tag>
-                    : <span className="sub">تبدأ بعد الاعتماد</span>}
+                    : <span className="sub">لم تبدأ</span>}
                 />
 
-                {live ? (
+                {live && (
                   <>
                     {/* Note: the number with its two reference points - SPI alone is a verdict with
                         no basis. */}
@@ -402,22 +377,7 @@ export default function PlanPage() {
                       ]}
                     />
 
-                    {/* Note: this sentence is the whole module in one line - the gap between the
-                        two numbers isn't a display detail, it's pending work. */}
-                    {claim > done && (
-                      <p className="sub cnote">
-                        الفرق بين المُعلَن والمقبول{' '}
-                        <span className="num">{claim - done}</span> نقطة · وهي أنشطة
-                        أعلنت الجهة اكتمالها ولم تُراجع بعد، ولا تُحتسب إنجازًا
-                        قبل القبول{/* doc rule 14 */}.
-                      </p>
-                    )}
                   </>
-                ) : (
-                  <p className="sub cnote">
-                    يبدأ القياس من تثبيت النسخة المرجعية، فقبلها لا يوجد مرجع
-                    يُقاس عليه الانحراف، وتصبح النسبة مجرد تقدير.
-                  </p>
                 )}
               </Glass>
 
@@ -475,7 +435,6 @@ export default function PlanPage() {
             {p.phases.length === 0 ? (
               <Empty
                 title="الخطة بلا مراحل."
-                note="المرحلة هي وحدة القياس، ومن دونها لا يُحتسب أي إنجاز."
               />
             ) : (
               <PhaseTree
@@ -511,23 +470,17 @@ export default function PlanPage() {
               />
             )}
 
-            {/* Note: phase totals against the grant - same discipline as the budget tree and
-                the payment schedule, and it's written below the table since it's a property of
-                the total, not of any single row. */}
-            {grant > 0 && (
-              <p className={`sub cnote${cost !== grant ? ' bad' : ''}`}>
-                مجموع تكلفة المراحل <Money sm>{cost}</Money> وقيمة المنحة{' '}
-                <Money sm>{grant}</Money>
-                {cost !== grant
-                  ? ' · يجب أن يتساويا قبل الاعتماد.'
-                  : ' · متطابقان.'}
+            {/* Client 26 Oct · guidance lines removed · the mismatch alone stays, it blocks approval */}
+            {grant > 0 && cost !== grant && (
+              <p className="bad cnote">
+                مجموع تكلفة المراحل <Money sm>{cost}</Money> لا يساوي قيمة المنحة <Money sm>{grant}</Money>
               </p>
             )}
             </>) : (
               <>
                 <h4 className="fnd-h">النسخ الملغاة</h4>
                 {oldVersions.length === 0 ? (
-                  <p className="sub cnote">لا توجد نسخ ملغاة · كل طلب تعديل يُعتمد يلغي النسخة السابقة ويُنشئ نسخة جديدة نشطة، وتبقى السابقة هنا للمقارنة.</p>
+                  <p className="sub cnote">لا توجد نسخ ملغاة.</p>
                 ) : (
                   <ul className="plver">
                     {oldVersions.map((v) => {
@@ -564,10 +517,7 @@ export default function PlanPage() {
 
                 <h4 className="fnd-h">طلبات التعديل والإلغاء</h4>
                 {p.changes.length === 0 ? (
-                  <p className="sub cnote">
-                    لا توجد طلبات · أي تعديل على الأنشطة أو التواريخ أو الشواهد بعد الاعتماد يمرّ من هنا: تقدّمه الجهة
-                    أو مشرف المنح أو مدير المنح، ويمرّ طلب الجهة بمشرف المنح ثم يعتمده مدير المنح.
-                  </p>
+                  <p className="sub cnote">لا توجد طلبات.</p>
                 ) : (
                   <ul className="plchg">
                     {[...p.changes].reverse().map((c) => {
@@ -608,29 +558,39 @@ export default function PlanPage() {
                             </div>
                           )}
                           {/* v3 · 12.4.15 · operational changes are made in the plan · contractual ones go to the agreement */}
-                          {c.kind && c.mode !== 'cancel' && <p className="sub"><Tag tone={c.kind === 'contractual' ? 'warn' : 'mute'}>{c.kind === 'contractual' ? 'تغيير تعاقدي' : 'تغيير تشغيلي'}</Tag>{c.contractual?.length ? <> · {c.contractual.join(' · ')}</> : <> · يُنفَّذ في الخطة ويُسجَّل في سجلها</>}</p>}
-                          {c.state === 'toAgreement' && <p className="sub">أُحيل لملحق تعديلي في الاتفاقية · يُعتمد في الخطة بعد اعتماد الملحق{annexAfter(p.projectId, c.at) ? ' · اعتُمد الملحق' : ''}</p>}
+                          {c.kind && c.mode !== 'cancel' && <p className="sub"><Tag tone={c.kind === 'contractual' ? 'warn' : 'mute'}>{c.kind === 'contractual' ? 'تغيير تعاقدي' : 'تغيير تشغيلي'}</Tag>{c.contractual?.length ? <> · {c.contractual.join(' · ')}</> : null}</p>}
+                          {c.state === 'toAgreement' && <p className="sub">أُحيل لملحق تعديلي في الاتفاقية{annexAfter(p.projectId, c.at) ? ' · اعتُمد الملحق' : ''}</p>}
                           {/* #36 · the supervisor's step on the entity's request */}
                           {atSup && !asEntity && role.key === 'supervisor' && (
                             <div className="act-a">
-                              <span className="fld"><input value={chNote[c.id] ?? ''} onChange={(e) => setChNote({ ...chNote, [c.id]: e.target.value })} placeholder="ملاحظة · إلزامية مع الإعادة" aria-label="ملاحظة مشرف المنح على الطلب" /></span>
-                              <button type="button" className="btn btn-p btn-sm" onClick={() => { const w = forwardChange(p.id, c.id, 'toManager', chNote[c.id] ?? '', user.name, role.key); if (w.length) setSaid(w[0]); setTick((x) => x + 1) }}>ارفعه لمدير المنح</button>
-                              <button type="button" className="btn btn-2 btn-sm" disabled={!(chNote[c.id] ?? '').trim()} onClick={() => { const w = forwardChange(p.id, c.id, 'returnEntity', chNote[c.id] ?? '', user.name, role.key); if (w.length) setSaid(w[0]); setTick((x) => x + 1) }}>أعده للجهة</button>
+                              {/* Client 26 Oct · the note in the decision's popup */}
+                              <DockActions
+                                actions={[
+                                  { label: 'أعده للجهة', kind: 'btn-2 btn-sm', needsNote: true, to: 'returnEntity' as const },
+                                  { label: 'ارفعه لمدير المنح', kind: 'btn-p btn-sm', to: 'toManager' as const },
+                                ]}
+                                subject={<>{c.mode === 'cancel' ? 'طلب إلغاء الخطة' : 'طلب تعديل الخطة'} · {p.projectName}</>}
+                                placeholder="ما يلزم الجهة استكماله"
+                                onRun={(a, n) => { const w = forwardChange(p.id, c.id, a.to, n, user.name, role.key); setTick((x) => x + 1); return w }}
+                              />
                             </div>
                           )}
                           {atMgr && mayApprovePlan(role.key, user.name) && !asEntity && (
                             <div className="act-a">
-                              <span className="fld"><input value={chNote[c.id] ?? ''} onChange={(e) => setChNote({ ...chNote, [c.id]: e.target.value })} placeholder="ملاحظة القرار · إلزامية" aria-label="ملاحظة قرار التعديل" /></span>
-                              {([...(c.kind === 'contractual' && c.mode !== 'cancel' && c.state === 'waiting' ? ['toAgreement'] as const : []), 'approve', 'return', 'reject'] as const).map((o) => {
-                                const blocked = o === 'approve' && c.kind === 'contractual' && c.mode !== 'cancel' && !annexAfter(p.projectId, c.at)
-                                return (
-                                  <button key={o} type="button" className={`btn ${o === 'approve' || o === 'toAgreement' ? 'btn-p' : 'btn-2'} btn-sm`} disabled={!(chNote[c.id] ?? '').trim() || blocked}
-                                    title={blocked ? 'يُعدَّل أولًا بملحق في الاتفاقية' : undefined}
-                                    onClick={() => { const w = decideChangeBy(p.id, c.id, o, chNote[c.id] ?? '', user.name, role.key); if (w.length) setSaid(w[0]); setTick((x) => x + 1) }}>
-                                    {o === 'approve' ? (c.mode === 'cancel' ? 'اعتمد الإلغاء' : 'اعتمد التعديل') : o === 'toAgreement' ? 'أحله لملحق الاتفاقية' : o === 'return' ? 'أعده للاستكمال' : 'ارفض الطلب'}
-                                  </button>
-                                )
-                              })}
+                              {/* Client 26 Oct · the decision's note (required) in its popup */}
+                              <DockActions
+                                actions={([...(c.kind === 'contractual' && c.mode !== 'cancel' && c.state === 'waiting' ? ['toAgreement'] as const : []), 'approve', 'return', 'reject'] as const).map((o) => {
+                                  const blocked = o === 'approve' && c.kind === 'contractual' && c.mode !== 'cancel' && !annexAfter(p.projectId, c.at)
+                                  return {
+                                    o, needsNote: true, kind: `${o === 'approve' || o === 'toAgreement' ? 'btn-p' : o === 'reject' ? 'btn-d' : 'btn-2'} btn-sm`,
+                                    stops: blocked ? ['يُعدَّل أولًا بملحق في الاتفاقية'] : [],
+                                    label: o === 'approve' ? (c.mode === 'cancel' ? 'اعتمد الإلغاء' : 'اعتمد التعديل') : o === 'toAgreement' ? 'أحله لملحق الاتفاقية' : o === 'return' ? 'أعده للاستكمال' : 'ارفض الطلب',
+                                  }
+                                })}
+                                subject={<>{c.mode === 'cancel' ? 'طلب إلغاء الخطة' : 'طلب تعديل الخطة'} · {p.projectName}</>}
+                                placeholder="ملاحظة القرار · تُسجَّل في سجل الخطة"
+                                onRun={(a, n) => { const w = decideChangeBy(p.id, c.id, a.o, n, user.name, role.key); setTick((x) => x + 1); return w }}
+                              />
                             </div>
                           )}
                         </li>
@@ -646,7 +606,7 @@ export default function PlanPage() {
           {/* Cross · the plan's history · every operation in order, who and when (12.4.30) */}
           {!asEntity && planLogOf(p.id).length > 0 && (
             <Glass>
-              <Head title="سجل الخطة" meta={<span className="sub"><Num>{planLogOf(p.id).length}</Num> عملية · لا يُعدَّل</span>} />
+              <Head title="سجل الخطة" meta={<span className="sub"><Num>{planLogOf(p.id).length}</Num> عملية</span>} />
               <ul className="xs-notes">
                 {planLogOf(p.id).slice(0, 12).map((e, i) => (
                   <li key={`${e.at}-${i}`}>
@@ -658,18 +618,6 @@ export default function PlanPage() {
             </Glass>
           )}
 
-          {/* Note: the rule is documented on the screen, not only in a comment - this is the most
-              confusing thing to see: a plan "in progress" whose project sits at an entirely
-              different stage. */}
-          {!pfT && <p className="sub tcen">
-            مرحلة الخطة لا تغيّر حالة المشروع ·{' '}
-            <Link to={ROUTES.project(p.projectId)} className="lnk">{p.projectName}</Link>{' '}
-            «{pr?.statusGroup ?? ''}» والخطة في «{planStageLabel(p.stage)}» · والخطة المطلوبة تُبقي المشروع قبل التنفيذ حتى تُعتمد.
-            {readyToClose(p) && ' وكل أنشطة الخطة قُبلت، فالمشروع مؤهَّل للإغلاق.'}
-            {issues.length > 0 && !live && (
-              <> · وتوجد <span className="num">{issues.length}</span> ملاحظة تمنع الإرسال.</>
-            )}
-          </p>}
         </div>
 
         {/* === Return an activity - modal ===
@@ -678,6 +626,7 @@ export default function PlanPage() {
             the user's hand as they type. Same modal shape as the budget line item exactly (`.bmask`
             + `.chrome.modal`). */}
         {reject && (
+          createPortal(
           <div className="bmask" role="presentation" onClick={() => setReject(null)}>
             <div
               className="chrome modal"
@@ -692,12 +641,6 @@ export default function PlanPage() {
               </div>
 
               <div className="mb col">
-                {/* Note: rule 14 returns it as "rejected", not "not started" - so the entity knows
-                    work was done and needs correcting, not redone from scratch. */}
-                <p className="sub cnote">
-                  تصل الملاحظة إلى الجهة مع النشاط، ويعود النشاط بحالة
-                  «مرفوض · بملاحظة» لا «لم يبدأ».
-                </p>
                 <label className="regf">
                   <span className="lb">
                     سبب الإعادة<b className="regf-r" aria-label="إلزامي">*</b>
@@ -730,7 +673,9 @@ export default function PlanPage() {
                 <button className="btn btn-2" onClick={() => setReject(null)}>إلغاء</button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body,
+          )
         )}
 
         {/* Note: the decision dock belongs to the institution alone - the entity has no approval
@@ -741,8 +686,6 @@ export default function PlanPage() {
           plan={p}
           grant={grant}
           actions={actions}
-          note={note}
-          onNote={setNote}
           onTake={take}
           onReview={() => {
             const a = queue[0]

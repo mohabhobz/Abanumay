@@ -270,7 +270,7 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
             <Glass className="d-age">
               <Head
                 title="مدة المكوث في القسم"
-                meta={<span className="sub">وسيط {median(liveDays)} {nounAfter(median(liveDays), NOUN.day)} · بالأيام</span>}
+                meta={<span className="sub">وسيط {median(liveDays)} {nounAfter(median(liveDays), NOUN.day)}</span>}
               />
               {/* The unit sits in the header, not floating below - on a narrow card it used to
                   overlap the last column's label. */}
@@ -336,7 +336,7 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
                 ]}
               />
               <p className="chnote">
-                من {entities.length} {nounAfter(entities.length, NOUN.entity)} في هذا النموذج · 3,272 في النظام العامل.
+                من {entities.length} {nounAfter(entities.length, NOUN.entity)}
               </p>
             </Glass>
           </div>
@@ -378,9 +378,6 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
                 ]}
                 slice={{ key: 'cycle', label: 'دورة 2026', value: flowCycle, hue: 'c2' }}
               />
-              <p className="chnote">
-                من ملفات {entities.length} {nounAfter(entities.length, NOUN.entity)} منذ تسجيلها · والدورة جزء من الإجمالي لا قسم ثالث منه.
-              </p>
             </Glass>
 
             <Glass className="hx-card">
@@ -389,9 +386,6 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
                 meta={<Link className="lnk" to={`${ROUTES.entities}?sort=granted`}>الكل</Link>}
               />
               <RankBars rows={partners} total={grantedTotal} />
-              <p className="chnote">
-                أعلى جهتين معًا {pct(Math.round(((partners[0]?.value ?? 0) + (partners[1]?.value ?? 0)) / Math.max(grantedTotal, 1) * 100))} من الملتزم به كله · والنسبة جنب كل جهة نصيبها منه.
-              </p>
             </Glass>
           </div>
 
@@ -418,7 +412,7 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
                   }
                 />
                 {queue.length === 0 ? (
-                  <Empty title="لا يوجد مشروع بانتظار قرارك." note="تحرّكت كل المشاريع المسندة إليك." />
+                  <Empty title="لا يوجد مشروع بانتظار قرارك." />
                 ) : (
                   <div className="qrows">
                     {queue.map((p) => (

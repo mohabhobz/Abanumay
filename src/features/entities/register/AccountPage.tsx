@@ -101,16 +101,6 @@ export default function RegisterAccountPage() {
 
   return (
     <AuthShell title={back ? 'العودة إلى طلبك' : 'إنشاء حساب الجهة'} sub={back ? 'بالحساب الذي أنشأته عند التسجيل' : 'الخطوة الأولى في تسجيل جهة جديدة'} err={err}>
-      {/* Note: this line explains why the account comes before the form. The entity asks "why am I
-          creating an account before I've even applied" - the answer is that the form itself is long
-          and gets interrupted: the license file, board term date, and IBAN aren't things people
-          have on hand, so they start, go get a document, and come back. The account is what makes
-          that "come back" possible. */}
-      <p className="lnote sub lwhy">
-        يُحفظ الطلب على هذا الحساب · يمكن تركه في أي خطوة والعودة إليه، ومتابعة
-        حالته بعد الإرسال.
-      </p>
-
       <form className="lform" onSubmit={submit} method="post" action="#" noValidate>
         <AuthField
           id="ra-email"
@@ -122,7 +112,6 @@ export default function RegisterAccountPage() {
           onChange={setEmail}
           autoComplete="email"
           enterKeyHint="next"
-          hint="تصل إليه جميع الإشعارات"
         />
         <AuthField
           id="ra-pass"
@@ -168,11 +157,11 @@ export default function RegisterAccountPage() {
         >
           {back ? 'ليس لديك حساب؟ أنشئ حسابًا' : 'لديك حساب بالفعل؟ عُد إلى طلبك'}
         </button>
-        <p className="lnote sub">
-          {back
-            ? <>نسيت كلمة المرور؟ <button type="button" className="llink" onClick={() => navigate(ROUTES.forgot)}>استعدها</button></>
-            : 'تُفتح المسودة حيث تركتها، ويُفتح الطلب المرسل في بوابته.'}
-        </p>
+        {back && (
+          <p className="lnote sub">
+            نسيت كلمة المرور؟ <button type="button" className="llink" onClick={() => navigate(ROUTES.forgot)}>استعدها</button>
+          </p>
+        )}
       </div>
     </AuthShell>
   )

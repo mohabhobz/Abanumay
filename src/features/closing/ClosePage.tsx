@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from 'react'
 import { closingAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TONE } from '@/lib/tone'
-import {
+import { type TabItem, Tabs,
   BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, StepArc, Tag,
   icons, type GateStep,
 } from '@/components/ui'
@@ -22,11 +22,11 @@ import { assistFor } from '@/data/mock/assistant'
 import { isolate, MISSING_ITEM, nf, NOUN, nounAfter, pct, unitAfter, withUnit } from '@/lib/format'
 import {
   CLOSE_DOCS, CLOSE_LIMIT, CLOSE_STAGES, canStartEval,
-  closeById, closeCycle, closeRequirements, closeStageLabel, closeStageWho, evalApproved, reportApproved,
+  closeById, closeCycle, closeStageLabel, closeStageWho, evalApproved, reportApproved,
   STOPPED_DOCS, needsComms, reportBlockers, reportGap,
 } from '@/data/mock/closing'
 import {
-  APPROVER_SAY, actOnClosing, approverFor, attachDoc, closeActions, closeSayOf, closeStops, evalScore, sendClosingReport, useClosing, type CloseAct,
+  actOnClosing, approverFor, attachDoc, closeActions, closeSayOf, closeStops, evalScore, sendClosingReport, useClosing, type CloseAct,
 } from '@/data/closing/store'
 import { ExceptionCard, FeedbackCard, FinanceCard, LogsCard, RecoveryCard, RedirectCard, ReopenCard, RequirementsCard, VersionsCard } from './parts'
 import { ReportFiles, TargetActual } from './report'
@@ -78,7 +78,7 @@ const CAP: Record<string, string> = {
 export default function ClosePage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const { role, user } = useRole()
   const mobile = useIsMobile()
   const asEntity = params.get('as') === 'entity'
@@ -91,7 +91,7 @@ export default function ClosePage() {
   const tick = ver
 
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
 
   const readings = useMemo(() => (c ? [...closeReadings(c), ...closingAi(c)] : []), [c, tick])
 
@@ -104,7 +104,6 @@ export default function ClosePage() {
             <Glass>
               <Empty
                 title="لا يوجد طلب إغلاق بهذا الرقم."
-                note="ارجع إلى صندوق الإغلاق واختر طلبًا."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.closings)}>
                     افتح صندوق الإغلاق
@@ -121,7 +120,6 @@ export default function ClosePage() {
   const pr = projectById(c.projectId)
   const cycle = closeCycle(c)
   const missing = reportBlockers(c)
-  const req = closeRequirements(c)
   const closed = evalApproved(c)
   const gaps = reportGap(c)
   /* The exits and what stops them come from the closing store · the dock names the first stop */
@@ -185,9 +183,6 @@ export default function ClosePage() {
   const holderRest = [
     <>دورة <b className="num">{cycle === 'report' ? 1 : 2}</b> من <b className="num">2</b> ·{' '}
       {cycle === 'report' ? 'مسار التقرير الختامي' : 'مسار تقييم المشروع'}</>,
-    cycle === 'report'
-      ? <>لا يبدأ التقييم قبل اعتماد {APPROVER_SAY(approverFor('report', c.projectId))} للتقرير{/* doc 10.4.9 */}</>
-      : <>التقييم سجلّ منفصل يُعدّه مشرف المنح{/* doc rule 17 */}</>,
   ]
 
   /* Attachments - one `DocList`, not a hand-built table. */
@@ -210,13 +205,14 @@ export default function ClosePage() {
       : undefined,
   }))
 
-  const take = (a: CloseAct, file?: string) => {
-    const out = actOnClosing(c.id, a, note, user.name, role.key, file)
-    if (out.length) { setSaid({ bad: out }); return }
+  const take = (a: CloseAct, file?: string, n?: string): string[] => {
+    const out = actOnClosing(c.id, a, n ?? note, user.name, role.key, file)
+    if (out.length) return out
     /* A return isn't approval - no step fills in, no seal. */
     setFresh(a.act === 'return' ? null : { step: at, sealed: evalApproved(c) })
     setSaid({ ok: a.label })
     setNote('')
+    return []
   }
 
   /* 17 Oct · the assistant suggests · the report's own gaps decide between approving and returning */
@@ -229,6 +225,20 @@ export default function ClosePage() {
     const out = actOnClosing(c.id, a, n, user.name, role.key)
     if (!out.length) { setFresh(a.act === 'return' ? null : { step: at, sealed: evalApproved(c) }); setNote('') }
     return out
+  }
+
+  const tabs: TabItem[] = [
+    { slug: 'report', label: 'التقرير الختامي' },
+    { slug: 'eval', label: 'التقييم' },
+    { slug: 'needs', label: 'المتطلبات والمالية' },
+    { slug: 'versions', label: 'الإصدارات' },
+    { slug: 'log', label: 'السجل' },
+  ]
+  const tab = tabs.find((t) => t.slug === params.get('tab'))?.slug ?? 'report'
+  const goTab = (slug: string) => {
+    const next = new URLSearchParams(params)
+    if (slug === 'report') next.delete('tab'); else next.set('tab', slug)
+    setParams(next, { replace: true })
   }
 
   return (
@@ -303,25 +313,14 @@ export default function ClosePage() {
             </Glass>
           )}
 
-          {asEntity && (
-            <Glass>
-              <Head
-                title="أنت في صفحة تقريرك الختامي"
-                meta={<Tag tone="mute">الجهة المستفيدة</Tag>}
-              />
-              <p className="sub cnote">
-                {c.basis === 'stopped'
-                  ? <>مشروعك موقوف بقرار · المطلوب التقرير المالي التنفيذي لما صُرف وأدلة المخرجات المتحققة{/* doc 10.9.3 */}، ولا يُرسل الطلب قبل اكتمالهما.</>
-                  : <>المطلوب{/* doc 10.4.4 · 10.4.5 · client 21 Oct */}: الفعلي مقابل المستهدف لعدد المستفيدين ومدة التنفيذ والميزانية الإجمالية للمشروع ومبلغ دعم المؤسسة،
-                    وما تحقق من كل مخرج متفق عليه، وأبرز النتائج، مع التقرير المالي التنفيذي وصور التنفيذ وأدلة المخرجات · وترفع ملفات التنفيذ مباشرة هنا ·
-                    ولا يُرسل التقرير قبل اكتمالها، والفواتير ليست شرطًا.</>}
-              </p>
-            </Glass>
-          )}
 
+
+          {/* Client 26 Oct · a record with this much in it reads in pinned tabs, the project's component */}
+          <Tabs items={tabs} active={tab} onChange={goTab} />
 
           <div className="g2">
             <div className="col">
+              {tab === 'report' && <>
               {/* Actual vs. approved - the core of the screen */}
               <Glass>
                 <Head
@@ -341,12 +340,6 @@ export default function ClosePage() {
                     { k: 'نموذج التقرير', v: c.report.template === 'foundation' ? 'قالب المؤسسة' : 'نموذج الجهة الخاص' },
                   ]}
                 />
-
-                {!c.report.outcomes && (
-                  <p className="sub cnote">
-                    «أبرز المخرجات والنتائج» لم تُدخل بعد · وهي {/* doc rule 4 */} من الحدّ الأدنى.
-                  </p>
-                )}
 
                 {(!asEntity || !closed) && (
                   <div className="act-a">
@@ -376,7 +369,7 @@ export default function ClosePage() {
                 {/* Note: a cloud link is a different attachment type, not a substitute for one -
                     rule 5 names "approved cloud storage links (e.g. Google Drive)" explicitly, for
                     a practical reason: videos and media files exceed any upload limit. */}
-                {c.report.links.length > 0 ? (
+                {c.report.links.length > 0 && (
                   <ul className="plchg">
                     {c.report.links.map((l) => (
                       <li key={l.url}>
@@ -389,18 +382,17 @@ export default function ClosePage() {
                       </li>
                     ))}
                   </ul>
-                ) : (
-                  <p className="sub cnote">
-                    لا توجد روابط سحابية · تسمح القواعد {/* doc rule 5 */}
-                    بإرفاق المواد الإعلامية والفيديوهات كروابط تخزين معتمدة، وهي
-                    عادةً أكبر من أي حدّ رفع.
-                  </p>
                 )}
               </Glass>
 
               {/* Client 21 Oct (#7) · the execution files in the foundation's storage · the reviewer opens them in place */}
               <ReportFiles c={c} edit={asEntity && (c.stage === 'draft' || c.stage === 'returned')} by={asEntity ? c.entityName : user.name} />
 
+              <FeedbackCard c={c} asEntity={asEntity} />
+              <ReopenCard c={c} asEntity={asEntity} />
+              </>}
+
+              {tab === 'eval' && <>
               {/* Evaluation - second cycle */}
               <Glass>
                 <Head
@@ -409,7 +401,7 @@ export default function ClosePage() {
                     ? <Tag tone={closed ? 'ok' : 'teal'}>
                       {closed ? 'معتمَد' : closeStageLabel(c.stage)}
                     </Tag>
-                    : <Tag tone="mute">لم يبدأ</Tag>}
+                    : <Tag tone="mute">{canStartEval(c) ? 'جاهز للبدء' : 'لم يبدأ'}</Tag>}
                 />
 
                 {c.evaluation ? (
@@ -451,34 +443,23 @@ export default function ClosePage() {
                       </div>
                     )}
                   </>
-                ) : (
-                  /* Note: absence is stated - same rule as the cards: "not started" with its
-                     reason, rather than a hidden section that shortens the page and leaves "where's
-                     the evaluation" unanswered. */
-                  <p className="sub cnote">
-                    {canStartEval(c)
-                      ? <>اعتُمد التقرير، فيمكن بدء التقييم الآن · يُعدّه مشرف
-                        المنح، ولدورته سجلّ منفصل{/* doc rule 17 */}.</>
-                      : <>لا يبدأ التقييم قبل اعتماد التقرير الختامي بالكامل من صاحب
-                        الصلاحية وفق المصفوفة{/* doc 10.4.9 */} · فهو بانتظار دوره لا
-                        متأخّر.</>}
-                  </p>
-                )}
+                ) : null}
               </Glass>
 
+              </>}
+
+              {tab === 'needs' && <>
               {/* 10.4.8 · 10.4.18 · the requirements, named · the financial report and its savings */}
               <ExceptionCard c={c} asEntity={asEntity} />
-              {/* Client 21 Oct (#16) · reopening a closed project · its own permission and a recorded reason */}
-              <ReopenCard c={c} asEntity={asEntity} />
               <RequirementsCard c={c} asEntity={asEntity} />
               <FinanceCard c={c} asEntity={asEntity} />
               {c.recovery && <RecoveryCard rec={c.recovery} owner={{ kind: 'close', id: c.id }} asEntity={asEntity} />}
               <RedirectCard c={c} asEntity={asEntity} />
-              <FeedbackCard c={c} asEntity={asEntity} />
+              </>}
 
               {/* Versions with their content and the two separate logs - rules 11, 15, 17 and 19 */}
-              <VersionsCard c={c} />
-              <LogsCard c={c} />
+              {tab === 'versions' && <VersionsCard c={c} />}
+              {tab === 'log' && <LogsCard c={c} />}
 
 
               {/* Correspondence · client 21 Oct (#2) · a floating chat over the page instead of a card at
@@ -510,18 +491,6 @@ export default function ClosePage() {
             </div>
           </div>
 
-          {/* v3 · 10.4.20 · the project's status follows its closing · v2's rule 16 is gone */}
-          <p className="sub tcen">
-            <Link to={ROUTES.project(c.projectId)} className="lnk">{c.projectName}</Link>{' '}
-            «{pr?.statusGroup ?? ''}»
-            {closed
-              ? <> · والإغلاق اكتمل في <DateText>{c.closedAt ?? ''}</DateText>.</>
-              : <> · والإغلاق في «{closeStageLabel(c.stage)}».</>}
-            {' '}{c.basis === 'stopped'
-              ? <>مشروع موقوف · يبقى على الحالة التي قرّرها الإيقاف، ويُسوّى ماليًّا وإداريًّا بالإغلاق{/* doc 10.9.1 */}.</>
-              : <>يبقى «قيد الإغلاق» حتى اعتماد التقرير والتقييم واستكمال المتطلبات المالية والإدارية معًا، ثم «مكتمل» أو «مغلق بوفر» أو «أعيد توجيه الدعم»{/* doc 10.4.20 · rule 8 · 18 */}.</>}
-            {!req.ok && <> وحاليًا: {req.say}.</>}
-          </p>
         </div>
 
         {/* Note: the entity's actions live on the screen, not in the footer - same as the plan
@@ -556,8 +525,6 @@ export default function ClosePage() {
             user={user}
             row={c}
             actions={actions}
-            note={note}
-            onNote={setNote}
             onAct={take}
           />
         )}

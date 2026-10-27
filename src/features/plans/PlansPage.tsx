@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
+import { StatRow,
   Empty, Glass, GroupPicker, Icon, MultiSelect, Num, SearchBox, Segments, Stat,
   Toggle, ViewToggle, icons,
 } from '@/components/ui'
@@ -188,38 +188,37 @@ export default function PlansPage() {
             variant="bar"
             title="قراءة سريعة للخطط"
             readings={readings}
-            empty="لا توجد في النطاق الحالي أنشطة بانتظار المراجعة أو متأخّرة · وسّع الفلتر لعرض المزيد."
+            empty="لا توجد في النطاق الحالي أنشطة بانتظار المراجعة أو متأخّرة."
           />
 
           {/* Note: the spec has no indicators for this module - these four are derived from its own
               rules, and logged elsewhere as placeholders, the same way the disbursement indicators
               have an empty target. */}
-          <div className="stats4">
+          <StatRow title="مؤشرات الخطط">
             <Stat
               label="أنشطة بانتظار مراجعتك"
               value={<Num>{k.waiting}</Num>}
               unit="نشاطًا"
-              note=" · لا تُحتسب إنجازًا قبل القبول"
             />
             <Stat
               label="الخطط الملتزمة بجدولها"
               value={<Num>{pct(k.onTrackPct)}</Num>}
-              note={/* doc BPD-012 */ "أداء الجدول ≥ 0.95 · مشتق من"}
+              hint={/* doc BPD-012 */ "أداء الجدول ≥ 0.95"}
               bar={{ w: `${k.onTrackPct}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="الأنشطة المتأخّرة"
               value={<Num>{pct(k.latePct)}</Num>}
-              note={`${k.late} من ${countOf(k.acts, NOUN.activity)} · مقاسة على النسخة المرجعية`}
+              note={`${k.late} من ${countOf(k.acts, NOUN.activity)}`}
               bar={{ w: `${k.latePct}%`, c: 'var(--warn)' }}
             />
             <Stat
               label="متوسط مدة اعتماد الخطة"
               value={<Num>{k.approveDays}</Num>}
               unit="يومًا"
-              note="من فتح الخطة حتى تثبيت النسخة المرجعية"
+              hint="من فتح الخطة حتى تثبيت النسخة المرجعية"
             />
-          </div>
+          </StatRow>
 
           <Segments
             active={readList(v.stage).length === 1 ? readList(v.stage)[0] : ''}
@@ -375,7 +374,6 @@ export default function PlansPage() {
             <Glass>
               <Empty
                 title="لا توجد خطط بهذه الفلاتر."
-                note="وسّع النطاق، أو اختر مرحلة أخرى من الشرائح في الأعلى."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
@@ -401,7 +399,6 @@ export default function PlansPage() {
               </Glass>
               {grouped && (
                 <p className="sub tcen">
-                  التجميع يعرض كل النتائج ·{' '}
                   <span className="num">{countLeaves(groupTree(sorted, group))}</span> مجموعات ·{' '}
                   <button className="lnk" onClick={() => set({ group: undefined })}>
                     إلغاء التجميع
@@ -417,14 +414,6 @@ export default function PlansPage() {
             </div>
           )}
 
-          {/* Note: the two rules that cause confusion are documented on the screen, not only in a
-              comment - exactly like rule 25 on agreements. */}
-          <p className="sub tcen">
-            مرحلة الخطة لا تغيّر حالة المشروع · غير أن الخطة المطلوبة تُبقيه في «استكمال متطلبات ما قبل التنفيذ» حتى تُعتمد
-            (0.status.4). والنشاط لا يُحتسب إنجازًا إلا بعد قبول مشرف المنح{/* doc rule 14 */} ·{' '}
-            <span className="num">{k.closable}</span> {nounAfter(k.closable, NOUN.project)} اكتملت خطته وصار
-            مؤهَّلًا للإغلاق.
-          </p>
         </div>
       </div>
     </AppLayout>

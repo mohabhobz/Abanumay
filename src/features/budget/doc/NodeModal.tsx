@@ -1,10 +1,10 @@
+import { createPortal } from 'react-dom'
 import { useState } from 'react'
-import { FieldSelect, Icon, MultiSelect, Num, Riyal, icons } from '@/components/ui'
+import { FieldMultiSelect, FieldSelect, Icon, Num, Riyal, icons } from '@/components/ui'
 import { NOUN, nf, nounAfter } from '@/lib/format'
 import {
-  KIND_NOTE, KIND_SAY, KIND_UNDER, childrenOf, docSources, kindFits, kindUnder, pathOf, sumChildren,
-  type BudgetDoc, type BudgetNode, type LineKind, type SourceShare,
-} from '@/data/mock/budgetTree'
+  KIND_SAY, KIND_UNDER, childrenOf, docSources, kindFits, kindUnder, pathOf, sumChildren,
+  type BudgetDoc, type BudgetNode, type LineKind, type SourceShare } from '@/data/mock/budgetTree'
 import { CYCLE } from '@/data/intake/cycle'
 import { DIRECTIONS, sourceName } from '@/data/budget/store'
 
@@ -122,6 +122,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
   }
 
   return (
+    createPortal(
     <div className="bmask" role="presentation" onClick={onClose}>
       <div className="chrome modal" role="dialog" aria-modal="true" aria-label={editId ? 'تعديل بند' : 'إضافة بند'} onClick={(e) => e.stopPropagation()}>
         <div className="mh">
@@ -137,7 +138,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
             <span className="fld">
               <input value={nLabel} onChange={(e) => setNLabel(e.target.value)} placeholder="مثال: مسار التعليم" aria-label="اسم البند" />
             </span>
-            <span className="sub regf-h">الاسم الداخلي الذي تعمل به المؤسسة</span>
+
           </label>
 
           {/* Public-facing name · not a translation of the name, a different name for a different
@@ -147,9 +148,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
             <span className="fld">
               <input value={nAlias} onChange={(e) => setNAlias(e.target.value)} placeholder="مثال: المنح التعليمية" aria-label="الاسم الظاهر للمستخدم" />
             </span>
-            <span className="sub regf-h">
-              {nShow ? 'اختياري · يظهر للخارج بدل الاسم الداخلي عند إدخاله' : 'إلزامي · الاسم الداخلي مخفي، فهذا الاسم هو الذي سيظهر'}
-            </span>
+
           </label>
 
           <div className="bchk">
@@ -157,16 +156,12 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
               <input type="checkbox" checked={nShow} onChange={(e) => setNShow(e.target.checked)} />
               <span>
                 <b>أظهر اسم البند للخارج</b>
-                <span className="sub">عند إلغائه يصبح الاسم الظاهر للمستخدم إلزاميًا</span>
               </span>
             </label>
             <label className="bchk-i">
               <input type="checkbox" checked={nActive} onChange={(e) => setNActive(e.target.checked)} />
               <span>
                 <b>البند نشط</b>
-                <span className="sub">
-                  البند الموقوف يبقى بأرقامه وحجوزاته السابقة ولا يُربط عليه مشروع جديد · وإيقافه يوقف ما تحته
-                </span>
               </span>
             </label>
           </div>
@@ -184,7 +179,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
               ]}
               onChange={(v) => setNKind(v as LineKind)}
             />
-            <span className="sub regf-h">{KIND_NOTE[nKind]}</span>
+
           </label>
 
           {/* The parent shown with its full path - "education track" alone isn't a unique label. */}
@@ -212,9 +207,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
               />
               <Riyal />
             </span>
-            {base ? (
-              <span className="sub regf-h">يأخذ البند الأساسي مبلغ الميزانية كاملًا</span>
-            ) : nParent ? (
+            {!base && nParent ? (
               <span className="sub regf-h">
                 المتبقّي في «{nodes.find((k) => k.id === nParent)?.label}»{' '}
                 <span className="num">
@@ -230,7 +223,6 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
                 <input type="checkbox" checked={useSplit} onChange={(e) => setUseSplit(e.target.checked)} />
                 <span>
                   <b>وزّع مبلغ البند على مصادر التمويل</b>
-                  <span className="sub">دون توزيع يرث البند مصدر البند الذي فوقه، أو يُجمع من بنوده</span>
                 </span>
               </label>
               {useSplit && (
@@ -258,15 +250,15 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
           {domain && (
             <label className="regf">
               <span className="lb">مشرف المنح المسؤول</span>
-              <MultiSelect
+              <FieldMultiSelect
                 label="مشرف المنح المسؤول"
-                all="من دورة الاستقبال"
+                placeholder="من دورة الاستقبال"
                 people
                 values={nOwners}
                 options={CYCLE.supervisors.map((s) => ({ value: s, label: s }))}
                 onChange={setNOwners}
               />
-              <span className="sub regf-h">يُوزَّع عليه ما يرد من مشاريع المجال عند اعتماد الميزانية</span>
+
             </label>
           )}
 
@@ -284,14 +276,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
           )}
 
           {/* The rule is shown where the decision happens, not as a toast after clicking. */}
-          {blocked
-            ? <p className="bad cnote">{blocked}</p>
-            : nodes.length === 0 && (
-              <p className="sub cnote">
-                أول بند هو <b>جذر الشجرة</b> · يأخذ المبلغ الإجمالي{' '}
-                <span className="num">{nf.format(doc.total)}</span> كاملًا، وتوضع البنود التالية تحته.
-              </p>
-            )}
+          {blocked && <p className="bad cnote">{blocked}</p>}
         </div>
 
         <div className="mf">
@@ -312,6 +297,8 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
           </span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
+    )
   )
 }

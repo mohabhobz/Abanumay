@@ -6,7 +6,7 @@ import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { NOUN, nf, nounAfter, pct as sayPct, unitAfter } from '@/lib/format'
+import { NOUN, nf, nounAfter, unitAfter } from '@/lib/format'
 import { APPROVAL_MATRIX, MONEY_LIMITS, approverFor, projectsUnder } from '@/data/mock/settings'
 import { logSettings } from '@/data/shared/settingsLog'
 import { useRole } from '@/hooks/useRole'
@@ -78,12 +78,8 @@ export default function ProjectSettingsPage() {
           <header>
             <div>
               <h1 className="ptitle">إعدادات المشاريع والصرف</h1>
-              <p className="sub mt-1">
-                الأرقام التي تحدّد صاحب الاعتماد ومتى يُعدّ الإجراء متأخّرًا · تُعدَّل من هنا بلا
-                تعديل برمجي، وتسري على النظام كله فور الحفظ
-              </p>
             </div>
-            {viewOnly ? <Tag tone="mute">للاطلاع · يعدّلها أصحاب الصلاحية ومدير النظام</Tag> : <Tag tone="mute">قابلة للإعداد</Tag>}
+            {viewOnly ? <Tag tone="mute">للاطلاع</Tag> : <Tag tone="mute">قابلة للإعداد</Tag>}
           </header>
 
           <Tabs items={TABS} active={tab} onChange={(x) => set({ tab: x === TABS[0].slug ? undefined : x })} />
@@ -145,7 +141,7 @@ function ApprovalTab() {
     <>
       {/* The rule is understood by trying it: enter an amount and see who decides it */}
       <Glass>
-        <Head title="جرّب المبلغ" meta={<span className="sub">تُقرأ القاعدة من الأسفل إلى الأعلى</span>} />
+        <Head title="جرّب المبلغ" />
         <div className="cfgrow">
           <label className="regf cfgwide">
             <span className="lb">مبلغ المشروع</span>
@@ -161,8 +157,7 @@ function ApprovalTab() {
           </label>
         </div>
         <p className="sub cnote">
-          مبلغ <Money>{amount}</Money> يعتمده <b>{who.role}</b> · صاحب القرار هو أول مستوى حدّه
-          المالي أكبر من المبلغ أو يساويه. ومشرف المنح يوصي ولا يعتمد، فلا مستوى له.
+          مبلغ <Money>{amount}</Money> يعتمده <b>{who.role}</b>
         </p>
       </Glass>
 
@@ -194,12 +189,8 @@ function ApprovalTab() {
           })}
         </ul>
         {broken && (
-          <p className="sub cnote"><Tag tone="warn">ترتيب غير صحيح</Tag> كل مستوى يجب أن يكون حدّه أعلى من المستوى الذي تحته، والحفظ متوقف حتى يُصحَّح.</p>
+          <p className="sub cnote"><Tag tone="warn">ترتيب غير صحيح</Tag> كل مستوى يجب أن يكون حدّه أعلى من المستوى الذي تحته.</p>
         )}
-        <p className="sub cnote">
-          الحفظ يغيّر الحدّ المالي لمدير المنح والمدير التنفيذي في كل الشاشات، وتوزيع المشاريع على
-          قوائم المدير التنفيذي واللجنة والمجلس في «اليوم».
-        </p>
       </Glass>
 
       {changed.length > 0 && (
@@ -231,7 +222,7 @@ function ReasonsTab() {
   }
   return (
     <Glass className="tblcard">
-      <Head title="أسباب التوصية بالرفض" meta={<span className="sub"><Num>{d.length}</Num> سببًا · ومعها «أخرى» بنص</span>} />
+      <Head title="أسباب التوصية بالرفض" meta={<span className="sub"><Num>{d.length}</Num> سببًا</span>} />
       <ul className="cfglist">
         {d.map((r, i) => (
           <li key={i}>
@@ -247,7 +238,6 @@ function ReasonsTab() {
         </li>
       </ul>
       {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
-      <p className="sub cnote">يختار مشرف المنح سبب توصيته بالرفض من هذه القائمة، أو «أخرى» ويكتب السبب · ويُحفظ السبب في سجل المشروع.</p>
       {changed && (
         <SaveBar
           count={1}
@@ -276,7 +266,7 @@ function ExclusionTab() {
   }
   return (
     <Glass className="tblcard">
-      <Head title="معايير الاستبعاد" meta={<span className="sub"><Num>{d.length}</Num> {nounAfter(d.length, NOUN.criterion)} · نعم / لا</span>} />
+      <Head title="معايير الاستبعاد" meta={<span className="sub"><Num>{d.length}</Num> {nounAfter(d.length, NOUN.criterion)}</span>} />
       <ul className="cfglist cfglist-w">
         {d.map((r, i) => (
           <li key={r.key}>
@@ -292,7 +282,6 @@ function ExclusionTab() {
         </li>
       </ul>
       {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
-      <p className="sub cnote">يجيب مشرف المنح عنها قبل معايير الدراسة · أي «نعم» يستبعد المشروع ويقترح التوصية بالرفض · والدراسات المحفوظة تبقى على الأسئلة كما كانت عند حفظها.</p>
       {changed && (
         <SaveBar
           count={1}
@@ -332,7 +321,6 @@ function LimitsTab() {
         {MONEY_LIMITS.map((l) => (
           <li key={l.key}>
             <b>{l.label}</b>
-            <span className="sub trim1">{l.where}</span>
             <span className="pc-sp" />
             {l.assumed && <Tag tone="warn">افتراضي</Tag>}
             <CfgNum
@@ -345,10 +333,6 @@ function LimitsTab() {
           </li>
         ))}
       </ul>
-      <p className="sub cnote">
-        كل رقم هنا يظهر في إجراء · والعمود الثاني يبيّن موضعه بالتحديد، ليعرف من يغيّره أثر التغيير.
-        {' '}الحالي: الدفعة الأولى حتى {sayPct(d.firstPayPct ?? 0)} من المنحة.
-      </p>
       {changed.length > 0 && (
         <SaveBar
           count={changed.length}
@@ -383,7 +367,6 @@ function StagesTab() {
       <Glass className="tblcard">
         <Head
           title="مدد مراحل الصرف"
-          meta={<span className="sub">آلية التصعيد 9.5</span>}
         />
         <StageLimits
           stages={PAY_STATES.map((s) => ({ key: s.key, label: s.label, who: s.who }))}

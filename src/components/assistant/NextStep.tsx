@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Tag } from '@/components/ui'
+import { DecisionDialog, Tag } from '@/components/ui'
 import { toast } from '@/data/feedback'
 import { pct } from '@/lib/format'
-import type { AgentAct, Suggestion } from '@/data/shared/agent'
+import type { AgentAct, SuggestOpt, Suggestion } from '@/data/shared/agent'
 
 /**
  * «الحل المقترح» — inside the assistant card (17 Oct · client: the assistant suggests what the
@@ -16,11 +16,13 @@ export function NextStep<A extends AgentAct>({ s, exec }: {
   exec: (a: A, note: string) => string[] | void
 }) {
   const [bad, setBad] = useState<string[]>([])
+  /* Client 26 Oct · an option opens the one decision popup · its reason, or a confirmation */
+  const [pick, setPick] = useState<SuggestOpt<A> | null>(null)
   const press = (a: A, note: string) => {
     const out = exec(a, note) || []
     setBad(out)
-    if (out.length) toast(`لم يُنفّذ «${a.label}» · ${out[0]}`, 'warn')
-    else toast(`تم: ${a.label}`, 'ok')
+    if (out.length) return out
+    toast(`تم: ${a.label}`, 'ok')
   }
   return (
     <section className="nstep" aria-label="الحل المقترح">
@@ -39,8 +41,8 @@ export function NextStep<A extends AgentAct>({ s, exec }: {
                 type="button"
                 className={`btn ${o.blocked ? 'btn-ghost' : 'btn-2'} nstep-b`}
                 disabled={Boolean(o.blocked)}
-                title={o.blocked ?? (o.note ? `تُرسل بالملاحظة: ${o.note}` : undefined)}
-                onClick={() => press(o.action, o.note)}
+                title={o.blocked ?? (o.mustNote ? 'يفتح نافذة القرار لكتابة السبب' : 'يفتح نافذة تأكيد القرار')}
+                onClick={() => setPick(o)}
               >
                 <span className="nstep-l">{o.action.label}</span>
                 {o.best && <Tag tone="teal">المقترح</Tag>}
@@ -51,6 +53,16 @@ export function NextStep<A extends AgentAct>({ s, exec }: {
         </div>
       )}
       {bad.length > 0 && <p className="bad nstep-p">{bad.join(' · ')}</p>}
+      {pick && (
+        <DecisionDialog
+          title={pick.action.label}
+          tone={pick.action.kind?.includes('btn-d') ? 'btn-d' : 'btn-p'}
+          note={pick.mustNote ? 'required' : 'optional'}
+          initialNote={pick.note}
+          onClose={() => setPick(null)}
+          onConfirm={(n) => press(pick.action, n)}
+        />
+      )}
     </section>
   )
 }

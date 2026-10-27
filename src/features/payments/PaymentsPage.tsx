@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePayments } from '@/data/payments/store'
 import { useRole } from '@/hooks/useRole'
 import { useLocation, useNavigate } from 'react-router-dom'
-import {
+import { StatRow,
   Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
   Riyal,
@@ -297,7 +297,7 @@ export default function PaymentsPage() {
             variant="bar"
             title="قراءة سريعة للصندوق"
             readings={readings}
-            empty="لا توجد دفعة موقوفة أو متأخرة في النطاق الحالي. وسّع الفلتر لعرض المزيد."
+            empty="لا توجد دفعة موقوفة أو متأخرة في النطاق الحالي."
           />
 
           {/* Note: these four cards are the spec's own four indicators (9.8), not four cards chosen
@@ -309,32 +309,31 @@ export default function PaymentsPage() {
               The "target value" column is empty in the spec for all four - so the number displays
               as a value, not a status, and isn't colored success or failure until the institution
               provides targets. */}
-          <div className="stats4" id="pay-kpi">
+          <StatRow title="مؤشرات الصرف" id="pay-kpi">
             <Stat
               label="متوسط مدة معالجة الطلب"
               value={<Num>{ks.avgDays}</Num>}
               unit="يومًا"
-              note={/* doc KPI 1 */ "المستهدف بانتظار المؤسسة"}
             />
             <Stat
               label="المنجزة ضمن المدة المستهدفة"
               value={<Num>{pct(ks.inTarget)}</Num>}
-              note={/* doc KPI 2 */ `المدة المؤقتة ${countOf(PAY_TARGET_DAYS, NOUN.day)}`}
+              hint={/* doc KPI 2 */ `المدة المستهدفة ${countOf(PAY_TARGET_DAYS, NOUN.day)}`}
               bar={{ w: `${ks.inTarget}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة تنفيذ الصرف المالي"
               value={<Num>{ks.financeDays}</Num>}
               unit="يومًا"
-              note={/* doc KPI 3 */ "من اعتماد مدير المنح حتى التحويل"}
+              hint={/* doc KPI 3 */ "من اعتماد مدير المنح حتى التحويل"}
             />
             <Stat
               label="الالتزام بجدول الدفعات"
               value={<Num>{pct(ks.onSchedule)}</Num>}
-              note={/* doc KPI 4 */ "المستهدف بانتظار المؤسسة"}
+
               bar={{ w: `${ks.onSchedule}%`, c: 'var(--lime)' }}
             />
-          </div>
+          </StatRow>
 
           {/* Stage tabs - same tab row as other inboxes, each tab counted within the current scope. */}
           <Segments
@@ -503,7 +502,6 @@ export default function PaymentsPage() {
             <Glass id={STAGE_ANCHORS.includes(hashId) ? hashId : undefined}>
               <Empty
                 title="لا توجد طلبات بهذه الفلاتر."
-                note="وسّع النطاق، أو اختر مرحلة أخرى من الشرائح أعلاه."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
@@ -529,7 +527,6 @@ export default function PaymentsPage() {
               </Glass>
               {grouped && (
                 <p className="sub tcen">
-                  التجميع يعرض كل النتائج ·{' '}
                   <span className="num">{countLeaves(groupTree(sorted, group))}</span> مجموعات ·{' '}
                   <button className="lnk" onClick={() => set({ group: undefined })}>
                     إلغاء التجميع
@@ -571,11 +568,7 @@ export default function PaymentsPage() {
                       ? 'لا يوجد طلب مصروف في النطاق الحالي.'
                       : 'لا يوجد طلب مفتوح في النطاق الحالي.'
                   }
-                  note={
-                    scopeEntity
-                      ? 'الصندوق يعرض طلبات هذه الدورة فقط · المبالغ المصروفة سابقًا محسوبة في ملف الجهة.'
-                      : 'اختر مرحلة أخرى من الشرائح أعلاه.'
-                  }
+
                 />
               </Glass>
             )}

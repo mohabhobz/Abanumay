@@ -90,10 +90,7 @@ export function PayExceptions({ request: r }: { request: PayRequest }) {
           </div>
           {file && <p className="sub cnote">المرفق: {file}</p>}
           {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
-          <p className="sub cnote">
-            الاستثناء من شرط صلاحية مدير المنح، ويرفع {/* doc rules 3 · 6 */}شرط اكتمال المستندات أو شرط الدفعة وحدهما · أما سريان الاتفاقية
-            والمحجوز وسقف المنحة فضوابط مالية لا تُستثنى. ويُغلق التسجيل باعتماد الإدارة المالية لأمر الصرف.
-          </p>
+
         </>
       )}
     </Glass>

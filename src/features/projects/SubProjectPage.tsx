@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Steps, Tabs, Tag, icons, type StepItem,
+  BackTo, DateText, DockActions, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Steps, Tabs, Tag, icons, type StepItem,
 } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -11,7 +11,6 @@ import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
 import { entityById } from '@/data/mock/entities'
 import { isolate, nf } from '@/lib/format'
-import { noteFirst } from '@/lib/dock'
 import {
   SUB_IMPL_SAY, SUB_STATE_SAY, SUB_STATE_TONE, SUB_STEPS, completeSub, decideSubs, pfActivities, pfMoney, profileOf, recommendSubs,
   rejectSubDirect, returnSub, saveSubInfo, sendSubs, studySubs, subIssues, subOf, subStep, submitSubResults, usePartners,
@@ -45,7 +44,7 @@ export default function SubProjectPage() {
   usePartners()
   const { role, user } = useRole()
   const [tab, setTab] = useState<TabKey>('data')
-  const [note, setNote] = useState('')
+  const [, setNote] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const found = subOf(id, sid)
   const back = `${ROUTES.portfolio(id)}${asPartner ? '?as=partner' : ''}`
@@ -55,7 +54,7 @@ export default function SubProjectPage() {
       <AppLayout assistantContext={assistFor.page('المشروع الفرعي')}>
         <div className="viewstack"><div className="screen col">
           <BackTo label="المحفظة" onClick={() => navigate(back)} />
-          <Glass><Empty title="المشروع الفرعي غير موجود." note="تُفتح المشاريع الفرعية من محفظتها." /></Glass>
+          <Glass><Empty title="المشروع الفرعي غير موجود." /></Glass>
         </div></div>
       </AppLayout>
     )
@@ -99,7 +98,6 @@ export default function SubProjectPage() {
     )
   }
   const recording = entity && (x.state === 'approved' || (x.state === 'closing' && !x.ready))
-  const needNote = acts.some((a) => a.needsNote)
   const holder = HOLDER[at]
 
   const readings: Reading[] = [
@@ -151,7 +149,7 @@ export default function SubProjectPage() {
           <div className="g2">
             <div className="col">
               <Glass>
-                <Head title="مسار المشروع الفرعي" meta={<span className="sub">الجهة · المشرف · المدير · التنفيذ · النتائج</span>} />
+                <Head title="مسار المشروع الفرعي" />
                 <Steps items={steps} flow="row" />
               </Glass>
 
@@ -197,24 +195,15 @@ export default function SubProjectPage() {
                 <Person name={user.name} size="lg" quiet={false} />
                 <span className="decsent">قرارك في <b>{x.name}</b><span className="decsep" />{nf.format(x.amount)} ريال</span>
               </div>
-              <div className="payact-g">
-                {needNote && (
-                  <label className="payact-n">
-                    <span className="vis-h">الملاحظة</span>
-                    <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="سبب الإعادة أو الرفض · إلزامي" />
-                  </label>
-                )}
-                <div className="rowf gp-2">
-                  {recording && acts.length === 0 && <button type="button" className="btn btn-p" onClick={() => setTab('results')}>سجّل النتائج</button>}
-                  {noteFirst(acts).map((a) => {
-                    const stop = a.needsNote && !note.trim() ? 'اكتب الملاحظة أولًا' : ''
-                    return (
-                      <button key={a.key} type="button" className={`btn ${a.kind}`} data-needs-note={a.needsNote ? '' : undefined} disabled={Boolean(stop)} title={stop} onClick={() => r(a.run(note), a.label)}>
-                        {a.label}
-                      </button>
-                    )
-                  })}
-                </div>
+              {/* Client 26 Oct · the bar holds the buttons only · each one confirms in its popup, with the reason there */}
+              <div className="payact-g rowf gp-2">
+                {recording && acts.length === 0 && <button type="button" className="btn btn-p" onClick={() => setTab('results')}>سجّل النتائج</button>}
+                <DockActions
+                  actions={acts}
+                  subject={<>{x.name} · {nf.format(x.amount)} ريال</>}
+                  placeholder="سبب الإعادة أو الرفض · يصل مع القرار"
+                  onRun={(a, n) => { const out = a.run(n); r(out, a.label); return out }}
+                />
               </div>
             </div>
           </div>
@@ -256,7 +245,7 @@ function DataCard({ pf, x, edit, by }: { pf: PortfolioRec; x: SubProject; edit: 
           { k: 'قيمة المنحة', v: <Money sm>{x.amount}</Money> },
           { k: 'التكلفة', v: x.cost ? <Money sm>{x.cost}</Money> : '—' },
           { k: 'المخرجات المستهدفة', v: x.outputs || '—' },
-          { k: 'التقييم التفصيلي', v: x.evalFile ?? <span className="sub">ملف حسب نموذج التقييم المعتمد للمحفظة</span> },
+          { k: 'التقييم التفصيلي', v: x.evalFile ?? '—' },
           { k: 'المرفقات', v: x.files.join(' · ') || '—' },
           ...(act ? [{ k: 'نشاط خطة المحفظة', v: act.label }] : []),
           { k: 'أضافه', v: <><Person name={x.addedBy} /> <span className="sub">· <DateText>{x.addedAt}</DateText></span></> },
@@ -289,11 +278,11 @@ function PlanCard({ x }: { x: SubProject }) {
   return (
     <>
       <Glass>
-        <Head title="المخرجات" meta={<span className="sub">منسوخة من المحفظة عند الإنشاء</span>} />
+        <Head title="المخرجات" />
         {x.outputsCopy?.length ? <ul className="spj-list">{x.outputsCopy.map((o) => <li key={o}>{isolate(o)}</li>)}</ul> : <Empty title="لا مخرجات في المحفظة." />}
       </Glass>
       <Glass className="tblcard">
-        <Head title="مراحل التنفيذ" meta={<span className="sub">{x.phasesCopy?.length ?? 0} مراحل · من خطة المحفظة</span>} />
+        <Head title="مراحل التنفيذ" meta={<span className="sub">{x.phasesCopy?.length ?? 0} مراحل</span>} />
         {x.phasesCopy?.length ? (
           <div className="tblwrap">
             <table className="tbl" aria-label="مراحل التنفيذ">
@@ -305,7 +294,7 @@ function PlanCard({ x }: { x: SubProject }) {
               </tbody>
             </table>
           </div>
-        ) : <Empty title="لا مراحل · خطة المحفظة لم تُعتمد عند إنشائه." />}
+        ) : <Empty title="لا مراحل." />}
       </Glass>
     </>
   )
@@ -321,7 +310,7 @@ function ResultsCard({ pf, x, recording, by }: { pf: PortfolioRec; x: SubProject
   }
   return (
     <Glass>
-      <Head title="نتائج المشروع الفرعي" meta={x.results ? <Tag tone={x.state === 'done' ? 'ok' : 'warn'}>{x.state === 'done' ? 'معتمدة' : x.ready ? 'عند مشرف المنح' : 'معادة'}</Tag> : <span className="sub">تسجّلها الجهة بعد الاعتماد · يعتمدها مشرف المنح</span>} />
+      <Head title="نتائج المشروع الفرعي" meta={x.results ? <Tag tone={x.state === 'done' ? 'ok' : 'warn'}>{x.state === 'done' ? 'معتمدة' : x.ready ? 'عند مشرف المنح' : 'معادة'}</Tag> : undefined} />
       {x.results && (
         <KV rows={[
           { k: 'التكلفة الفعلية', v: <Money sm>{x.results.cost}</Money> },
@@ -332,7 +321,7 @@ function ResultsCard({ pf, x, recording, by }: { pf: PortfolioRec; x: SubProject
         ]} />
       )}
       {x.outcome && x.state === 'closing' && !x.ready && <p className="bad cnote">أُعيدت · {isolate(x.outcome.note)}</p>}
-      {!x.results && !recording && <p className="sub">{['draft', 'submitted', 'study', 'pending'].includes(x.state) ? 'تُسجَّل النتائج بعد اعتماد المشروع الفرعي.' : 'لا نتائج مسجّلة.'}</p>}
+      {!x.results && !recording && <p className="sub">لا نتائج مسجّلة.</p>}
       {recording && (
         <div className="ptn-form">
           <div className="regfields">

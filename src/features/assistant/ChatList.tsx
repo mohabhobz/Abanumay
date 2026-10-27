@@ -175,7 +175,7 @@ export function ChatList({
       </div>
 
       <div className="cl-foot sub">
-        المحادثات محفوظة لك وحدك · <b>{chats.length}</b> محادثة
+        <b>{chats.length}</b> محادثة
       </div>
     </aside>
   )

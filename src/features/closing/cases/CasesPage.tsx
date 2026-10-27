@@ -33,7 +33,7 @@ export default function CasesPage() {
           <header>
             <div>
               <h1 className="ptitle">حالات التعثر</h1>
-              <p className="sub mt-1">إيقاف المشاريع وتعديل قيمها والإغلاق المباشر والمبالغ المستردة · <Num>{all.length}</Num> حالة</p>
+              <p className="sub mt-1"><Num>{all.length}</Num> حالة</p>
             </div>
           </header>
           <Glass className="ftoolbar">
@@ -71,7 +71,7 @@ export default function CasesPage() {
               </ul>
             ) : res.length || kinds.length
               ? <Empty title="لا حالات بهذه النتيجة." actions={<button type="button" className="btn btn-2" onClick={() => set({ res: undefined, kind: undefined })}>مسح الفلتر</button>} />
-              : <Empty title="لا حالات تعثّر." note="تُفتح الحالة من تبويب الإغلاق في صفحة المشروع." />}
+              : <Empty title="لا حالات تعثّر." />}
           </Glass>
         </div>
       </div>

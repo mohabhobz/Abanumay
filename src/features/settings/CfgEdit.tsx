@@ -1,10 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { Nil, Tag } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
-import { Link } from 'react-router-dom'
 import { CFG, isConfigured, persist } from '@/lib/config'
 import { useRole } from '@/hooks/useRole'
-import { ROUTES } from '@/app/routes'
 import { NOUN, countOf, nf } from '@/lib/format'
 import { logSettings } from '@/data/shared/settingsLog'
 import { useLocation } from 'react-router-dom'
@@ -89,12 +87,7 @@ export function StageLimits({ stages, limits, cfgKey, countAt, unitLabel = 'ال
 
   return (
     <>
-      <p className="sub cnote">
-        {configured
-          ? <>عُدّلت هذه المدد من الإعدادات · وتُقرأ في ألوان «متأخر» وقوائم «اليوم» فورًا</>
-          : <><Tag tone="warn">افتراضي</Tag> مدد مؤقتة حتى تؤكدها المؤسسة · وتعديلها يغيّر من يُعدّ متأخرًا فورًا</>}
-        {!admin && <> · <Tag tone="mute">يحرّرها مدير النظام</Tag> من <Link className="lnk" to={ROUTES.escalationSettings}>آلية التصعيد</Link></>}
-      </p>
+      {!configured && <p className="sub cnote"><Tag tone="warn">افتراضي</Tag></p>}
       <table className="tbl cfgtbl">
         <thead>
           <tr>

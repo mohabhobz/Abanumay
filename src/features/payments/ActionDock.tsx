@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Icon, icons, Money, Person } from '@/components/ui'
+import { DecisionDialog, Icon, icons, Money, Person, Tag } from '@/components/ui'
 import { nf } from '@/lib/format'
 import { useProximity } from '@/hooks/useProximity'
 import { payStops, type PayAction } from '@/data/payments/store'
@@ -23,16 +23,15 @@ export interface ActionDockProps {
   user: CurrentUser
   request: PayRequest
   actions: PayAction[]
-  note: string
-  onNote: (v: string) => void
-  onAct: (a: PayAction, file?: string, amount?: number) => void
+  /** Runs the decision · returns what refused it, which the popup shows */
+  onAct: (a: PayAction, file?: string, amount?: number, note?: string) => string[] | void
 }
 
-export function ActionDock({ user, request, actions, note, onNote, onAct }: ActionDockProps) {
+export function ActionDock({ user, request, actions, onAct }: ActionDockProps) {
   const bar = useRef<HTMLDivElement>(null)
   useProximity(bar)
-  const needNote = actions.some((a) => a.needsNote)
-  const needAmount = actions.some((a) => a.needsAmount)
+  const [pick, setPick] = useState<PayAction | null>(null)
+  const needAmount = Boolean(pick?.needsAmount)
   const [amount, setAmount] = useState('')
   const amt = amount === '' ? request.due : Number(amount) || 0
   /* 9.2.16 · the transfer's proof is picked first, then the transfer confirmed · a pick alone never executes it */
@@ -50,57 +49,22 @@ export function ActionDock({ user, request, actions, note, onNote, onAct }: Acti
           </span>
         </div>
 
-        {/* The field and buttons form one group that wraps together. */}
+        {/* Client 26 Oct · the bar holds the buttons only · each one opens its popup · the amount, the
+            proof and the reason the decision needs are asked there */}
         <div className="payact-g">
-          {needAmount && (
-            <label className="payact-a">
-              <span className="vis-h">قيمة إذن الصرف</span>
-              <input
-                className="num" inputMode="numeric" aria-label="قيمة إذن الصرف"
-                value={nf.format(amount === '' ? request.due : Number(amount) || 0)}
-                onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
-              />
-            </label>
-          )}
-          {needNote && (
-            <label className="payact-n">
-              <span className="vis-h">ملاحظات الإعادة</span>
-              <input
-                value={note}
-                onChange={(e) => onNote(e.target.value)}
-                placeholder="السبب وما يلزم استكماله · إلزامي للإعادة والرفض والإلغاء"
-              />
-            </label>
-          )}
-
           <div className="rowf gp-2">
             {noteFirst(actions).map((a) => {
               /* Rules 9 · 14 · 11 · 10 - a forward exit stays locked until every control passes,
                  and the reason is written in `title`, not hidden in color alone. */
-              const stops = payStops(request, a.act, a.needsAmount ? amt : request.asked)
-              const stop = a.needsNote && !note.trim() ? 'اكتب السبب أولًا' : stops[0] ?? ''
-              if (a.needsFile && !stop) {
-                const picked = proof?.act === a.act ? proof : null
-                return (
-                  <span key={a.label} className="rowf gp-2">
-                    <label className={`btn ${picked ? 'btn-2' : a.kind}`} title={`ارفع ${a.needsFile}` /* doc · step a.step */}>
-                      <Icon name={icons.upload} size="sm" />{picked ? picked.name : a.needsFile}
-                      <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label={`${a.label} · ${a.needsFile}`} onChange={(e) => { const f = e.target.files?.[0]; if (f) setProof({ act: a.act, name: f.name }); e.target.value = '' }} />
-                    </label>
-                    <button className={`btn ${a.kind}`} disabled={!picked} title={picked ? undefined : `ارفع ${a.needsFile} أولًا`} onClick={() => { if (picked) { onAct(a, picked.name); setProof(null) } }}>
-                      {a.confirm ?? a.label}
-                    </button>
-                  </span>
-                )
-              }
+              const stops = payStops(request, a.act, a.needsAmount ? request.due : request.asked)
               return (
                 <button
                   key={a.label}
                   className={`btn ${a.kind}`}
                   data-needs-note={a.needsNote ? '' : undefined}
-                  disabled={Boolean(stop)}
-                  title={stop || undefined /* doc · step a.step */}
-                  onClick={() => onAct(a, undefined, a.needsAmount ? amt : undefined)}
+                  disabled={Boolean(stops[0]) && !a.needsAmount}
+                  title={stops[0] || undefined /* doc · step a.step */}
+                  onClick={() => { setPick(a); setAmount(''); setProof(null) }}
                 >
                   {a.label}
                 </button>
@@ -109,6 +73,43 @@ export function ActionDock({ user, request, actions, note, onNote, onAct }: Acti
           </div>
         </div>
       </div>
+      {pick && (
+        <DecisionDialog
+          title={pick.label}
+          tone={pick.kind === 'btn-d' ? 'btn-d' : 'btn-p'}
+          subject={<>{request.projectName} · الدفعة {request.no} · <Money>{pick.needsAmount ? amt : request.asked}</Money></>}
+          note={pick.needsNote ? 'required' : 'optional'}
+          notePlaceholder={pick.needsNote ? 'السبب وما يلزم استكماله · يصل مع القرار' : undefined}
+          stops={payStops(request, pick.act, pick.needsAmount ? amt : request.asked)}
+          ready={!pick.needsFile || Boolean(proof)}
+          confirmLabel={pick.confirm ?? `تأكيد: ${pick.label}`}
+          onClose={() => setPick(null)}
+          onConfirm={(n) => onAct(pick, proof?.name, pick.needsAmount ? amt : undefined, n)}
+        >
+          {pick.needsAmount && (
+            <label className="regf">
+              <span className="lb">قيمة إذن الصرف<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <span className="fld">
+                <input className="num" inputMode="numeric" aria-label="قيمة إذن الصرف"
+                  value={nf.format(amount === '' ? request.due : Number(amount) || 0)}
+                  onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} />
+              </span>
+            </label>
+          )}
+          {pick.needsFile && (
+            <div className="regf">
+              <span className="lb">{pick.needsFile}<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <span className="apv-row">
+                <label className="btn btn-2 btn-sm">
+                  <Icon name={icons.upload} size="sm" />{proof ? 'استبدل الملف' : 'ارفع الملف'}
+                  <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label={`${pick.label} · ${pick.needsFile}`} onChange={(e) => { const f = e.target.files?.[0]; if (f) setProof({ act: pick.act, name: f.name }); e.target.value = '' }} />
+                </label>
+                {proof ? <Tag tone="ok">{proof.name}</Tag> : <span className="sub">لا ملف بعد</span>}
+              </span>
+            </div>
+          )}
+        </DecisionDialog>
+      )}
     </div>
   )
 }

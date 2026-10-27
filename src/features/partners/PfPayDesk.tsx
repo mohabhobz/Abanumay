@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, Money, MoneyField, Tag } from '@/components/ui'
+import { DockActions, DateText, Glass, Head, Money, MoneyField, Tag } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -20,7 +20,7 @@ export function PfPayDesk() {
   const list = PORTFOLIOS.filter((pf) => pf.stage === 'approved' || pf.requests.length > 0)
   return (
     <Glass>
-      <Head title="صرف دفعات المحافظ" meta={<span className="sub">إجراء صرف الدفعات · على مستوى المحفظة وفق جدولها</span>} />
+      <Head title="صرف دفعات المحافظ" />
       {list.length ? list.map((pf) => <PfPays key={pf.id} pf={pf} />) : <p className="sub cnote">لا محافظ معتمدة لها دفعات.</p>}
     </Glass>
   )
@@ -29,16 +29,16 @@ export function PfPayDesk() {
 function PfPays({ pf }: { pf: PortfolioRec }) {
   const { role, user } = useRole()
   const [ref, setRef] = useState('')
-  const [note, setNote] = useState('')
   const [why, setWhy] = useState('')
   const [amt, setAmt] = useState('')
   const [docs, setDocs] = useState<string[]>([])
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   const sup = role.key === 'supervisor'
-  const act = (rq: PfRequest, a: 'qualify' | 'permit' | 'approve' | 'order' | 'pay' | 'return', ok: string) => {
+  const act = (rq: PfRequest, a: 'qualify' | 'permit' | 'approve' | 'order' | 'pay' | 'return', ok: string, note: string) => {
     const out = actOnPfReq(pf.id, rq.id, a, note, user.name, ref, role.key, a === 'permit' ? (Number(amt) || rq.asked || rq.amount) : undefined)
     setSaid(out.length ? { bad: out } : { ok })
-    if (!out.length) { setNote(''); setRef(''); setAmt('') }
+    if (!out.length) { setRef(''); setAmt('') }
+    return out
   }
   const mine = (rq: PfRequest) =>
     ((rq.state === 'supervisor' || rq.state === 'eligible') && role.key === 'supervisor') || (rq.state === 'manager' && role.key === 'grants-manager')
@@ -59,13 +59,22 @@ function PfPays({ pf }: { pf: PortfolioRec }) {
               {rq?.why && <span className="sub">{rq.why}{rq.docs?.length ? ` · ${rq.docs.join('، ')}` : ''}</span>}
               {rq && mine(rq) && (
                 <span className="rowf gp-2">
-                  {rq.state === 'supervisor' && <button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'qualify', 'اعتماد المتطلبات')}>اعتمد المتطلبات</button>}
-                  {rq.state === 'eligible' && <><MoneyField value={amt} onChange={setAmt} label={`قيمة إذن الدفعة ${rq.no}`} placeholder={nf.format(rq.asked ?? rq.amount)} /><button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'permit', 'إذن الصرف')}>أنشئ إذن الصرف</button></>}
-                  {(rq.state === 'manager' || rq.state === 'exec') && <button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'approve', 'اعتماد الإذن')}>اعتمد الإذن</button>}
-                  {rq.state === 'finance' && <button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'order', 'اعتماد أمر الصرف')}>اعتمد أمر الصرف</button>}
-                  {rq.state === 'order' && <><span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label={`رقم أمر التحويل · ${pf.name} · الدفعة ${rq.no}`} placeholder="رقم أمر التحويل" /></span><button type="button" className="btn btn-p btn-sm" onClick={() => act(rq, 'pay', 'صرف الدفعة')}>صرف</button></>}
-                  <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label={`سبب الإعادة · ${pf.name}`} placeholder="سبب الإعادة" /></span>
-                  <button type="button" className="btn btn-2 btn-sm" onClick={() => act(rq, 'return', 'إعادة الطلب')}>أعد</button>
+                  {rq.state === 'eligible' && <MoneyField value={amt} onChange={setAmt} label={`قيمة إذن الدفعة ${rq.no}`} placeholder={nf.format(rq.asked ?? rq.amount)} />}
+                  {rq.state === 'order' && <span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label={`رقم أمر التحويل · ${pf.name} · الدفعة ${rq.no}`} placeholder="رقم أمر التحويل" /></span>}
+                  {/* Client 26 Oct · each decision confirms in its popup · the return's reason there */}
+                  <DockActions
+                    actions={[
+                      { label: 'أعد', kind: 'btn-2 btn-sm', needsNote: true, a: 'return' as const, ok: 'إعادة الطلب' },
+                      ...(rq.state === 'supervisor' ? [{ label: 'اعتمد المتطلبات', kind: 'btn-p btn-sm', a: 'qualify' as const, ok: 'اعتماد المتطلبات' }] : []),
+                      ...(rq.state === 'eligible' ? [{ label: 'أنشئ إذن الصرف', kind: 'btn-p btn-sm', a: 'permit' as const, ok: 'إذن الصرف' }] : []),
+                      ...(rq.state === 'manager' || rq.state === 'exec' ? [{ label: 'اعتمد الإذن', kind: 'btn-p btn-sm', a: 'approve' as const, ok: 'اعتماد الإذن' }] : []),
+                      ...(rq.state === 'finance' ? [{ label: 'اعتمد أمر الصرف', kind: 'btn-p btn-sm', a: 'order' as const, ok: 'اعتماد أمر الصرف' }] : []),
+                      ...(rq.state === 'order' ? [{ label: 'صرف', kind: 'btn-p btn-sm', a: 'pay' as const, ok: 'صرف الدفعة' }] : []),
+                    ]}
+                    subject={<>{pf.name} · الدفعة {rq.no} · {nf.format(rq.asked ?? rq.amount)} ريال</>}
+                    placeholder="سبب الإعادة"
+                    onRun={(x, n) => act(rq, x.a, x.ok, n)}
+                  />
                 </span>
               )}
             </li>

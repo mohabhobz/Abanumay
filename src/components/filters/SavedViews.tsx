@@ -86,7 +86,7 @@ export function SavedViews({
 
           {views.length === 0 ? (
             <div className="fmenu-e sub">
-              لا توجد أوضاع محفوظة. اضبط الشاشة كما تريد واحفظها باسم لتستعيدها بضغطة.
+              لا توجد أوضاع محفوظة.
             </div>
           ) : (
             <div className="fmenu-l" role="menu">
@@ -126,12 +126,6 @@ export function SavedViews({
             <button className="btn btn-p btn-sm" disabled={!trimmed} onClick={save}>
               {existing ? 'حدّث' : 'احفظ'}
             </button>
-          </div>
-          {/* ⚠️ **What gets saved is stated, not left to guessing.** The button says "Save," and
-              the user asks "save what?" — this line is the answer, and it's also what makes the
-              "one saved state saves everything" decision legible instead of looking like a gap. */}
-          <div className="fviews-n sub">
-            يُحفظ: الفلتر والبحث والترتيب <b>والتجميع</b> وعدد الصفوف.
           </div>
           {existing && (
             <div className="fviews-n sub">يوجد وضع بالاسم نفسه، وسيُحدَّث عند الحفظ.</div>

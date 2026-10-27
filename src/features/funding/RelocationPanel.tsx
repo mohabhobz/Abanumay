@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { DateText, FieldSelect, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
+import { DockActions, DateText, FieldSelect, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { CfgNum } from '@/features/settings/CfgEdit'
 import { linesFor } from '@/features/budget/lines'
 import { isolate, nf } from '@/lib/format'
@@ -83,7 +83,6 @@ export function RelocationPanel({ row }: { row: ProjectRow }) {
   const list = relocationsOf(row.id)
   const open = openRelocation(row.id)
   const [edit, setEdit] = useState<Relocation | 'new' | null>(null)
-  const [dec, setDec] = useState('')
   const [said, setSaid] = useState<string[]>([])
   const paid = paidPayments(row.id)
 
@@ -92,7 +91,7 @@ export function RelocationPanel({ row }: { row: ProjectRow }) {
 
   return (
     <>
-      <h4 className="fnd-h">إعادة تسكين المشروع <span className="sub">{/* doc 1.3b */}بطلب يُعتمد ثم يُنفَّذ تلقائيًا</span></h4>
+      <h4 className="fnd-h">إعادة تسكين المشروع{/* doc 1.3b */}</h4>
       {list.length > 0 && <RelocList list={list} />}
       {open?.state === 'submitted' && mayApproveRelocation(role) && (
         <div className="apv-rec">
@@ -106,9 +105,13 @@ export function RelocationPanel({ row }: { row: ProjectRow }) {
           <SideBySide from={l.shares} to={open.to} scope={open.scope} />
           <Effects r={{ ...open, from: l.shares }} />
           <div className="apv-row mt-2">
-            <span className="fld"><input value={dec} onChange={(e) => setDec(e.target.value)} placeholder="ملاحظات القرار · إلزامية للإعادة" aria-label="ملاحظات قرار إعادة التسكين" /></span>
-            <button className="btn btn-p btn-sm" onClick={() => { const w = decideRelocation(open.id, 'approve', dec, me); setSaid(w); if (!w.length) setDec('') }}>اعتمد ونفّذ</button>
-            <button className="btn btn-2 btn-sm" onClick={() => { const w = decideRelocation(open.id, 'return', dec, me); setSaid(w); if (!w.length) setDec('') }}>أعد للمراجعة</button>
+            {/* Client 26 Oct · the decision confirms in its popup · the return's reason there */}
+            <DockActions
+              actions={[{ label: 'أعد للمراجعة', kind: 'btn-2 btn-sm', needsNote: true, d: 'return' as const }, { label: 'اعتمد ونفّذ', kind: 'btn-p btn-sm', d: 'approve' as const }]}
+              subject={<>{open.id} · {SCOPE_SAY[open.scope]}</>}
+              placeholder="ملاحظات القرار"
+              onRun={(x, n) => { const w = decideRelocation(open.id, x.d, n, me); setSaid(w); return w }}
+            />
           </div>
           {said.length > 0 && <ul className="apv-sig">{said.map((x) => <li key={x} className="no"><Icon name={icons.alert} size="sm" /><span>{x}</span></li>)}</ul>}
         </div>

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Empty, Glass, Icon, icons, MultiSelect, Num, SearchBox, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { isolate, nf, NOUN, nounAfter } from '@/lib/format'
+import { nf, NOUN, nounAfter } from '@/lib/format'
 import { LIVE_SPECS, catalogTotals, type LiveSpec } from '@/data/liveReports'
 
 /**
@@ -61,12 +61,6 @@ export function Catalog() {
           <Stat n={catalogTotals.charts} k={nounAfter(catalogTotals.charts, NOUN.chart)} />
           <Stat n={catalogTotals.rows} k={`${nounAfter(catalogTotals.rows, NOUN.row)} في الشاشات`} big />
         </div>
-        <p className="mut rpsec-n prose">
-          كل شاشة تقرير في النظام العامل موصوفة هنا بالكامل: أعمدتها بأسمائها،
-          وفلاترها بعدد خياراتها، ورسومها، ومستويات التعمّق إن وُجدت. اضغط أي
-          شاشة لعرض جدولها بأعمدته الحقيقية، <b>القيم في الصفوف تجريبية</b>،
-          والأعمدة والفلاتر منقولة كما هي.
-        </p>
       </section>
 
       {/* The system filter bar, same as the projects list: search, a status
@@ -104,7 +98,7 @@ export function Catalog() {
       </Glass>
 
       {list.length === 0 ? (
-        <Glass><Empty title="لا توجد شاشة بهذا الوصف." note="ابحث باسم آخر أو امسح البحث." /></Glass>
+        <Glass><Empty title="لا توجد شاشة بهذا الوصف." /></Glass>
       ) : (
         <div className="catg">
           {list.map((s) => <Card key={s.key} s={s} />)}
@@ -138,7 +132,6 @@ function Card({ s }: { s: LiveSpec }) {
       <code className="mono catc-p">control/{s.path}</code>
 
       <p className="catc-q">{s.question}</p>
-      <p className="catc-w mut">{s.what}</p>
 
       {/* The counters are what tell you "what's in this screen" at a glance. */}
       <span className="catc-n">
@@ -151,7 +144,6 @@ function Card({ s }: { s: LiveSpec }) {
         )}
       </span>
 
-      {s.finding && <span className="catc-f">{isolate(s.finding)}</span>}
     </Link>
   )
 }

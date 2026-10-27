@@ -169,12 +169,22 @@ export const COLS: Col[] = [
        Progress" is a 75px label, and the column was 96px minus 24px of cell
        padding (2×12) = 72px, so the label was being truncated at a 1440px
        viewport width. */
-    w: 196,
+    w: 128,
     label: 'الحالة',
     def: true,
-    /* Client 19 Oct · the status names where the project stands · in study, its seat */
-    cell: (r) => { const t = statusSeat(r); const seat = seatOf(r); return <span className="tagfit" title={t}><Tag tone={groupTone(r.statusGroup)}>{r.statusGroup}</Tag>{seat && <span className="sub tseat">{seat}</span>}</span> },
-    text: (r) => statusSeat(r),
+    /* Client sheet 26 Oct (#113) · one status per cell · the seat that sat under it is its own column */
+    cell: (r) => <span className="tagfit" title={r.statusGroup}><Tag tone={groupTone(r.statusGroup)}>{r.statusGroup}</Tag></span>,
+    text: (r) => r.statusGroup,
+  },
+  /* Client sheet 26 Oct (#113) · where in the approvals the project sits · its own column */
+  {
+    key: 'seat',
+    w: 140,
+    label: 'مرحلة الاعتماد',
+    def: true,
+    added: '2026-10-26',
+    cell: (r) => { const seat = seatOf(r); return seat ? <span className="trim1" title={statusSeat(r)}>{seat}</span> : <span className="sub">—</span> },
+    text: (r) => seatOf(r) ?? '',
   },
   /* Client sheet 24 Oct (#95) · the outcome · مكتمل / مرفوض / ملغي, empty while under way */
   {

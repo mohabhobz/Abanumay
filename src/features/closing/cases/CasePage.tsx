@@ -2,14 +2,13 @@ import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, MoneyField, Mono, Person, Tag, icons } from '@/components/ui'
+import { Tabs, BackTo, DateText, DockActions, Empty, Glass, Head, Icon, KV, Money, MoneyField, Mono, Person, Tag, icons } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate, nf } from '@/lib/format'
-import { noteFirst } from '@/lib/dock'
+import { isolate } from '@/lib/format'
 import {
   CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, actOnCase, attachCaseDoc, caseActions, caseById, caseStops,
   settleCase, stopPhase, useClosing,
@@ -35,13 +34,14 @@ import { caseOutcome } from '@/data/shared/outcome'
 export default function CasePage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
+  const caseTab = params.get('tab') === 'log' ? 'log' : 'data'
   const asEntity = params.get('as') === 'entity'
   const { role, user } = useRole()
   useClosing()
   usePayments()
   const c = caseById(id)
-  const [note, setNote] = useState('')
+  const [, setNote] = useState('')
   const [actual, setActual] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
 
@@ -50,7 +50,7 @@ export default function CasePage() {
       <AppLayout assistantContext={assistFor.page('حالة تعثّر')}>
         <div className="viewstack"><div className="screen col">
           <BackTo label="حالات التعثر" onClick={() => navigate(ROUTES.distresses)} />
-          <Glass><Empty title="لا توجد حالة بهذا الرقم." note="ارجع إلى قائمة حالات التعثر." /></Glass>
+          <Glass><Empty title="لا توجد حالة بهذا الرقم." /></Glass>
         </div></div>
       </AppLayout>
     )
@@ -59,12 +59,6 @@ export default function CasePage() {
   const actions = caseActions(c, role.key, asEntity)
   const phase = stopPhase(c.projectId)
   const s = c.settlement
-  const needNote = actions.some((a) => a.needsNote)
-  const act = (a: (typeof actions)[number]) => {
-    const out = actOnCase(c.id, a.act, note, user.name, role.key)
-    setSaid(out.length ? { bad: out } : { ok: a.label })
-    if (!out.length) setNote('')
-  }
 
   /* 17 Oct · the assistant suggests · the case's own exits · a rejection stays human */
   const nextPlan = suggestNext(actions, {
@@ -103,8 +97,13 @@ export default function CasePage() {
             </Glass>
           )}
 
+          {/* Client 26 Oct · every record reads its data and its log in tabs */}
+          <Tabs items={[{ slug: 'data', label: 'بيانات الحالة' }, { slug: 'log', label: 'سجل الحالة', count: c.log.length || undefined }]} active={caseTab}
+            onChange={(x) => { const n = new URLSearchParams(params); if (x === 'data') n.delete('tab'); else n.set('tab', x); setParams(n, { replace: true }) }} />
+
           <div className="g2">
             <div className="col">
+              {caseTab === 'data' && <>
               <Glass>
                 <Head title="القرار" meta={<Person name={c.openedBy} />} />
                 <KV
@@ -175,12 +174,12 @@ export default function CasePage() {
                       </button>
                     </div>
                   )}
-                  <p className="sub cnote">يُطلب من الجهة التقرير المالي التنفيذي وأدلة المخرجات، ويعتمد المشرف ما صُرف فعلًا من {nf.format(c.paid)} · والفرق يُسترد ويعود إلى مخصص المجال.</p>
                 </Glass>
               )}
 
               {c.recovery && <RecoveryCard rec={c.recovery} owner={{ kind: 'case', id: c.id }} asEntity={asEntity} />}
-              <Glass>
+              </>}
+              {caseTab === 'log' && <Glass>
                 <Head title="سجلّ الحالة" meta={<span className="sub">{c.kind === 'direct' ? DIRECT_PATH.join(' · ') : <>مشرف المنح · مدير المنح{caseFinalIsMgr(c) ? '' : ' · المدير التنفيذي'}</>}</span>} />
                 <ul className="plchg">
                   {c.log.map((a, i) => (
@@ -190,7 +189,7 @@ export default function CasePage() {
                     </li>
                   ))}
                 </ul>
-              </Glass>
+              </Glass>}
             </div>
 
             <AssistantAside suggest={actions.length > 0 ? <NextStep s={nextPlan} exec={nextExec} /> : undefined} title="قراءة الحالة" cta="اقرأ الحالة" empty="لا ملاحظات على هذه الحالة الآن." readings={readCase(c)} ask={!asEntity} />
@@ -204,23 +203,14 @@ export default function CasePage() {
                 <Person name={user.name} size="lg" quiet={false} />
                 <span className="decsent">قرارك في <b>{CASE_KIND_SAY[c.kind]}</b><span className="decsep" />{c.projectName}</span>
               </div>
+              {/* Client 26 Oct · the bar holds the buttons only · each one confirms in its popup, with the reason there */}
               <div className="payact-g">
-                {needNote && (
-                  <label className="payact-n">
-                    <span className="vis-h">الملاحظة</span>
-                    <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="سبب الإعادة أو الرفض · إلزامي" />
-                  </label>
-                )}
-                <div className="rowf gp-2">
-                  {noteFirst(actions).map((a) => {
-                    const stop = a.needsNote && !note.trim() ? 'اكتب الملاحظة أولًا' : caseStops(c, a.act)[0] ?? ''
-                    return (
-                      <button key={a.label} type="button" className={`btn ${a.kind}`} data-needs-note={a.needsNote ? '' : undefined} disabled={Boolean(stop)} title={stop || '10.9'} onClick={() => act(a)}>
-                        {a.label}
-                      </button>
-                    )
-                  })}
-                </div>
+                <DockActions
+                  actions={actions.map((a) => ({ ...a, stops: caseStops(c, a.act), why: '10.9' }))}
+                  subject={<>{CASE_KIND_SAY[c.kind]} · {c.projectName}</>}
+                  placeholder="سبب الإعادة أو الرفض · يصل مع القرار"
+                  onRun={(a, n) => { const out = actOnCase(c.id, a.act, n, user.name, role.key); if (!out.length) setSaid({ ok: a.label }); return out }}
+                />
               </div>
             </div>
           </div>

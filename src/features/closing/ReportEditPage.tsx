@@ -63,7 +63,6 @@ export default function ReportEditPage() {
             <Glass>
               <Empty
                 title="لا يوجد طلب إغلاق بهذا الرقم."
-                note="ارجع إلى صندوق الإغلاق واختر طلبًا منه."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.closings)}>
                     العودة إلى صندوق الإغلاق
@@ -137,16 +136,11 @@ export default function ReportEditPage() {
           <header>
             <div>
               <h1 className="ptitle">التقرير الختامي · {c.projectName}</h1>
-              <p className="sub mt-1">
-                {evalApproved(c)
-                  ? /* doc rule 21 */ 'اكتمل الإغلاق · الصفحة للقراءة فقط، وأي تعديل بعده يحتاج إلى إجراء جديد'
-                  : !asEntity && (c.stage === 'draft' || c.stage === 'returned')
-                    ? 'تكتب الجهة التقرير من بوابتها · الصفحة للقراءة'
-                  : closed
-                    ? /* doc rule 19 */ 'التقرير في المراجعة · يُعدَّل حين يُعاد للجهة، وكل إعادة إصدار جديد'
-                  : <>تحدّد القواعد {/* doc rule 4 */} بيانات حدًّا
-                    أدنى · والمستهدف بجانب كل منها ليظهر الفرق أثناء الكتابة</>}
-              </p>
+              {closed && (
+                <p className="sub mt-1">
+                  {evalApproved(c) ? /* doc rule 21 */ 'اكتمل الإغلاق · الصفحة للقراءة فقط' : 'الصفحة للقراءة'}
+                </p>
+              )}
             </div>
             {/* Status as text, not a colored tag - the page header isn't a card's status field.
                 Counted the same way as "not blocking". */}
@@ -156,16 +150,6 @@ export default function ReportEditPage() {
                 ? <>قبل الإرسال: <Num>{missing.length}</Num> {nounAfter(missing.length, MISSING_ITEM)}</>
                 : 'جاهز للإرسال'}</span>}
           </header>
-
-          {stopped && (
-            <Glass>
-              <Head title="متطلبات إغلاق مشروع موقوف" meta={<Tag tone="warn">وفق حالته</Tag>} />
-              <p className="sub cnote">
-                يُغلق المشروع الموقوف بما يناسب حالته{/* doc 10.4.5 */}: التقرير المالي التنفيذي، وأدلة المخرجات لما نُفّذ، وبيان ما نُفّذ حتى الإيقاف ·
-                ولا يُطلب منه التقرير الختامي الكامل.
-              </p>
-            </Glass>
-          )}
 
           {/* Client 21 Oct (#4) · the report's terms on top · the template changes how the report looks, never
               what this form asks for · the same fields whichever the entity picks */}
@@ -181,7 +165,6 @@ export default function ReportEditPage() {
                 <span className="pc-sp" />
                 <button type="button" className="btn btn-2 btn-sm" onClick={downloadTemplate}><Icon name={icons.export} size="sm" />نزّل قالب المؤسسة</button>
               </div>
-              <p className="sub cnote">يجوز تصميم الجهة الخاص بشرط أن يتضمن البنود أعلاه · وأيًّا كان النموذج تُدخل الأرقام هنا وتُقارن بالمستهدف{/* doc 10.4.7 */}.</p>
             </Glass>
           )}
 
@@ -189,7 +172,7 @@ export default function ReportEditPage() {
               the costs are two figures · the project's whole budget and the foundation's support */}
           {!stopped && (
             <Glass>
-              <Head title="المستهدف والفعلي" meta={<span className="sub">المستهدف من المشروع المعتمد · والفعلي تُدخله الجهة</span>} />
+              <Head title="المستهدف والفعلي" />
               {closed
                 ? <TargetActual c={c} />
                 : <TargetActual c={c} edit values={tva} onValue={setTva} outputs={outs} onOutput={(i, v) => setOuts((x) => x.map((y, j) => (j === i ? { ...y, achieved: v } : y)))} />}
@@ -197,7 +180,6 @@ export default function ReportEditPage() {
                 <label className="regf mt-3">
                   <span className="lb">علاقة مساهمة المؤسسة بما تحقق<b className="regf-r" aria-label="إلزامي">*</b></span>
                   <span className="fld"><textarea rows={2} value={contribution} disabled={closed} onChange={(e) => setContribution(e.target.value)} aria-label="علاقة مساهمة المؤسسة بما تحقق" placeholder="ما الذي موّلته مساهمة المؤسسة تحديدًا من المخرجات" /></span>
-                  <span className="sub regf-h">مطلوب لأن الميزانية الإجمالية أكبر من دعم المؤسسة{/* doc 10.4.4 */}</span>
                 </label>
               )}
             </Glass>
@@ -236,9 +218,6 @@ export default function ReportEditPage() {
                   placeholder="تأخّر التوريد شهرًا في المرحلة الثانية"
                 />
               </span>
-              <span className="sub regf-h">
-                أي فرق عن المستهدف بلا تفسير يعود سؤالًا من المراجعة · والإعادة تُنشئ إصدارًا جديدًا{/* doc rule 19 */}
-              </span>
             </label>
           </Glass>
 
@@ -253,7 +232,6 @@ export default function ReportEditPage() {
             />
             <DocList rows={docRows} label="مستندات التقرير الختامي وحالتها" />
             {Object.entries(reads).map(([k, r]) => <div key={k}><span className="sub">{CLOSE_DOCS.find((d) => d.key === k)?.label}</span><DocReadNote r={r} /></div>)}
-            <p className="sub cnote">الفواتير التفصيلية ليست شرطًا{/* client 21 Oct (#8) */} · تُرفق إن رغبت الجهة مستندًا داعمًا.</p>
           </Glass>
 
           {/* Client 21 Oct (#7) · the execution files in the foundation's storage · many at once · read in place */}
@@ -269,9 +247,7 @@ export default function ReportEditPage() {
                 <button type="button" className="btn btn-2 btn-sm" disabled={!link.trim()} onClick={() => { const out = addLink(c.id, linkLabel, link, c.entityName); setBad(out); if (!out.length) { setLink(''); setLinkLabel('') } }}>أضف الرابط</button>
               </div>
             )}
-            {c.report.links.length > 0
-              ? <ul className="apv-list">{c.report.links.map((l) => <li key={l.url}><span className="apv-t"><b>{l.label}</b><span className="sub">{l.url}</span></span></li>)}</ul>
-              : <p className="sub cnote">الأفضل رفع الملفات مباشرة أعلاه · فالرابط قد يحتاج صلاحية وصول.</p>}
+            {c.report.links.length > 0 && <ul className="apv-list">{c.report.links.map((l) => <li key={l.url}><span className="apv-t"><b>{l.label}</b><span className="sub">{l.url}</span></span></li>)}</ul>}
             {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
           </Glass>
 
@@ -284,12 +260,6 @@ export default function ReportEditPage() {
             </div>
           )}
 
-          {/* The save note is shown only when a save button is present. */}
-          {!closed && (
-            <p className="sub tcen">
-              الحفظ لا يُرسل التقرير · الإرسال للمراجعة من صفحة الطلب، ولا يُرسل {/* doc rule 3 */} قبل اكتمال البيانات والمستندات.
-            </p>
-          )}
         </div>
       </div>
     </AppLayout>

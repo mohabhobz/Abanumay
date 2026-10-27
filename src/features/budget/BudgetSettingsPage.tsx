@@ -1,14 +1,14 @@
+import { TaxonomyTab } from './TaxonomyTab'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  DateField, BackTo, DateText, Glass, Head, Icon, icons, Mono, MultiSelect, Num, Switch, Tabs, Tag,
-} from '@/components/ui'
+import { FieldMultiSelect,
+  DateField, BackTo, DateText, Glass, Head, Icon, icons, Mono, Num, Switch, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
-import { NOUN, nf, nounAfter, pct } from '@/lib/format'
+import { NOUN, nf, nounAfter } from '@/lib/format'
 import { fiscalYears, fundSources, docSources, yearOverlap } from '@/data/mock/budgetTree'
 import { allBudgets } from '@/data/mock/chain'
 import { APPROVAL_MATRIX } from '@/data/approval'
@@ -26,6 +26,8 @@ const TABS = [
   { slug: 'years', label: 'السنوات المالية' },
   { slug: 'sources', label: 'مصادر التمويل' },
   { slug: 'directions', label: 'التوجهات الاستراتيجية' },
+  /* Client sheet 26 Oct (#112) */
+  { slug: 'taxonomy', label: 'المسارات والمجالات والأهداف' },
   { slug: 'limits', label: 'حدود الصلاحيات' },
   { slug: 'rules', label: 'قواعد الاعتماد والمناقلة' },
 ] as const
@@ -66,10 +68,6 @@ export default function BudgetSettingsPage() {
           <header>
             <div>
               <h1 className="ptitle">إعدادات الميزانية</h1>
-              <p className="sub mt-1">
-                القيم التي تُبنى عليها كل ميزانية · لا يمكن فتح ميزانية
-                إلا بعد تعريف سنتها ومصدر تمويلها هنا
-              </p>
             </div>
           </header>
 
@@ -78,6 +76,7 @@ export default function BudgetSettingsPage() {
           {tab === 'years' && <YearsTab />}
           {tab === 'sources' && <SourcesTab />}
           {tab === 'directions' && <DirectionsTab />}
+          {tab === 'taxonomy' && <TaxonomyTab />}
           {tab === 'limits' && <LimitsTab />}
           {tab === 'rules' && <RulesTab />}
         </div>
@@ -111,7 +110,7 @@ function YearsTab() {
   return (
     <>
       <Glass>
-        <Head title="سنة مالية جديدة" meta={<span className="sub">الاسم والمدى · سنة واحدة لكل فترة</span>} />
+        <Head title="سنة مالية جديدة" />
         <div className="cfgrow">
           <label className="regf">
             <span className="lb">اسم السنة<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -140,12 +139,12 @@ function YearsTab() {
           </button>
         </div>
         {yearTaken && (
-          <p className="bad cnote">السنة <b>{yName}</b> معرَّفة من قبل · أدخل اسمًا آخر، فالسنة المالية لا تتكرر.</p>
+          <p className="bad cnote">السنة <b>{yName}</b> معرَّفة من قبل.</p>
         )}
-        {reversed && <p className="bad cnote">تاريخ النهاية قبل تاريخ البداية · لا تنتهي السنة المالية قبل أن تبدأ.</p>}
+        {reversed && <p className="bad cnote">تاريخ النهاية قبل تاريخ البداية.</p>}
         {overlap && (
           <p className="bad cnote">
-            المدة تتداخل مع السنة <b className="num">{overlap.name}</b> (<DateText>{overlap.from}</DateText> – <DateText>{overlap.to}</DateText>) · لكل فترة مالية سنة واحدة.
+            المدة تتداخل مع السنة <b className="num">{overlap.name}</b> (<DateText>{overlap.from}</DateText> – <DateText>{overlap.to}</DateText>).
           </p>
         )}
       </Glass>
@@ -167,10 +166,7 @@ function YearsTab() {
             )
           })}
         </ul>
-        <p className="sub cnote">
-          لا تُحذف سنة عليها ميزانية · فالميزانية عليها مشاريع، والمشروع
-          عليه اتفاقيات ودفعات، وهذه السلسلة تمنع الحذف من أولها.
-        </p>
+
       </Glass>
     </>
   )
@@ -188,7 +184,7 @@ function SourcesTab() {
   return (
     <>
       <Glass>
-        <Head title="مصدر تمويل جديد" meta={<span className="sub">الرمز والاسم · ولا يتكرر الرمز</span>} />
+        <Head title="مصدر تمويل جديد" />
         <div className="cfgrow">
           <label className="regf">
             <span className="lb">رمز المصدر<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -213,9 +209,7 @@ function SourcesTab() {
           </button>
         </div>
         {codeTaken && <p className="bad cnote">الرمز <Mono>{sCode.trim().toUpperCase()}</Mono> مستعمل لمصدر آخر.</p>}
-        {/* Note: the code is what ties the transaction to its source once integration arrives -
-            the name can change, the code can't. */}
-        <p className="sub cnote">يبقى الرمز ثابتًا طوال عمر المصدر · يمكن تعديل الاسم، أما الرمز فهو ما تُربط به الحركات المالية.</p>
+
       </Glass>
 
       <Glass className="tblcard">
@@ -250,9 +244,7 @@ function SourcesTab() {
             )
           })}
         </ul>
-        <p className="sub cnote">
-          للميزانية مصدر واحد أو أكثر بمبلغ لكل مصدر · ويُوزَّع مبلغ البند على مصادر ميزانيته عند إعداد الشجرة.
-        </p>
+
       </Glass>
     </>
   )
@@ -287,7 +279,7 @@ function DirectionsTab() {
           </button>
         </div>
         {taken && <p className="bad cnote">التوجه معرَّف من قبل.</p>}
-        <p className="sub cnote">تُبنى كل ميزانية على توجه أو أكثر من هذه القائمة، ويرتبط بها كل بند في شجرتها · فيُقرأ التخصيص في التقرير المجمّع حسب التوجه.</p>
+
       </Glass>
 
       <Glass className="tblcard">
@@ -305,8 +297,7 @@ function DirectionsTab() {
             </li>
           ))}
         </ul>
-        <p className="sub cnote">التوجه الموقوف لا يُختار لميزانية جديدة · ويبقى على الميزانيات المبنية عليه.</p>
-        <p className="sub cnote">الأولوية من 1 إلى 5 · تدخل في اقتراح توزيع المخصصات (1.6.2): 3 محايدة، وكل درجة فوقها أو تحتها تزيد وزن مسارات التوجه أو تنقصه بنسبة {pct(25)}.</p>
+
       </Glass>
     </>
   )
@@ -325,7 +316,12 @@ function LimitsTab() {
   return (
     <>
       <Glass className="tblcard">
-        <Head title="حدود الاعتماد والصرف لكل مستوى إداري" meta={<span className="sub"><bdi>{/* doc 1.1.input-6 */}</bdi></span>} />
+        {/* doc 1.1.input-6 */}
+        <Head
+          title="حدود الاعتماد والصرف لكل مستوى إداري"
+          meta={<Link className="lnk sub" to={`${ROUTES.projectSettings}?tab=approval`}>إعدادات المشاريع</Link>}
+          hint="حدود اعتماد المشروع تُعدَّل من إعدادات المشاريع · ولا حد مالي لاعتماد إذن صرف الدفعات."
+        />
         <div className="tblwrap">
           <table className="tbl">
             <thead>
@@ -353,16 +349,12 @@ function LimitsTab() {
             </tbody>
           </table>
         </div>
-        {broken && <p className="bad cnote">الحدود تتصاعد مستوى بعد مستوى · لا يصرف مستوى أعلى أقل من الذي تحته.</p>}
-        <p className="sub cnote">
-          حدود اعتماد المشروع من مصفوفة الاعتماد (مصدر واحد للنظام كله) · <Link className="lnk" to={`${ROUTES.projectSettings}?tab=approval`}>عدّلها في إعدادات المشاريع</Link>.
-          قرار المؤسسة (18 أكتوبر · بند 41): لا حدود مالية في اعتماد صرف الدفعات · يعتمد مدير المنح إذن الصرف ويُحال للإدارة المالية بأي مبلغ، فحدود الصرف هنا لا تُطبَّق على الإذن.
-        </p>
+        {broken && <p className="bad cnote">حد المستوى الأعلى أقل من الذي تحته.</p>}
       </Glass>
       {dirty && (
         <SaveBar
           count={1}
-          sentence={<>تعديل حدود الصرف<span className="decsep" /><span className="sub">تسري على طلبات الصرف فور الحفظ</span></>}
+          sentence="تعديل حدود الصرف"
           onSave={() => { if (broken) return; saveBudgetRules({ ...BUDGET_RULES, spendCaps: d }); setSaved({ ...d }) }}
           onDiscard={() => setD({ ...saved })}
         />
@@ -378,25 +370,26 @@ function RulesTab() {
   const [d, setD] = useState<BudgetRules>(() => structuredClone(BUDGET_RULES))
   const dirty = JSON.stringify(d) !== JSON.stringify(saved)
   const put = <K extends keyof BudgetRules>(k: K, x: BudgetRules[K]) => setD((s) => ({ ...s, [k]: x }))
-  const roles = (k: 'prepareBy' | 'managerBy' | 'financeBy' | 'execBy' | 'statusBy' | 'notifyLive', label: string, note: string) => (
+  const roles = (k: 'prepareBy' | 'managerBy' | 'financeBy' | 'execBy' | 'statusBy' | 'notifyLive', label: string) => (
     <li className="itk-sup">
-      <span className="cfgl"><b>{label}</b><span className="sub">{note}</span></span>
+      <span className="cfgl"><b>{label}</b></span>
       <span className="pc-sp" />
-      <MultiSelect all="لا أحد" values={d[k]} options={ROLE_OPTS} onChange={(x) => put(k, x as RoleKey[])} />
+      <FieldMultiSelect placeholder="لا أحد" values={d[k]} options={ROLE_OPTS} onChange={(x) => put(k, x as RoleKey[])} />
     </li>
   )
 
   return (
     <>
       <Glass>
-        <Head title="مسار الاعتماد" meta={<span className="sub">خارج مسؤوليات إدارة المنح · يُسند لأصحاب الصلاحية<bdi>{/* v3 · 1.1.desc-4 · doc 1.2.7–1.2.11 · 1.3.6–1.3.9 */}</bdi></span>} />
+        {/* v3 · 1.1.desc-4 · doc 1.2.7–1.2.11 · 1.3.6–1.3.9 */}
+        <Head title="مسار الاعتماد" />
         <ul className="cfglist">
-          {roles('prepareBy', 'إعداد الميزانية وطلبات العمليات', 'صاحب الصلاحية · يُنشئ ويرسل')}
-          {roles('managerBy', 'مراجعة قبل الإدارة المالية (اختيارية)', 'قرار المؤسسة (18 أكتوبر): بلا هذه الخطوة · «لا أحد» = تذهب الميزانية من مُعِدّها إلى الإدارة المالية مباشرة')}
-          {roles('financeBy', 'مراجعة الإدارة المالية واعتمادها', 'موافقة وإحالة للمدير التنفيذي · أو إعادة للمُعِدّ')}
-          {roles('execBy', 'اعتماد المدير التنفيذي', 'اعتماد وتفعيل · أو إعادة للإدارة المالية')}
-          {roles('statusBy', 'تفعيل البنود وإيقافها', 'على الميزانية المعتمدة · ويسري على ما تحت البند')}
-          {roles('notifyLive', 'يُبلَّغ بتفعيل الميزانية وتنفيذ العمليات', 'من يربط المشاريع بالميزانية')}
+          {roles('prepareBy', 'إعداد الميزانية وطلبات العمليات')}
+          {roles('managerBy', 'مراجعة قبل الإدارة المالية (اختيارية)')}
+          {roles('financeBy', 'مراجعة الإدارة المالية واعتمادها')}
+          {roles('execBy', 'اعتماد المدير التنفيذي')}
+          {roles('statusBy', 'تفعيل البنود وإيقافها')}
+          {roles('notifyLive', 'يُبلَّغ بتفعيل الميزانية وتنفيذ العمليات')}
         </ul>
       </Glass>
 
@@ -404,18 +397,18 @@ function RulesTab() {
         <Head title="سياسة المناقلة" meta={<span className="sub"><bdi>{/* doc 1.3.5 */}</bdi></span>} />
         <ul className="cfglist">
           <li className="itk-sup">
-            <span className="cfgl"><b>أقصى ما ينقله طلب واحد</b><span className="sub">من مخصص البند المنقول منه</span></span>
+            <span className="cfgl"><b>أقصى ما ينقله طلب واحد</b></span>
             <span className="pc-sp" />
             <CfgNum value={d.maxTransferPct} min={1} label="أقصى نسبة للمناقلة" suffix="بالمئة" onChange={(n) => put('maxTransferPct', Math.min(100, n))} />
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>مرفق داعم إلزامي من مبلغ</b><span className="sub">على المناقلة والتعزيز والتخفيض</span></span>
+            <span className="cfgl"><b>مرفق داعم إلزامي من مبلغ</b></span>
             <span className="pc-sp" />
             <CfgNum value={d.attachAbove} label="مبلغ المرفق الإلزامي" suffix="ريال" onChange={(n) => put('attachAbove', n)} />
           </li>
           {/* Client 24 Oct (#87) · the operation's approval by amount, as every approval in the system */}
           <li className="itk-sup">
-            <span className="cfgl"><b>تعتمد الإدارة المالية وتنفّذ حتى مبلغ</b><span className="sub">فوقه يعتمده المدير التنفيذي بعدها · «0» = كل الطلبات للمدير التنفيذي</span></span>
+            <span className="cfgl"><b>تعتمد الإدارة المالية وتنفّذ حتى مبلغ</b></span>
             <span className="pc-sp" />
             <CfgNum value={d.opFinanceUpTo} label="حد اعتماد الإدارة المالية للعمليات" suffix="ريال" onChange={(n) => put('opFinanceUpTo', n)} />
           </li>
@@ -424,7 +417,7 @@ function RulesTab() {
 
       {/* Client 24 Oct (#87) · a returned or rejected operation picks its reason, as the other approvals do */}
       <Glass>
-        <Head title="أسباب إعادة العمليات ورفضها" meta={<span className="sub">ومعها «أخرى» بنص · تُسجَّل في سجل الطلب</span>} />
+        <Head title="أسباب إعادة العمليات ورفضها" />
         <div className="g2 gp-4">
           <ReasonList title="أسباب الإعادة للمُعِدّ" list={d.opReturnReasons} onChange={(x) => put('opReturnReasons', x)} />
           <ReasonList title="أسباب الرفض" list={d.opRejectReasons} onChange={(x) => put('opRejectReasons', x)} />
@@ -435,7 +428,7 @@ function RulesTab() {
         <Head title="الحجز والارتباط المالي" meta={<span className="sub"><bdi>{/* doc 5.4.19 · 1.4.27 · 1.4.28 · 1.4.56 */}</bdi></span>} />
         <ul className="cfglist">
           <li className="itk-sup">
-            <span className="cfgl"><b>مرحلة الحجز على الميزانية</b><span className="sub">وفق السياسة المالية · ويثبت الحجز نهائيًّا عند الاعتماد في الحالتين</span></span>
+            <span className="cfgl"><b>مرحلة الحجز على الميزانية</b></span>
             <span className="pc-sp" />
             <div className="cfgchips" role="radiogroup" aria-label="مرحلة الحجز">
               {(['recommend', 'approval'] as const).map((v) => (
@@ -447,14 +440,14 @@ function RulesTab() {
           </li>
           {/* v3 · 1.3b · the link of an approved project moves by a relocation request */}
           <li className="itk-sup">
-            <span className="cfgl"><b>طلب إعادة تسكين مشروع</b><span className="sub">ينشئه على المشروع المعتمد ويرسله للاعتماد النهائي</span></span>
+            <span className="cfgl"><b>طلب إعادة تسكين مشروع</b></span>
             <span className="pc-sp" />
-            <MultiSelect all="لا أحد" values={d.relocateBy} options={ROLE_OPTS} onChange={(x) => put('relocateBy', x as RoleKey[])} />
+            <FieldMultiSelect placeholder="لا أحد" values={d.relocateBy} options={ROLE_OPTS} onChange={(x) => put('relocateBy', x as RoleKey[])} />
           </li>
           <li className="itk-sup">
-            <span className="cfgl"><b>اعتماد إعادة التسكين</b><span className="sub">يعتمد الطلب أو يعيده للمراجعة · وعند الاعتماد يُنفَّذ تلقائيًا</span></span>
+            <span className="cfgl"><b>اعتماد إعادة التسكين</b></span>
             <span className="pc-sp" />
-            <MultiSelect all="لا أحد" values={d.relocateApproveBy} options={ROLE_OPTS} onChange={(x) => put('relocateApproveBy', x as RoleKey[])} />
+            <FieldMultiSelect placeholder="لا أحد" values={d.relocateApproveBy} options={ROLE_OPTS} onChange={(x) => put('relocateApproveBy', x as RoleKey[])} />
           </li>
         </ul>
       </Glass>
@@ -463,21 +456,21 @@ function RulesTab() {
         <Head title="استقبال المشاريع" meta={<span className="sub"><bdi>{/* doc 1.1.output-5 · 1.4.37 */}</bdi></span>} />
         <Switch
           label="لا يُفتح التقديم إلا على المجالات الممولة في ميزانية معتمدة"
-          note="المجال الذي لا بند نشطًا له في ميزانية السنة المعتمدة يُغلق في دورة الاستقبال · وتظهر للجهة الأهداف النشطة وحدها"
+
           on={d.requireFunding}
           onChange={(x) => put('requireFunding', x)}
         />
         {/* Client 24 Oct (#86) · the portal's support options follow the budget's balances */}
         <Switch
           label="ربط خيارات الدعم في البوابة بالميزانية"
-          note="يرى مقدّم الطلب المجال أو الهدف الذي لا متاح له في ميزانية السنة معطّلًا مع سببه · والهدف القريب من النفاد عليه تنبيه"
+
           on={d.portalLink}
           onChange={(x) => put('portalLink', x)}
         />
         {d.portalLink && (
           <ul className="cfglist mt-3">
             <li className="itk-sup">
-              <span className="cfgl"><b>تنبيه «المتاح قليل» تحت</b><span className="sub">من مخصص الهدف المتبقي متاحًا</span></span>
+              <span className="cfgl"><b>تنبيه «المتاح قليل» تحت</b></span>
               <span className="pc-sp" />
               <CfgNum value={d.lowFundPct} min={0} label="نسبة تنبيه المتاح القليل" suffix="بالمئة" onChange={(n) => put('lowFundPct', Math.min(100, n))} />
             </li>
@@ -487,14 +480,14 @@ function RulesTab() {
 
       <Glass>
         <Head title="بيانات العرض التجريبي" />
-        <p className="sub cnote">يُعيد الميزانيات وطلبات العمليات والخطط المالية والسنوات والمصادر المضافة إلى بداية العرض.</p>
+
         <button type="button" className="btn btn-2" onClick={resetBudget}>أعد ضبط بيانات الميزانية</button>
       </Glass>
 
       {dirty && (
         <SaveBar
           count={1}
-          sentence={<>تعديل قواعد الميزانية<span className="decsep" /><span className="sub">تسري على الشاشات والطلبات فور الحفظ</span></>}
+          sentence="تعديل قواعد الميزانية"
           onSave={() => { saveBudgetRules(d); setSaved(structuredClone(d)) }}
           onDiscard={() => setD(structuredClone(saved))}
         />

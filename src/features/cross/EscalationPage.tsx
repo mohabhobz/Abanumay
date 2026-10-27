@@ -62,7 +62,7 @@ export default function EscalationPage() {
             <div className="pmain">
               <h1 className="ptitle">المتأخر والمتعثر</h1>
               <p className="sub mt-1">
-                آلية التصعيد في جميع الإجراءات · <Num>{stuck}</Num> مرحلة متعثرة و<Num>{late}</Num> متأخر عن مدة المرحلة · لا يغيّر أيٌّ منهما حالة المشروع
+                <Num>{stuck}</Num> مرحلة متعثرة و<Num>{late}</Num> متأخر عن مدة المرحلة
               </p>
             </div>
             <div className="rowf gp-2">
@@ -81,7 +81,7 @@ export default function EscalationPage() {
           <Segments items={HEATS} active={v.heat ?? ''} onChange={(x) => set({ heat: x })} />
 
           <Glass className="tblcard">
-            <Head title="حسب الإجراء" meta={proc ? <button type="button" className="lnk" onClick={() => set({ proc: undefined })}>كل الإجراءات</button> : <span className="sub">اختر إجراءً لعرض طلباته وحدها</span>} />
+            <Head title="حسب الإجراء" meta={proc ? <button type="button" className="lnk" onClick={() => set({ proc: undefined })}>كل الإجراءات</button> : undefined} />
             <div className="tblwrap">
               <table className="tbl esc-procs" aria-label="المتأخر والمتعثر حسب الإجراء">
                 <thead>
@@ -111,7 +111,7 @@ export default function EscalationPage() {
 
           {groups.length === 0 ? (
             <Glass>
-              <Empty title="لا يوجد طلب متأخر أو متعثر." note="كل الطلبات المفتوحة ضمن مدة مرحلتها." />
+              <Empty title="لا يوجد طلب متأخر أو متعثر." />
             </Glass>
           ) : (
             groups.map((g) => (

@@ -82,13 +82,8 @@ export function BankRows({
                   aria-label={`صاحب الحساب ${i + 1}`}
                 />
               </span>
-              <span className="sub regf-h">باسم الجهة · لا باسم شخص</span>
             </label>
 
-            {/* Note: the short name is required per the client's own screens - and its tooltip
-                states our interpretation of it explicitly (the name as it appears on statements),
-                since the client never explained it and the question is still open, so the entity
-                isn't left guessing and a reviewer knows this is our interpretation. */}
             <label className="regf">
               <span className="lb">الاسم المختصر<b className="regf-r" aria-label="إلزامي">*</b></span>
               <span className="fld">
@@ -96,9 +91,9 @@ export function BankRows({
                   value={b.shortName}
                   onChange={(e) => patch(b.id, { shortName: e.target.value })}
                   aria-label={`الاسم المختصر للحساب ${i + 1}`}
+                  placeholder="مثل: تحفيظ"
                 />
               </span>
-              <span className="sub regf-h">الاسم الذي يُعرف به الحساب في الكشوف، مثل «تحفيظ»</span>
             </label>
 
             <label className="regf">
@@ -110,12 +105,11 @@ export function BankRows({
                   /* Upper case, letters and digits only · what was pasted with dashes still reads */
                   onChange={(e) => patch(b.id, { iban: e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '') })}
                   aria-label={`آيبان الحساب ${i + 1}`}
+                  placeholder="SA00 0000 0000 0000 0000 0000"
                 />
               </span>
               {/* 2.4.6 · checked as it is typed: shape first, then the check digits */}
-              {b.iban.replace(/\s/g, '').length >= 24 && !ibanValid(b.iban)
-                ? <span className="bad regf-h">الآيبان غير صحيح · تحقّق من الأرقام</span>
-                : <span className="sub regf-h">SA يليه 22 رقمًا</span>}
+              {b.iban.replace(/\s/g, '').length >= 24 && !ibanValid(b.iban) && <span className="bad regf-h">الآيبان غير صحيح · تحقّق من الأرقام</span>}
             </label>
           </div>
 
@@ -140,7 +134,7 @@ export function BankRows({
               <Icon name={icons.upload} size="sm" />
               <span>{BANK_DOC_LABEL}</span>
               <span className="pc-sp" />
-              <span className="sub regdocs-m">PDF أو صورة · إلزامية لكل حساب</span>
+              <span className="sub regdocs-m">PDF أو صورة</span>
             </label>
           )}
         </div>

@@ -43,17 +43,16 @@ export interface AgreementTabProps {
  * showing a blank screen.
  */
 export function AgreementTab({
-  agreement: A, payments, entityName, projectId, example, onOpenExample, onStart, startBlocked,
+  agreement: A, payments, projectId, example, onOpenExample, onStart, startBlocked,
 }: AgreementTabProps) {
   const go = useNavigate()
   if (!A) {
     return (
       <Glass>
-        <Head title="اتفاقية المشروع" meta="تُفتح بعد الاعتماد النهائي" />
+        <Head title="اتفاقية المشروع" />
         <Empty
           art={{ done: 1 }}
           title={onStart && !startBlocked ? 'المشروع معتمد وحجزه نهائي · جاهز لإعداد الاتفاقية.' : `لا توجد اتفاقية بعد${startBlocked ? ` · ${startBlocked}` : ''}.`}
-          note="عند الوصول إليها يختار المشرف القالب، ويعبّئ النظام بيانات المشروع والجهة، فيُولَّد النص وجدول الدفعات، ثم تمرّ الاتفاقية على مدير المنح ثم المدير التنفيذي، فتوقّعها الجهة ويعتمدها ممثل المؤسسة فتسري."
           actions={
             <>
               {onStart && (
@@ -103,9 +102,6 @@ export function AgreementTab({
           <div>
             <div className="lb">القالب المستخدَم</div>
             <div className="agr-tpl">{A.template}</div>
-            {/* The template isn't a free choice: the system has ten, and the name itself
-                states the selection rule — funding source × grant size × media visibility. */}
-            <div className="sub">يُختار آليًا من مصدر التمويل وحجم المنحة والظهور الإعلامي · 10 قوالب</div>
           </div>
           <div>
             <div className="lb">التوقيع</div>
@@ -143,9 +139,6 @@ export function AgreementTab({
               <span className="sub">{A.returned.by} · <DateText>{A.returned.at}</DateText></span>
             </div>
             <div className="tx">{A.returned.note}</div>
-            <div className="src">
-              أُعيدت الاتفاقية إلى المشرف مرة واحدة قبل الاعتماد، والإعادة مسجَّلة في السجل إجراءً مستقلًا.
-            </div>
           </div>
         )}
       </Glass>
@@ -175,14 +168,11 @@ export function AgreementTab({
               </tbody>
             </table>
           </div>
-          <div className="sub mt-3">
-            يُدرج هذا الجدول في نص الاتفاقية عبر المتغيّر <Mono>payments_table</Mono>، بأرقام تبويب الدفعات نفسها.
-          </div>
         </Glass>
       )}
 
       <Glass>
-        <Head title="نص الاتفاقية" meta="مولَّد من القالب" />
+        <Head title="نص الاتفاقية" />
         <div className="agr-body">
           {A.body.map((c) => (
             <section key={c.title}>
@@ -192,10 +182,6 @@ export function AgreementTab({
               </ul>
             </section>
           ))}
-        </div>
-        <div className="sub mt-4">
-          الاسم والمبلغ والمدة والدفعات كلها متغيّرات، والنص واحد لكل مشروع يستخدم القالب نفسه،
-          ولا يختلف إلا في هذه القيم. توقيع {entityName} مسجَّل في السجل بوصفه إجراء «قبول الإتفاقية».
         </div>
       </Glass>
     </>

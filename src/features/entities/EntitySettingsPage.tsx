@@ -70,15 +70,11 @@ export default function EntitySettingsPage() {
   /* Note: `used: null` means no figure, not zero - and the difference matters: a row with no
      computed dependents shows no tag at all. The first version printed "used in the form" on every
      row, and a repeated tag on every row takes up space and says nothing. */
-  const rows: { k: string; used: number | null; note?: string }[] =
+  const rows: { k: string; used: number | null }[] =
     tab === 'places'
       ? cities.map((c) => ({ k: c, used: cityUsed(c) }))
       : tab === 'types'
-        ? ENTITY_TYPES.map((t) => ({
-          k: t,
-          used: typeUsed(t),
-          note: t === 'شركة غير ربحية' ? 'تجعل ثلاثة مستندات إلزامية · قاعدتا 8 و9' : undefined,
-        }))
+        ? ENTITY_TYPES.map((t) => ({ k: t, used: typeUsed(t) }))
         : tab === 'licensors'
           ? LICENSORS.map((l) => ({ k: l, used: licensorUsed(l) }))
           : TARGET_GROUPS.map((g) => ({ k: g, used: null }))
@@ -93,10 +89,6 @@ export default function EntitySettingsPage() {
           <header>
             <div>
               <h1 className="ptitle">إعدادات الجهات</h1>
-              <p className="sub mt-1">
-                القوائم التي يُبنى عليها نموذج تسجيل الجهة وملفها ·
-                لكل قائمة منسدلة في النموذج مجموعة هنا
-              </p>
             </div>
           </header>
 
@@ -128,10 +120,6 @@ export default function EntitySettingsPage() {
                   </li>
                 ))}
               </ul>
-              <p className="sub cnote">
-                الرقم بجانب المنطقة هو عدد الجهات المسجَّلة فيها ·
-                ولا تُحذف منطقة مرتبطة بجهات.
-              </p>
             </Glass>
           )}
 
@@ -175,7 +163,6 @@ export default function EntitySettingsPage() {
               {rows.map((r) => (
                 <li key={r.k}>
                   <b>{r.k}</b>
-                  {r.note && <span className="sub trim1">{r.note}</span>}
                   <span className="pc-sp" />
                   {r.used !== null && (
                     r.used > 0
@@ -185,16 +172,6 @@ export default function EntitySettingsPage() {
                 </li>
               ))}
             </ul>
-
-            <p className="sub cnote">
-              {tab === 'types'
-                ? 'التصنيف ليس وسمًا · فهو يحدّد المستندات الإلزامية في نموذج التسجيل، وتغييره يغيّر شرط قبول.'
-                /* "With the count next to it" only when a real count exists - categories have no
-                   counter. */
-                : rows.some((r) => r.used !== null)
-                  ? 'لا تُحذف قيمة مرتبطة بسجلات · والرقم بجانبها يوضّح السبب قبل المحاولة.'
-                  : 'لا تُحذف قيمة مرتبطة بسجلات.'}
-            </p>
           </Glass>}
         </div>
         {/* The unsaved-changes dock · inside the view stack, so it spans the content column like the decision bar, not the rail */}

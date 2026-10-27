@@ -15,7 +15,7 @@ export function AssistantAside({
   readings, title, cta, empty, ask = true, suggest,
 }: { readings: Reading[]; title?: string; cta?: string; empty?: string; ask?: boolean; suggest?: ReactNode }) {
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
   return (
     <div className="col aiside" ref={aside}>
       <AnalysisCard

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
+import { StatRow,
   Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
   Riyal,
@@ -215,38 +215,38 @@ export default function AgreementsPage() {
             variant="bar"
             title="قراءة سريعة للاتفاقيات"
             readings={readings}
-            empty="لا توجد اتفاقية موقوفة عن الاعتماد في النطاق الحالي · وسّع الفلتر لعرض المزيد."
+            empty="لا توجد اتفاقية موقوفة عن الاعتماد في النطاق الحالي."
           />
 
           {/* Note: these four are the document's four indicators, not four arbitrary numbers - the
               "target value" column is empty for all of them, so the number shown is a value, not a
               status. */}
-          <div className="stats4">
+          <StatRow title="مؤشرات الاتفاقيات">
             <Stat
               label="متوسط مدة إعداد الاتفاقية"
               value={k.prepDays === null ? '—' : <Num>{k.prepDays}</Num>}
               unit={k.prepDays === null ? undefined : 'يومًا'}
-              note={/* doc KPI 1 */ "من فتح الاتفاقية حتى سريانها"}
+              hint={/* doc KPI 1 */ "من فتح الاتفاقية حتى سريانها"}
             />
             <Stat
               label="المنجزة ضمن المدة المستهدفة"
               value={k.inTarget === null ? '—' : <Num>{pct(k.inTarget)}</Num>}
-              note={/* doc KPI 2 */ `${countOf(k.target, NOUN.day)} · مجموع مدد المراحل`}
+              hint={/* doc KPI 2 */ `المدة المستهدفة ${countOf(k.target, NOUN.day)}`}
               bar={k.inTarget === null ? undefined : { w: `${k.inTarget}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة دورة الاعتماد"
               value={k.cycleDays === null ? '—' : <Num>{k.cycleDays}</Num>}
               unit={k.cycleDays === null ? undefined : 'يومًا'}
-              note={/* doc KPI 3 */ "من الإرسال حتى اكتمال الاعتمادات"}
+              hint={/* doc KPI 3 */ "من الإرسال حتى اكتمال الاعتمادات"}
             />
             <Stat
               label="المعادة للتعديل"
               value={k.returnedPct === null ? '—' : <Num>{pct(k.returnedPct)}</Num>}
-              note={/* doc KPI 4 */ "كل إعادة دورة اعتماد كاملة"}
+
               bar={k.returnedPct === null ? undefined : { w: `${k.returnedPct}%`, c: 'var(--warn)' }}
             />
-          </div>
+          </StatRow>
 
           <Segments
             active={readList(v.stage).length === 1 ? readList(v.stage)[0] : ''}
@@ -391,7 +391,6 @@ export default function AgreementsPage() {
             <Glass>
               <Empty
                 title="لا توجد اتفاقيات بهذه الفلاتر."
-                note="وسّع النطاق، أو اختر مرحلة أخرى من الشرائح أعلاه."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
@@ -417,7 +416,6 @@ export default function AgreementsPage() {
               </Glass>
               {grouped && (
                 <p className="sub tcen">
-                  التجميع يعرض كل النتائج ·{' '}
                   <span className="num">{countLeaves(groupTree(sorted, group))}</span> مجموعات ·{' '}
                   <button className="lnk" onClick={() => set({ group: undefined })}>
                     إلغاء التجميع
@@ -448,14 +446,9 @@ export default function AgreementsPage() {
             })
           )}
 
-          {/* Rule 25 is stated on screen, not only in a comment - it's the most confusing case: an
-              agreement "awaiting executive director" while its project still shows "agreement
-              setup". */}
           <p className="sub tcen">
-            مرحلة الاتفاقية لا تغيّر حالة المشروع · يبقى «استكمال متطلبات ما قبل التنفيذ» حتى
-            سريانها واعتماد خطته إن كانت مطلوبة{/* doc rule 25 · 0.status.4 */}.
-            وإجمالي قيمة الاتفاقيات تحت الإعداد{' '}
-            <span className="num">{nf.format(k.openSum)}</span> <Riyal />.
+            إجمالي قيمة الاتفاقيات تحت الإعداد{' '}
+            <span className="num">{nf.format(k.openSum)}</span> <Riyal />
           </p>
         </div>
       </div>

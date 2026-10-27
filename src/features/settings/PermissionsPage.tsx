@@ -1,13 +1,11 @@
 import { AuthRulesCard } from './AuthRulesCard'
 import { readRole } from '@/data/roles'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   DateText, Empty, FieldSelect, Glass, Head, Icon, icons, Num, Person, SearchBox, Select, Switch, Tabs, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
-import { ROUTES } from '@/app/routes'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { assistFor } from '@/data/mock/assistant'
 import { useStored } from '@/lib/prefs'
@@ -67,10 +65,7 @@ export default function PermissionsPage() {
             <div>
               <h1 className="ptitle">الصلاحيات والأدوار</h1>
               <p className="sub mt-1">
-                من يرى ماذا ويفعل ماذا في <Num>{PERM_MODULES.length}</Num> وحدة ·
-                الدور يحمل الأساس، والتخصيص لمستخدم بعينه يبقى ظاهرًا
-                ({ov > 0 ? <><Num>{ov}</Num> تخصيص حاليًا</> : 'لا تخصيصات'}) ·{' '}
-                <Link className="tlink" to={ROUTES.settings}>إعدادات النظام</Link>
+                <Num>{PERM_MODULES.length}</Num> وحدة · {ov > 0 ? <><Num>{ov}</Num> تخصيص حاليًا</> : 'لا تخصيصات'}
               </p>
             </div>
             <Tag tone="mute">
@@ -275,13 +270,12 @@ function UserEditor({ user, roles, onSave }: {
             label="دور المستخدم"
             disabled={self}
           />
-          {self && <span className="sub">لا تغيّر دورك بنفسك · يغيّره مدير نظام آخر</span>}
+          {self && <span className="sub">لا تغيّر دورك بنفسك</span>}
         </div>
         <div className="regf">
           <span className="lb">الحساب</span>
           <Switch
             label={d.active ? 'مفعّل' : 'موقوف'}
-            note={d.active ? 'يدخل ويعمل بصلاحياته' : 'لا يدخل · وتبقى سجلاته وأعماله باسمه'}
             on={d.active}
             onChange={(x) => setD((y) => ({ ...y, active: x }))}
             disabled={self}
@@ -327,7 +321,7 @@ function RolesTab({ st, setSt, sel, onSel }: {
   return (
     <div className="pm-split">
       <Glass className="pm-side">
-        <Head title="الأدوار" meta={<span className="sub">الأساس لكل من يحمله</span>} />
+        <Head title="الأدوار" />
         {/* Grouped by persona · the four «صفات اعتبارية» the system is designed around */}
         {PERSONAS.map((p) => {
           const list = st.roles.filter((r) => (r.persona ?? 'staff') === p.key)
@@ -336,7 +330,6 @@ function RolesTab({ st, setSt, sel, onSel }: {
             <div className="pm-group" key={p.key}>
               <div className="pm-group-h">
                 <b>{p.label}</b>
-                <span className="sub">{p.note}</span>
               </div>
               <ul className="pm-list" role="listbox" aria-label={p.label}>
                 {list.map((r) => {
@@ -420,14 +413,12 @@ function RoleEditor({ role, members, onSave }: {
     setGrants((x) => ({ ...x, [mod]: { acts: x[mod]?.acts ?? [], scope } }))
 
   const sod = conflicts(draft, {})
-  const custom = members.filter((u) => overrideCount(u.overrides) > 0).length
 
   return (
     <Glass className="pm-main">
       <div className="pm-who">
         <div>
           <h3 className="pm-rt">{role.label}</h3>
-          <span className="sub">{role.note}</span>
         </div>
         <span className="pc-sp" />
         {changes.length > 0 && (
@@ -440,19 +431,7 @@ function RoleEditor({ role, members, onSave }: {
         )}
       </div>
 
-      <p className="sub cnote">
-        {members.length > 0 ? (
-          <>
-            يطبَّق الحفظ على <Num>{members.length}</Num> مستخدم فورًا
-            {custom > 0 && <> · وتبقى تخصيصات <Num>{custom}</Num> منهم كما هي</>}
-          </>
-        ) : (
-          'لا يحمل هذا الدور أحد حاليًا'
-        )}
-        {role.external && ' · دور من خارج المؤسسة، وما يُمنح له يُقرأ في حدود سجلاته وحدها'}
-      </p>
-      {/* Client 18 Oct · the super admin */}
-      {role.key === 'admin' && <p className="sub cnote">مدير النظام · صلاحيات كاملة على كل الموديولات والإجراءات وكل السجلات، ويعدّل أي إعداد أو بيانات · والعمل في مقعد اعتماد غيره يكون بالتولّي المسجَّل بسببه</p>}
+      {members.length === 0 && <p className="sub cnote">لا يحمل هذا الدور أحد حاليًا</p>}
 
       {members.length > 0 && (
         <div className="pm-faces">
@@ -479,7 +458,7 @@ function RoleEditor({ role, members, onSave }: {
 function LogTab({ log }: { log: PermLogRow[] }) {
   return (
     <Glass className="tblcard">
-      <Head title="سجل التغييرات" meta={<span className="sub">لا يُحذف ولا يُعدَّل</span>} />
+      <Head title="سجل التغييرات" />
       {log.length === 0 ? (
         <Empty title="لم يُسجَّل تغيير بعد." />
       ) : (

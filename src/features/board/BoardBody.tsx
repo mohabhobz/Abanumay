@@ -1,5 +1,5 @@
 import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Glass, Head, Icon, Money, icons } from '@/components/ui'
+import { Hint, Glass, Head, Icon, Money, icons } from '@/components/ui'
 import { SAUDI_REGIONS, SAUDI_VIEW } from '@/components/charts/saudi-regions'
 import { usePayments } from '@/data/payments/store'
 import { useClosing } from '@/data/closing/store'
@@ -63,23 +63,12 @@ function KpiStrip({ totals }: { totals: Totals }) {
   )
 }
 
-function Kpi({ icon, label, value, fill, note }: { icon: keyof typeof icons; label: string; value: ReactNode; fill: number; note: string }) {
-  const uid = useId().replace(/:/g, '')
+function Kpi({ icon, label, value, note }: { icon: keyof typeof icons; label: string; value: ReactNode; fill?: number; note: string }) {
+  /* Client 27 Oct · the system's one KPI card · its name and its figure · the context behind the (i) */
   return (
     <Glass className="gb-kpi">
-      <span className="gb-kpi-k"><Icon name={icons[icon]} size="sm" />{label}</span>
+      <span className="gb-kpi-k"><Icon name={icons[icon]} size="sm" />{label}<Hint text={note} /></span>
       <span className="gb-kpi-v">{value}</span>
-      <svg className="gb-line" aria-hidden="true">
-        <defs>
-          <linearGradient id={`${uid}-g`} x1="1" y1="0" x2="0" y2="0">
-            <stop offset="0" className="gb-st-a" />
-            <stop offset="1" className="gb-st-c" />
-          </linearGradient>
-        </defs>
-        <rect className="gb-line-t" width="100%" height="100%" />
-        <rect className="gb-line-f" x={`${100 - fill}%`} width={`${fill}%`} height="100%" fill={`url(#${uid}-g)`} />
-      </svg>
-      <span className="sub">{note}</span>
     </Glass>
   )
 }
@@ -160,7 +149,7 @@ function GeoPanel({ regions, sel, onSel, spot }: {
 
   return (
     <Glass className="gb-geo">
-      <Head title="المنح على خريطة المملكة" meta={<span className="sub">لون المنطقة بعدد المشاريع · اختر منطقة من الخريطة أو القائمة</span>} />
+      <Head title="المنح على خريطة المملكة" />
       <div className="gb-geo-b">
         {/* the chosen region · start side */}
         <section className="gb-spot" aria-live="polite">

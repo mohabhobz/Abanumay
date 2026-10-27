@@ -1,7 +1,7 @@
 import { KIND_SAY, LEVEL_RANK, LEVEL_SAY, floorOf, kindOf } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
+import { DockActions, DateText, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, pct } from '@/lib/format'
 import type { ProjectRow } from '@/types/domain'
@@ -20,14 +20,13 @@ import { projectRows } from '@/data/mock/projects'
 import { meOf, readRole } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import {
-  DEPT_SAY, OUTCOME_SAY, VERDICT_SAY, VOTE_SAY, addCondition, addMandNote, amendDecision, answerOpinion,
+  DEPT_SAY, OUTCOME_SAY, VERDICT_SAY, addCondition, addMandNote, amendDecision, answerOpinion,
   appFlowOf, askOpinion, conflictOf, declareConflict, entityBlock, entityLimitBlock, entityTally, holdLine,
   levelCap, makeOfficial, meetCondition, payPlanOf, planSuggested, resolveNote, sessionsOf, strategyOf, useApprovals,
-  type Opinion, finPosition, supportAmount,
-} from '@/data/approvals/store'
+  type Opinion, finPosition, supportAmount } from '@/data/approvals/store'
 import { AmountCard, FinKV } from '@/features/approvals/AmountCard'
 import { ApprovalOptions } from '@/features/approvals/ApprovalOptions'
-import { CONSULTANTS, consultantsFor } from '@/data/intake/consultants'
+import { consultantsFor } from '@/data/intake/consultants'
 import { referConsultant } from '@/data/intake/flow'
 import { FieldSelect } from '@/components/ui'
 import { reasonSay } from '@/data/intake/reasons'
@@ -103,8 +102,6 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
   const [ask, setAsk] = useState('')
   const [dept, setDept] = useState<Opinion['dept']>('finance')
   const [ans, setAns] = useState<Record<string, string>>({})
-  const [conf, setConf] = useState('')
-  const [amend, setAmend] = useState('')
   const per = row.beneficiaries > 0 ? Math.round(amount / row.beneficiaries) : 0
   const [cons, setCons] = useState('')
   const consOpts = consultantsFor(row.field)
@@ -123,8 +120,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         {study?.recommendation === 'reject' && holder && holder !== 'supervisor' && (
           <p className="sub cnote">
             <Tag tone="no">أوصى مشرف المنح بالرفض</Tag>{' '}
-            {study.rejectReason ? <>{reasonSay(study.rejectReason, study.rejectOther)} · </> : null}
-            لصاحب القرار أن يعتمد أو يوصي بالموافقة خلافها · تبقى التوصية محفوظة في ملف المراجعة وسجل المشروع.
+            {study.rejectReason ? reasonSay(study.rejectReason, study.rejectOther) : null}
           </p>
         )}
         <KV rows={[
@@ -132,7 +128,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           ...(floorOf(row) && LEVEL_RANK[floorOf(row)!] > LEVEL_RANK[decider.key] ? [{ k: 'صاحب القرار حسب النوع', v: <>{LEVEL_SAY[floorOf(row)!]} فأعلى <span className="sub">· {KIND_SAY[kindOf(row)]}</span></> }] : []),
           { k: 'حد المدير التنفيذي بالتجاوز المسموح', v: <><Num>{levelCap('exec')}</Num> <span className="sub">({pct(APPROVAL_RULES.execOverPct)})</span></> },
           { k: 'الحجز', v: <>{/* Re-audit 17 Oct · one source · the budget link (or the multi-year plan), never the path's own flag */ hold ? HOLD_STAGE_SAY[hold.link.stage] : fplan ? (f.hold === 'none' ? 'لا حجز' : 'على خطة التمويل متعددة السنوات') : 'لا حجز · لا ارتباط بالميزانية بعد'}{hold?.node && <span className="sub"> · {hold.link.shares.length > 1 ? `${nf.format(hold.link.shares.length)} بنود` : hold.node.label} · <Money sm>{hold.link.amount}</Money></span>}</> },
-          ...(f.needsPlan !== undefined ? [{ k: 'الخطة', v: f.needsPlan ? 'يتطلب خطة' : 'لا يتطلب خطة' }] : [{ k: 'الخطة', v: <span className="sub">{planSuggested(row) ? 'مقترح: يتطلب خطة (وفق القاعدة)' : 'مقترح: لا يتطلب خطة'}</span> }]),
+          ...(f.needsPlan !== undefined ? [{ k: 'الخطة', v: f.needsPlan ? 'يتطلب خطة' : 'لا يتطلب خطة' }] : [{ k: 'الخطة', v: <span className="sub">{planSuggested(row) ? 'مقترح: يتطلب خطة' : 'مقترح: لا يتطلب خطة'}</span> }]),
           ...(f.source ? [{ k: 'مصدر التمويل', v: <>{f.source.name} <span className="sub">· <Person name={f.source.by} /></span></> }] : []),
           ...(f.levelNotes?.length ? [{ k: 'ملاحظات مستويات الاعتماد', v: <span className="sub">{f.levelNotes.map((n) => `${HOLDER_LABEL[n.level]}: ${n.text}`).join(' · ')}</span> }] : []),
           ...(f.decided ? [{ k: 'القرار النهائي', v: <>{HOLDER_LABEL[f.decided.level]} · <Person name={f.decided.by} /> · <DateText>{f.decided.at}</DateText></> }] : []),
@@ -141,11 +137,15 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         {/* v3 · 5.4.21 · an approved decision is reopened by a documented act until the agreement work starts */}
         {(holder === 'confirm' || row.statusGroup === 'معتمد') && f.decided && role === 'ceo' && (
           <div className="apv-row mt-3">
-            <span className="fld"><input value={amend} onChange={(e) => setAmend(e.target.value)} placeholder="سبب إعادة فتح القرار" aria-label="سبب تعديل القرار" /></span>
-            <button className="btn btn-2 btn-sm" disabled={!amend.trim()} onClick={() => { amendDecision(row, amend.trim(), me); setAmend('') }}>عدّل القرار بإجراء رسمي</button>
+            {/* Client 26 Oct · the reason in the decision's popup */}
+            <DockActions
+              actions={[{ label: 'عدّل القرار بإجراء رسمي', kind: 'btn-2 btn-sm', needsNote: true }]}
+              subject={row.name}
+              placeholder="سبب إعادة فتح القرار"
+              onRun={(_a, n) => { amendDecision(row, n, me) }}
+            />
           </div>
         )}
-        <p className="sub cnote">لا يُحذف القرار بعد صدوره · يُعاد فتحه بإجراء رسمي موثّق في السجل.{/* doc 5.4.21 */}</p>
       </Glass>
 
       {/* Client 24 Oct (#82 · #83) · what the seat may change with its decision */}
@@ -154,7 +154,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       <AmountCard row={row} />
 
       <Glass>
-        <Head title="ملف المراجعة" meta={<span className="sub">التوصيات السابقة كما صدرت</span>} />
+        <Head title="ملف المراجعة" />
         {study && (
           <div className="apv-rec">
             <div className="apv-rec-h">
@@ -192,7 +192,6 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           <div className="apv-rec">
             <div className="apv-rec-h"><b>المستشار · {consultantByKey(ref.consultant)?.name}</b><span className="pc-sp" /><Tag tone={ref.opinion ? 'ok' : 'warn'}>{ref.opinion ? ref.verdict : 'بانتظار الرأي'}</Tag></div>
             {ref.opinion && <p className="sub cnote">{ref.opinion}</p>}
-            <p className="sub cnote">{/* doc 4.4.7 · 4.4.8 */}رأي استشاري غير ملزم · لا يوقف مسار الاعتماد ولا يُتخذ مسار إعادة.</p>
           </div>
         )}
         {/* v3 · 4.2.8 · 4.4.7 · the grants manager asks a consultant himself · the path goes on */}
@@ -202,7 +201,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
               <FieldSelect value={cons} label="مستشار مختص" options={consOpts.map((c) => ({ value: c.key, label: `${c.name} · ${c.accessDays} أيام` }))} onChange={setCons} />
               <button type="button" className="btn btn-2 cfgadd" disabled={!cons} onClick={() => { referConsultant(row.id, cons, me); setCons('') }}>اطلب رأي المستشار</button>
             </div>
-          ) : <p className="sub cnote">لا مستشار مرتبط بمجال «{row.field}» · يُضاف من إعدادات المستشارين ({CONSULTANTS.list.length}).</p>
+          ) : <p className="sub cnote">لا مستشار مرتبط بمجال «{row.field}».</p>
         )}
         {[...f.recs].reverse().filter((r) => r.level !== 'supervisor' || !study).map((r, i) => (
           <div key={`${r.level}-${i}`} className="apv-rec">
@@ -220,11 +219,11 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
             )}
           </div>
         ))}
-        <p className="sub cnote">مرات الإعادة: <Num>{f.recs.filter((r) => r.verdict === 'return').length}</Num> · لكل إعادة سببها في السجل.</p>
+        <p className="sub cnote">مرات الإعادة: <Num>{f.recs.filter((r) => r.verdict === 'return').length}</Num></p>
       </Glass>
 
       <Glass>
-        <Head title="اللوحة التنفيذية" meta={<Tag tone="mute">للعرض · لا تعديل على بيانات المشروع</Tag>} />
+        <Head title="اللوحة التنفيذية" />
         <KV rows={[
           { k: 'مبلغ الدعم', v: <b><Money sm>{amount}</Money></b> },
           { k: 'المستفيدون · تكلفة المستفيد', v: <><Num>{row.beneficiaries}</Num> · <Money sm>{per}</Money></> },
@@ -248,20 +247,20 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           /* Batch 7 · approvals#8 · the expected impact from the reach really reported (cross#28) */
           { k: 'الأثر المتوقع', v: <><Num>{ei.expected}</Num> مستفيد · {ei.from === 'default' ? 'تقدير افتراضي' : <>بنسبة تحقّق <span className="num">{pct(Math.round(ei.rate * 100))}</span> في <Num>{ei.basis}</Num> {ei.from === 'similar' ? 'مشابهًا' : 'من المجال'}</>}</> },
           /* Client 21 Oct (#28) · the end is a date the entity gave (moved with the actual start) · the duration the days between */
-          { k: 'نهاية التنفيذ', v: row.endAt ? <><DateText>{row.endAt}</DateText>{row.durationDays ? <span className="sub"> · <Num>{row.durationDays}</Num> يومًا من البداية</span> : null}</> : '—' },
+          { k: 'نهاية التنفيذ', v: row.endAt ? <><DateText>{row.endAt}</DateText>{row.durationDays ? <span className="sub"> · <Num>{row.durationDays}</Num> يومًا</span> : null}</> : '—' },
           { k: 'الأهداف التفصيلية', v: objectives.length ? <><Num>{objectives.length}</Num> · {objectives.slice(0, 2).join('، ')}{objectives.length > 2 ? '…' : ''}</> : '—' },
           { k: 'سجلّ الجهة في المشاريع المغلقة', v: past.n ? <><Num>{past.n}</Num> مشروع · متوسط التقييم {past.score === null ? '—' : <Num>{past.score}</Num>} · تحقق المستفيدين {past.reach === null ? '—' : <span className="num">{pct(past.reach)}</span>}</> : 'لا مشاريع مغلقة للجهة بعد' },
         ]} />
         <h3 className="stdy-h mt-3">الخطة</h3>
         <KV rows={[
           { k: 'الخطة المالية', v: fplan ? fplan.years.map((y) => `${yearById(y.yearId)?.name ?? y.yearId}: ${nf.format(y.amount)}`).join(' · ') : 'سنة واحدة · من بند الحجز' },
-          { k: 'توجيهات الصرف', v: payPlan?.note ? <>{payPlan.count ? <><Num>{payPlan.count}</Num> دفعات · </> : null}{payPlan.note} · <span className="sub">الجدول التفصيلي في الاتفاقية</span></> : 'جدول الدفعات يُعدّ في الاتفاقية' },
-          { k: 'خطة التنفيذ', v: needsPlan === undefined ? 'يُقرَّر مع الاعتماد' : needsPlan ? 'يتطلب خطة تنفيذ · تُفتح بعد الاعتماد' : 'لا يتطلب خطة' },
+          { k: 'توجيهات الصرف', v: payPlan?.note ? <>{payPlan.count ? <><Num>{payPlan.count}</Num> دفعات · </> : null}{payPlan.note}</> : '—' },
+          { k: 'خطة التنفيذ', v: needsPlan === undefined ? 'يُقرَّر مع الاعتماد' : needsPlan ? 'يتطلب خطة تنفيذ' : 'لا يتطلب خطة' },
         ]} />
       </Glass>
 
       <Glass>
-        <Head title="قراءة المساعد للقرار" meta={<Tag tone="mute">استرشادية · ليست قرارًا</Tag>} />
+        <Head title="قراءة المساعد للقرار" />
         <ul className="apv-sig">
           {fit.signals.map((x) => (
             <li key={x.text} className={x.tone === 'ok' ? 'ok' : 'no'}>
@@ -277,7 +276,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         {similar.length > 0 && (
           <p className="sub cnote">مشاريع مشابهة: {similar.map((x, i) => <span key={x.id}>{i > 0 && '، '}<Link className="lnk" to={ROUTES.project(x.id)}>{x.name}</Link> ({x.stage})</span>)}</p>
         )}
-        <p className="sub cnote">التوافق <span className="num">{pct(fit.score)}</span> · مخرجات الذكاء الاصطناعي أداة دعم لا يترتب عليها أثر اعتمادي.</p>
+        <p className="sub cnote">التوافق <span className="num">{pct(fit.score)}</span></p>
       </Glass>
 
       <Glass>
@@ -310,7 +309,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="الملاحظات الإلزامية" meta={<span className="sub">{/* doc 5.4.14 */}تمنع الإحالة لأعلى حتى تُعالج</span>} />
+        <Head title="الملاحظات الإلزامية" />
         {f.notes.length === 0 && <p className="sub cnote">لا ملاحظات إلزامية.</p>}
         <ul className="apv-list">
           {f.notes.map((n) => (
@@ -338,7 +337,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="رأي إدارة مختصة" meta={<span className="sub">{/* doc 5.4.15 */}استشاري</span>} />
+        <Head title="رأي إدارة مختصة" />
         {f.opinions.length === 0 && <p className="sub cnote">لم يُطلب رأي.</p>}
         <ul className="apv-list">
           {f.opinions.map((o) => (
@@ -371,9 +370,9 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="الملاحظات الرسمية للجهة" meta={<span className="sub"><bdi>{/* doc 5.4.22 */}</bdi></span>} />
+        <Head title="الملاحظات الرسمية للجهة" />
         {f.official.length === 0
-          ? <p className="sub cnote">لا ملاحظات رسمية · الملاحظات الداخلية لا تظهر للجهة إلا إذا اعتُمدت هنا.</p>
+          ? <p className="sub cnote">لا ملاحظات رسمية.</p>
           : <ul className="apv-list">{f.official.map((o) => <li key={o.id}><span className="apv-t"><b>{o.text}</b><span className="sub"><Person name={o.by} /> · <DateText>{o.at}</DateText></span></span></li>)}</ul>}
       </Glass>
 
@@ -396,17 +395,20 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
               )
             })}
           </ul>
-          <p className="sub cnote">لكل عرض محضره وتصويته · وتبقى العروض السابقة سجلًا تاريخيًا. أصوات الأعضاء: {Object.keys(VOTE_SAY).length} خيارات.</p>
         </Glass>
       )}
 
       {holder && holder !== 'supervisor' && holder !== 'confirm' && !conflict && canDecide && (
         <Glass>
-          <Head title="تعارض المصالح" meta={<span className="sub"><bdi>{/* doc 5.4.24 */}</bdi></span>} />
-          <p className="sub cnote">إن كان لك تعارض مع الجهة فأعلنه · يُحوَّل القرار لصاحب الصلاحية التالي ولا تتخذه أنت.</p>
+          <Head title="تعارض المصالح" />
           <div className="apv-row">
-            <span className="fld"><input value={conf} onChange={(e) => setConf(e.target.value)} placeholder="سبب التعارض" aria-label="سبب التعارض" /></span>
-            <button className="btn btn-2 btn-sm" disabled={!conf.trim()} onClick={() => { declareConflict(row, holder, conf.trim(), me); setConf('') }}>أعلن التعارض وحوّل القرار</button>
+            {/* Client 26 Oct · the reason in the decision's popup */}
+            <DockActions
+              actions={[{ label: 'أعلن التعارض وحوّل القرار', kind: 'btn-2 btn-sm', needsNote: true }]}
+              subject={row.name}
+              placeholder="سبب التعارض"
+              onRun={(_a, n) => { declareConflict(row, holder, n, me) }}
+            />
           </div>
         </Glass>
       )}
@@ -434,7 +436,6 @@ function ReviewCard({ row }: { row: ProjectRow }) {
         { k: 'الشروط الخاصة', v: f.conditions.length ? <>{unmet.length ? <span className="bad"><Num>{unmet.length}</Num> لم تُستوفَ</span> : 'مستوفاة'} · <Num>{f.conditions.length}</Num> شرط</> : <span className="sub">لا شروط</span> },
         { k: 'الملاحظات الإلزامية', v: open.length ? <span className="bad"><Num>{open.length}</Num> لم تُعالج</span> : <span className="sub">لا ملاحظات مفتوحة</span> },
       ]} />
-      <p className="sub cnote">آخر خطوة في المسار مهما كان صاحب القرار · يتحقق مشرف المنح ثم يؤكد «اعتماد مكتمل» من شريط القرار · بعدها يُفتح إعداد الاتفاقية.</p>
     </Glass>
   )
 }

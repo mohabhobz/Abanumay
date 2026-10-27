@@ -685,7 +685,7 @@ export function GroupPicker({
         <MenuPanel
           foot={
             <>
-              {full && <span className="sub">الحد الأقصى <span className="num">{max}</span> مستويات، وبعدها تصبح كل مجموعة صفًّا واحدًا</span>}
+              {full && <span className="sub">الحد الأقصى <span className="num">{max}</span> مستويات</span>}
               {chain.length > 0 && (
                 <button type="button" className="fclear" onClick={() => onChange(undefined)}>
                   إلغاء التجميع

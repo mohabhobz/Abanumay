@@ -23,7 +23,7 @@ export interface ModulePlaceholderProps {
  * real figures, so the client can gauge scale, and the developer knows
  * what's required.
  */
-export function ModulePlaceholder({ title, scope, facts, demoTo }: ModulePlaceholderProps) {
+export function ModulePlaceholder({ title, facts, demoTo }: ModulePlaceholderProps) {
   const navigate = useNavigate()
 
   return (
@@ -38,7 +38,7 @@ export function ModulePlaceholder({ title, scope, facts, demoTo }: ModulePlaceho
 
           {facts && facts.length > 0 && (
             <Glass>
-              <Head title="الحجم الفعلي في النظام" meta="مصدره النظام العامل" />
+              <Head title="الحجم الفعلي في النظام" />
               <div className="imp" style={{ '--n': facts.length } as React.CSSProperties}>
                 {facts.map((f) => (
                   <div key={f.k}>
@@ -56,7 +56,6 @@ export function ModulePlaceholder({ title, scope, facts, demoTo }: ModulePlaceho
             <Empty
               art={{ done: 0, total: 2 }}
               title={`${title}، لم تُبنَ بعد في هذا النموذج.`}
-              note={scope}
               actions={
                 demoTo && (
                   <button className="btn btn-2" onClick={() => navigate(demoTo.to)}>

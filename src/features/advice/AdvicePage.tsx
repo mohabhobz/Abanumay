@@ -64,8 +64,7 @@ export default function AdvicePage() {
               {p && r && !unlocked ? (
                 <Glass>
                   <Head title="رمز الوصول" />
-                  <p className="sub cnote">أدخل الرمز المرسل إليك مع رابط الإحالة · الشاشة لمستشار هذه الإحالة وحده.</p>
-                  <form className="apv-row mt-2" onSubmit={(e) => { e.preventDefault(); const r = unlockAdvice(p.id, code); if (r.ok) setUnlocked(true); else setCodeErr(r.lockedFor ? `أُوقفت المحاولات ${countOf(r.lockedFor, NOUN.minute)} بعد ${ADVICE_MAX_TRIES} محاولات خاطئة` : `الرمز غير صحيح · بقيت ${countOf(r.left, NOUN.attempt)}`) }}>
+                  <form className="apv-row" onSubmit={(e) => { e.preventDefault(); const r = unlockAdvice(p.id, code); if (r.ok) setUnlocked(true); else setCodeErr(r.lockedFor ? `أُوقفت المحاولات ${countOf(r.lockedFor, NOUN.minute)} بعد ${ADVICE_MAX_TRIES} محاولات خاطئة` : `الرمز غير صحيح · بقيت ${countOf(r.left, NOUN.attempt)}`) }}>
                     <span className="fld"><input className="num" inputMode="numeric" dir="ltr" value={code} onChange={(e) => { setCode(e.target.value); setCodeErr('') }} aria-label="رمز الوصول" /></span>
                     <button type="submit" className="btn btn-p btn-sm">ادخل</button>
                   </form>
@@ -74,7 +73,7 @@ export default function AdvicePage() {
               ) : !p || !r ? (
                 <Glass>
                   <Head title="لا توجد إحالة" />
-                  <p className="sub cnote">لا يوجد مشروع محال إليك بهذا الرابط · تصلك الإحالة من مشرف المنح ومعها رابطها.</p>
+                  <p className="sub cnote">لا يوجد مشروع محال إليك بهذا الرابط.</p>
                 </Glass>
               ) : (
                 <>
@@ -112,7 +111,7 @@ export default function AdvicePage() {
                         )}
                       </Glass>
                       <Glass>
-                        <Head title="مرفقات الجهة" meta={<span className="sub">المرفقات الداخلية لا تظهر هنا</span>} />
+                        <Head title="مرفقات الجهة" />
                         <DocList
                           label="مرفقات الجهة"
                           rows={REQUEST_DOCS.filter((d) => d.audience === 'entity').map((d) => {
@@ -139,7 +138,7 @@ export default function AdvicePage() {
                             <p className="cnote">{r.opinion}</p>
                           </>
                         ) : expired ? (
-                          <p className="sub cnote">انتهت مدة وصولك إلى هذا المشروع · تُجدَّد الإحالة من مشرف المنح إن لزم.</p>
+                          <p className="sub cnote">انتهت مدة وصولك إلى هذا المشروع.</p>
                         ) : (
                           <>
                             <div className="cfgchips" role="radiogroup" aria-label="الرأي">
@@ -156,7 +155,7 @@ export default function AdvicePage() {
                               </span>
                             </label>
                             <div className="regfoot">
-                              <span className="decsent">{c?.name ?? ''} · يصل رأيك إلى مشرف المنح</span>
+                              <span className="decsent">{c?.name ?? ''}</span>
                               <span className="pc-sp" />
                               <button className="btn btn-p" disabled={!open || !verdict || !text.trim()} onClick={() => verdict && giveOpinion(p.id, text.trim(), verdict, c?.name ?? 'المستشار')}>
                                 أرسل الرأي

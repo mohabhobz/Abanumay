@@ -1,3 +1,4 @@
+import { demoIban } from '@/lib/iban'
 /**
  * New entity registration.
  *
@@ -620,7 +621,7 @@ const req = (
   partner: PORTAL_KIND,
   /* An obfuscated IBAN · this is a mock in an open repo, no need for a number resembling a real one */
   banks: [
-    { id: 'b1', bankName: 'مصرف الراجحي', bankHolder: name, shortName: 'الحساب العام', iban: 'SA00 0000 0000 0000 0000 0000', doc: 'وثيقة-الحساب.pdf' },
+    { id: 'b1', bankName: 'مصرف الراجحي', bankHolder: name, shortName: 'الحساب العام', iban: demoIban(`reg-${name}`, 'مصرف الراجحي'), doc: 'وثيقة-الحساب.pdf' },
   ],
   acctEmail: `reg-${id}@example.org`,
   docs,

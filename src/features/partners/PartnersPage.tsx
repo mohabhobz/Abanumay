@@ -3,7 +3,7 @@ import { useDocReads } from '@/lib/docCache'
 import { suggestNext } from '@/data/shared/agent'
 import { rowGo } from '@/lib/rowGo'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { BackTo, FieldSelect, Glass, Head, KV, Money, Tabs, Tag, CheckChip } from '@/components/ui'
+import { FieldMultiSelect, BackTo, FieldSelect, Glass, Head, KV, Money, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -67,7 +67,7 @@ export default function PartnersPage() {
           <header>
             <div>
               <h1 className="ptitle">الشركاء الاستراتيجيون</h1>
-              <p className="sub mt-1">المشاريع المدعومة عبر جهات خارجية والمحافظ · <span className="num">{PROFILES.filter((p) => p.state === 'approved').length}</span> شريك معتمد · <span className="num">{PORTFOLIOS.length}</span> محافظ</p>
+              <p className="sub mt-1"><span className="num">{PROFILES.filter((p) => p.state === 'approved').length}</span> شريك معتمد · <span className="num">{PORTFOLIOS.length}</span> محافظ</p>
             </div>
             <span className="rowf gp-2">
               {EXT_CREATE.includes(role.key) && <button type="button" className="btn btn-2" onClick={() => navigate(ROUTES.externalNew)}>مشروع لجهة خارجية</button>}
@@ -86,7 +86,6 @@ export default function PartnersPage() {
                 </ul>
               </Glass>
               {PROFILES.map((p) => <PartnerCard key={p.entityId} entityId={p.entityId} />)}
-              <p className="sub cnote">يُسجَّل الشريك من «تسجيل جهة داخليًا» بنوع «شريك استراتيجي» · ويعتمده مدير المنح هنا أو من ملف الجهة.</p>
             </>
           )}
 
@@ -149,7 +148,7 @@ export default function PartnersPage() {
           {tab === 'finance' && (
             <>
               <Glass>
-                <Head title="عمليات منصات الجهات الخارجية" meta={<span className="sub">مراجعة المستندات وتأكيد الحالة · الإدارة المالية</span>} />
+                <Head title="عمليات منصات الجهات الخارجية" />
                 <PayList list={fq.pays} finance={role.key === 'finance'} />
               </Glass>
               {/* Cross · each operation's documents read against its amount, number and date */}
@@ -170,7 +169,7 @@ export default function PartnersPage() {
 
           {tab === 'report' && (
             <Glass className="tblcard">
-              <Head title="مشاريع الشركاء في التقارير" meta={<span className="sub">مميّزة بنوعها · تدخل التقارير العامة</span>} />
+              <Head title="مشاريع الشركاء في التقارير" />
               <div className="ftool-f mb-2">
                 <FieldSelect value={kindF} onChange={setKindF} label="النوع" options={[{ value: '', label: 'كل الأنواع' }, ...[EXT_KIND, 'محفظة', 'مشروع فرعي'].map((k) => ({ value: k, label: k }))]} />
                 <FieldSelect value={partyF} onChange={setPartyF} label="الجهة الخارجية أو الشريك" options={[{ value: '', label: 'كل الجهات' }, ...[...new Set(partnerReport().map((x) => x.partner))].map((k) => ({ value: k, label: k }))]} />
@@ -219,15 +218,13 @@ function ExternalTab() {
     setSaid(out.errors.length ? { bad: out.errors } : { ok: `السجل المرجعي · ${v.name}` })
     if (!out.errors.length) setV({ name: '', region: '', city: '', transfer: '', refs: '' })
   }
-  const flip = <K extends 'party' | 'project'>(k: K, f: (K extends 'party' ? ExtPartyField : ExtProjectField)) =>
-    setCfg((c) => ({ ...c, [k]: (c[k] as string[]).includes(f) ? (c[k] as string[]).filter((x) => x !== f) : [...(c[k] as string[]), f] }))
   const digest = externalDigest(ehsanProjects())
   return (
     <>
       {/* Batch 8 · 11.6.3 · a periodic digest over every external project */}
       {digest && <AnalysisCard title="ملخص دوري" cta="حدّث الملخص" ask={false} onAsk={() => undefined} readings={[digest]} />}
       <Glass className="tblcard">
-        <Head title="السجلات المرجعية للجهات الخارجية" meta={<span className="sub">لا حساب بوابة · لا مستخدم · لا ممثل تنفيذي</span>} />
+        <Head title="السجلات المرجعية للجهات الخارجية" />
         <div className="tblwrap">
           <table className="tbl" aria-label="الجهات الخارجية">
             <thead><tr><th><span className="th-t">الجهة</span></th><th><span className="th-t">بيانات التحويل</span></th><th><span className="th-t">البيانات المرجعية</span></th><th className="n"><span className="th-t">المشاريع</span></th><th><span className="th-t">أنشأه</span></th></tr></thead>
@@ -247,7 +244,7 @@ function ExternalTab() {
       </Glass>
       {may && (
         <Glass>
-          <Head title="سجل مرجعي جديد" meta={<span className="sub">صاحب صلاحية تسجيل الجهات واعتمادها</span>} />
+          <Head title="سجل مرجعي جديد" />
           <div className="regfields">
             <label className="regf"><span className="lb">اسم الجهة الخارجية</span><span className="fld"><input value={v.name} onChange={(e) => setV((x) => ({ ...x, name: e.target.value }))} aria-label="اسم الجهة الخارجية" /></span></label>
             <label className="regf"><span className="lb">المنطقة · اختياري</span><FieldSelect value={v.region} onChange={(x) => setV((y) => ({ ...y, region: x }))} label="منطقة الجهة الخارجية" options={[...REGIONS]} /></label>
@@ -261,12 +258,11 @@ function ExternalTab() {
       <Glass>
         <Head title="الحد الأدنى من البيانات" meta={<span className="sub">{may ? 'قابل للإعداد' : 'للاطلاع'}</span>} />
         <KV rows={[
-          { k: 'الجهة الخارجية', v: <span className="rowf gp-2">{(Object.keys(EXT_PARTY_FIELD_SAY) as ExtPartyField[]).map((f) => <CheckChip key={f} disabled={!may} on={cfg.party.includes(f)} onToggle={() => flip('party', f)}>{EXT_PARTY_FIELD_SAY[f]}</CheckChip>)}</span> },
-          { k: 'المشروع · فوق الاسم والجهة والمسار والمجال والمبلغ والمدة', v: <span className="rowf gp-2">{(Object.keys(EXT_PROJECT_FIELD_SAY) as ExtProjectField[]).map((f) => <CheckChip key={f} disabled={!may} on={cfg.project.includes(f)} onToggle={() => flip('project', f)}>{EXT_PROJECT_FIELD_SAY[f]}</CheckChip>)}</span> },
+          { k: 'الجهة الخارجية', v: <FieldMultiSelect disabled={!may} values={cfg.party} options={(Object.keys(EXT_PARTY_FIELD_SAY) as ExtPartyField[]).map((f) => ({ value: f, label: EXT_PARTY_FIELD_SAY[f] }))} label="حقول الجهة الخارجية" placeholder="حقول الجهة الخارجية" onChange={(xs) => setCfg((c) => ({ ...c, party: xs as ExtPartyField[] }))} /> },
+          { k: 'المشروع', v: <FieldMultiSelect disabled={!may} values={cfg.project} options={(Object.keys(EXT_PROJECT_FIELD_SAY) as ExtProjectField[]).map((f) => ({ value: f, label: EXT_PROJECT_FIELD_SAY[f] }))} label="حقول المشروع" placeholder="حقول المشروع" onChange={(xs) => setCfg((c) => ({ ...c, project: xs as ExtProjectField[] }))} /> },
         ]} />
         {may && <div className="apv-row mt-3"><button type="button" className="btn btn-p btn-sm" onClick={() => { const out = saveExtCfg(cfg, user.name, role.key); setCfgSaid(out.length ? { bad: out } : { ok: 'الحد الأدنى من البيانات' }) }}>احفظ الإعداد</button></div>}
         <Said said={cfgSaid} />
-        <p className="sub cnote">الحقل المفعَّل إلزامي · ولا يلزم المشروع الخارجي استيفاء كل حقول المشروع العادي{/* doc 11.4.3 */}.</p>
       </Glass>
       {waiting.length > 0 && (
         <Glass>

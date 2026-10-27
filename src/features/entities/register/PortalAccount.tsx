@@ -42,7 +42,7 @@ export function PortalAccount({ e }: { e: EntityRow }) {
           <Icon name={icons.alert} size="sm" />
           <div>
             <b>انتهت صلاحية {lapsed.join(' و')}</b>
-            <p>حساب الجهة غير نشط حتى ترفع النسخة السارية بطلب تحديث · لا يُقبل منها طلب مشروع ولا تُصرف لها دفعة قبل اعتماده.</p>
+            <p>حساب الجهة غير نشط حتى ترفع النسخة السارية بطلب تحديث.</p>
           </div>
         </div>
       )}
@@ -53,7 +53,7 @@ export function PortalAccount({ e }: { e: EntityRow }) {
             <b>طلب التحديث <Mono>{open.id}</Mono> · {UPD_STATE_SAY[open.state]}</b>
             <p>{open.state === 'completion'
               ? `أعادته المؤسسة للاستكمال: ${open.note ?? ''}`
-              : open.state === 'draft' ? 'مسودة لم تُرسل بعد.' : 'حساب الجهة «معلق» حتى يُبتّ فيه · مشاريعك القائمة مستمرة ولا تقديم جديد.'}</p>
+              : open.state === 'draft' ? 'مسودة لم تُرسل بعد.' : 'حساب الجهة «معلق» حتى يُبتّ فيه.'}</p>
           </div>
         </div>
       )}
@@ -66,7 +66,7 @@ export function PortalAccount({ e }: { e: EntityRow }) {
 
       {!blocked && (
         <footer className="payq-f">
-          <span className="sub payq-when">بيانات الاتصال تُحدَّث فورًا · والهوية والترخيص والحسابات البنكية باعتماد المؤسسة</span>
+          <span className="pc-sp" />
           <Link className={`btn ${lapsed.length && !open ? 'btn-p' : 'btn-2'}`} to={`${ROUTES.entityUpdate}?entity=${e.id}${open ? `&id=${open.id}` : ''}`}>
             <Icon name={icons.edit} size="sm" />
             {open && open.state !== 'review' ? 'أكمل طلب التحديث' : open ? 'اعرض طلب التحديث' : 'حدّث بيانات الجهة'}

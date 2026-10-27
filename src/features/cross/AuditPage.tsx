@@ -61,7 +61,7 @@ export default function AuditPage() {
           <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">سجل التدقيق</h1>
-              <p className="sub mt-1"><Num>{all.length}</Num> عملية في جميع الوحدات · سجل للقراءة فقط لا يُعدَّل ولا يُحذف</p>
+              <p className="sub mt-1"><Num>{all.length}</Num> عملية في جميع الوحدات</p>
             </div>
             <button type="button" className="btn btn-2 btn-sm" onClick={() => exportXlsx(sheet)}>
               <Icon name={icons.export} size="sm" />

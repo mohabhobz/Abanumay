@@ -372,10 +372,12 @@ function Fan({ slots, compact, aria, restK, restT, rest }: FanProps) {
      The height is then structural, not a number someone has to
      keep in sync with the longest state.
      ═══════════════════════════════════════════════════════════ */
-  const NB = '\u00A0'
 
-  const rows = active ? active.lines.filter(Boolean) : rest.filter(Boolean)
-  const src = active && active.src ? active.src : null
+  /* Client 27 Oct · nothing reads under the arc at rest (the lines the page wrote there are gone) ·
+     a hovered step reads its who and when in a reading that floats under the arc, so the arc keeps
+     one height and sits centred against the record's title */
+  const rows = active ? active.lines.filter(Boolean) : []
+  void rest
 
   return (
     <div className="garc">
@@ -479,11 +481,11 @@ function Fan({ slots, compact, aria, restK, restT, rest }: FanProps) {
       </div>
       </div>
 
-      <div className="fanfoot" key={hover === null ? 'fbase' : `f${hover}`}>
-        <div className="fhl">{rows[0] ?? NB}</div>
-        <div className="fhl">{rows[1] ?? NB}</div>
-        <div className="fhs">{src ?? NB}</div>
-      </div>
+      {rows.length > 0 && (
+        <div className="fanfoot" key={`f${hover}`} role="status">
+          {rows.slice(0, 2).map((r, i) => <div key={i} className="fhl">{r}</div>)}
+        </div>
+      )}
     </div>
   )
 }

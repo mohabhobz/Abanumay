@@ -1,4 +1,4 @@
-import { Glass, Money, Num } from '@/components/ui'
+import { Glass, Money } from '@/components/ui'
 import { nf } from '@/lib/format'
 import { CYCLES, plan2026, type PlanNode } from '@/data/budgetPlan'
 
@@ -132,11 +132,6 @@ export function FieldSpend({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
           </div>
         ))}
       </div>
-
-      <p className="mut chb-n">
-        يعرض النظام العامل هذا الرسم أعمدةً رأسيةً على <Num>39</Num> هدفًا، فتظهر الأسماء
-        مقلوبة ومتداخلة. الأعمدة الأفقية تجعل الاسم مقروءًا، والطول هو المقياس.
-      </p>
     </Glass>
   )
 }
@@ -240,7 +235,6 @@ export function YearSpend() {
 
   const sAlloc = spline(pAlloc)
   const sSpent = spline(pSpent)
-  const overYears = rows.filter((c) => c.spent > c.alloc).map((c) => c.label.split(' ')[0])
 
   /* Overshoot region - computed by sampling, not a mask.
      A mask subtracts one area from another, so the result covers everything under both lines rather
@@ -357,16 +351,6 @@ export function YearSpend() {
           </span>
         </span>
       )}
-
-      <p className="mut chb-n">
-        المنطقة الملوّنة بين الخطّين تعني صرفًا تجاوز المخصص، وقد حدث في{' '}
-        {overYears.map((y, i) => (
-          <span key={y}>
-            {i > 0 && ' و'}
-            <span className="num">{y}</span>
-          </span>
-        ))}. ويظهر الوقف خارج الخطّ لأنه جهة أخرى في السنة نفسها، لا سنة تالية.
-      </p>
     </Glass>
   )
 }
@@ -382,10 +366,6 @@ export function YearSpend() {
  * reports - we weren't able to read that formula.
  */
 export function PlanCoverage({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
-  const total = nodes.reduce((s, n) => s + n.alloc, 0)
-  const inPlan = nodes.filter((n) => n.plan > 0).reduce((s, n) => s + n.alloc, 0)
-  const out = nodes.filter((n) => n.plan === 0)
-
   return (
     <Glass className="chb">
       <span className="chb-h">
@@ -411,12 +391,6 @@ export function PlanCoverage({ nodes = fields2026 }: { nodes?: PlanNode[] }) {
           </div>
         ))}
       </div>
-
-      <p className="mut chb-n">
-        <b><Money sm>{total - inPlan}</Money></b> من <Money sm>{total}</Money> خارج
-        حساب الإنجاز: {out.map((n) => n.label).join(' و')} خطة إنجازها <span className="num">0</span>{' '}
-        وباقي المجالات <span className="num">100</span>. ولا توجد إشارة إلى ذلك في الشاشة.
-      </p>
     </Glass>
   )
 }

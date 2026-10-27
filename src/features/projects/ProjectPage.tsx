@@ -303,7 +303,7 @@ export default function ProjectPage() {
   const screen = useRef<HTMLDivElement>(null)
   /* The analytics column fills the remaining space from its position up to the decision bar. */
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
   const [atEnd, setAtEnd] = useState(false)
 
   useEffect(() => {
@@ -663,13 +663,12 @@ export default function ProjectPage() {
           compact={mobile}
           atEnd={atEnd}
           /* The grants manager links the project to a budget line as part of the decision. */
-          hold={asEntity ? (waiting ? 'مطلوب منك استكمال الطلب وإعادة إرساله من بوابتك' : undefined) : waiting ? 'بانتظار استكمال الجهة · الدراسة متوقفة حتى تعيد إرسال الطلب' : closed ? (flow?.closed?.kind === 'cancel' ? 'الطلب ملغى' : 'الطلب مؤرشف') : seat && (!seat.mine || seat.actions.length === 0) ? seat.say : outOfStudy && row ? `${row.statusGroup} · خارج مسار الدراسة والاعتماد` : undefined}
+          hold={asEntity ? (waiting ? 'مطلوب منك استكمال الطلب وإعادة إرساله من بوابتك' : undefined) : waiting ? 'بانتظار استكمال الجهة' : closed ? (flow?.closed?.kind === 'cancel' ? 'الطلب ملغى' : 'الطلب مؤرشف') : seat && (!seat.mine || seat.actions.length === 0) ? seat.say : outOfStudy && row ? row.statusGroup : undefined}
           onDecide={decide}
           intercept={intercept}
           context={holder === 'supervisor' && seat?.mine && flow?.study ? (
             <p className="sub cnote">
               التوصية المسجّلة: <b>{flow.study.recommendation === 'approve' ? 'الموافقة' : flow.study.recommendation === 'reject' ? 'الرفض' : 'لم تُحدَّد'}</b>
-              {' · '}تُحال لمدير المنح ولا يترتب عليها اعتماد
             </p>
           ) : undefined}
           lead={(holder === 'committee' || holder === 'board') && seat?.mine ? (
@@ -694,10 +693,9 @@ export default function ProjectPage() {
         messages={detail.messages}
         entityName={entity.name}
         me={asEntity ? 'entity' : 'staff'}
-        why={detail.threadWhy}
         placeholder={asEntity ? 'اكتب رسالة إلى المؤسسة…' : `اكتب رسالة إلى ${entity.name}…`}
         emptyTitle="لا توجد مراسلات على هذا المشروع."
-        emptyNote="تُستخدم القناة عمليًا حين يتوقف إجراء على أحد الطرفين: طلب استكمال، أو سند لم يُرفع، أو تقرير متأخر. وفي غير ذلك يجري التواصل عبر المتابعات."
+        emptyNote=""
       />
     </AppLayout>
   )

@@ -44,7 +44,6 @@ export default function LiveReport() {
           <Glass>
             <Empty
               title="هذه الشاشة غير موجودة في الكتالوج."
-              note="عُد إلى الكتالوج واختر تقريرًا منه."
               actions={<Link className="btn btn-2" to={ROUTES.reportTab('catalog')}>كتالوج التقارير</Link>}
             />
           </Glass>
@@ -65,9 +64,8 @@ export default function LiveReport() {
               <p className="sub mt-1">
                 <code className="mono">control/{spec.path}</code>
                 {spec.rowsLive !== null && (
-                  <> · <span className="num">{nf.format(spec.rowsLive)}</span> {nounAfter(spec.rowsLive, NOUN.row)} في النظام الحالي</>
+                  <> · <span className="num">{nf.format(spec.rowsLive)}</span> {nounAfter(spec.rowsLive, NOUN.row)}</>
                 )}
-                {spec.flaw && <> · <Tag tone="mute">{spec.flaw}</Tag></>}
               </p>
             </div>
           </header>
@@ -76,15 +74,7 @@ export default function LiveReport() {
 
           <Glass className="lrq">
             <p className="lrq-q">{spec.question ? spec.question : spec.what}</p>
-            {spec.question && <p className="mut lrq-w">{spec.what}</p>}
           </Glass>
-
-          {spec.finding && (
-            <Glass className="lrfind">
-              <span className="badge badge-30"><Icon name={icons.insight} size="sm" /></span>
-              <p>{spec.finding}</p>
-            </Glass>
-          )}
 
           {spec.charts.length > 0 && <Charts spec={spec} />}
 
@@ -102,7 +92,7 @@ export default function LiveReport() {
 function Charts({ spec }: { spec: LiveSpec }) {
   return (
     <section className="rpsec">
-      <Head title="رسوم الشاشة" meta={`${countOf(spec.charts.length, NOUN.chart)} في النظام`} />
+      <Head title="رسوم الشاشة" meta={countOf(spec.charts.length, NOUN.chart)} />
       {spec.charts.map((c) => (
         <RealChart key={c.title} title={c.title} />
       ))}
@@ -210,8 +200,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
     return (
       <Glass>
         <Empty
-          title="هذه الشاشة فارغة في النظام الحالي."
-          note="تُفتح دون جدول أو فلاتر أو رسوم، ولا يوجد منها إلا اسمها في القائمة. أُدرجت هنا ليبقى الجرد كاملًا، ولأنها بند في قائمة متطلبات الواجهة الخلفية."
+          title="هذه الشاشة فارغة."
         />
       </Glass>
     )
@@ -224,8 +213,6 @@ function Rows({ spec }: { spec: LiveSpec }) {
     rows: shown.map((r) => spec.cols.map((c) => String(r[c.key] ?? ''))),
   }
 
-  const only = spec.cols.filter((c) => c.only)
-  const heavy = spec.filters.filter((f) => (f.count ?? 0) >= 20).length
   const advCount = rest.filter((f) => valuesOf(f).length > 0).length
   const chips = live.flatMap((f) => valuesOf(f).map((v) => ({ f, v })))
   const hasFilters = spec.filters.length > 0
@@ -236,21 +223,6 @@ function Rows({ spec }: { spec: LiveSpec }) {
         title="الجدول بأعمدته"
         meta={`${countOf(spec.cols.length, NOUN.column)}${hasFilters ? ` · ${countOf(spec.filters.length, NOUN.filter)}` : ''} · عيّنة ${countOf(rows.length, NOUN.row)}`}
       />
-
-      <p className="mut rpsec-n">
-        القيم تجريبية · الأعمدة والفلاتر منقولة من <code className="mono">control/{spec.path}</code>.
-        {heavy > 0 && (
-          <>
-            {' '}في النظام الحالي <Num>{heavy}</Num> من فلاترها <b>منسدلة طويلة بلا بحث</b>،
-            وهنا كل قائمة طويلة مزوّدة ببحث داخلي.
-          </>
-        )}
-        {only.length > 0 && (
-          <>
-            {' '}الأعمدة المعلّمة <b>لا مثيل لها في أي شاشة أخرى</b>: {only.map((c) => c.label).join(' · ')}.
-          </>
-        )}
-      </p>
 
       <Glass className="ftoolbar rptb">
         <div className="ftool-r">
@@ -285,7 +257,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
             )}
             {!hasFilters && (
               <span className="sub">
-                <span className="num">{nf.format(shown.length)}</span> {nounAfter(shown.length, NOUN.row)} · لا فلاتر لهذه الشاشة في النظام
+                <span className="num">{nf.format(shown.length)}</span> {nounAfter(shown.length, NOUN.row)}
               </span>
             )}
           </div>
@@ -349,7 +321,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
 
       <Glass className="tblcard">
         {shown.length === 0 ? (
-          <Empty title="لا توجد صفوف بهذه الفلاتر." note="خفّف الفلاتر أو امسحها." />
+          <Empty title="لا توجد صفوف بهذه الفلاتر." />
         ) : (
         <div className="tblwrap">
           <div className="tblock">
@@ -475,8 +447,7 @@ function BudgetTree() {
               </div>
             {!leaf && (
               <span className="sub">
-                <span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.line)} ·{' '}
-                الإجماليات محسوبة من الدورات الخمس الحقيقية
+                <span className="num">{rows.length}</span> {nounAfter(rows.length, NOUN.line)}
               </span>
             )}
           </div>
@@ -485,7 +456,7 @@ function BudgetTree() {
       </Glass>
 
       {leaf ? (
-        <Glass><Empty title="آخر مستوى في الشجرة." note="لا تقسيم تحت الهدف، فعُد إلى مستوى أعلى من المسار في الأعلى." /></Glass>
+        <Glass><Empty title="آخر مستوى في الشجرة." /></Glass>
       ) : (
         <>
           <Glass className="tblcard">
@@ -540,14 +511,6 @@ function BudgetTree() {
               </div>
             </div>
           </Glass>
-
-          <p className="mut rpsec-n">
-            <b>المتبقي = الميزانية − المعتمد.</b> الصف ذو القيمة السالبة يعني اعتمادًا يتجاوز
-            الحد المالي، وقد حدث ذلك فعلًا في <span className="num">2024</span> و
-            <span className="num">2025</span>. والنظام الحالي يعرض هذا الرقم في خلية
-            جدول عادية دون أي تنبيه، ولا توجد شاشة تنبّه مدير المنح إلى تجاوز الحد المالي
-            <b> وقت</b> الاعتماد.
-          </p>
         </>
       )}
     </section>

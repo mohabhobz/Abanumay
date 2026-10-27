@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { regTrends } from '@/data/shared/ai'
 import { Link, useNavigate } from 'react-router-dom'
-import {
+import { StatRow,
   DateField, DateText, Empty, Glass, Icon, icons, GroupPicker, MultiSelect, Num, SearchBox, Segments, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
@@ -179,9 +179,8 @@ export default function RequestsPage() {
               <h1 className="ptitle">طلبات تسجيل الجهات</h1>
               <p className="sub mt-1">
                 <span className="num">{rows.length}</span> {nounAfter(rows.length, REQUEST_NOUN)} من{' '}
-                <span className="num">{regRows.length}</span> في هذا النموذج ·{' '}
-                <span className="num">{k.open}</span> تحت المراجعة · والجهة لا تُنشأ
-                إلا بعد الاعتماد{/* doc rule 2 */}
+                <span className="num">{regRows.length}</span> ·{' '}
+                <span className="num">{k.open}</span> تحت المراجعة
               </p>
             </div>
             {/* Note: same action, name, and destination as on "Entities". Here it was "Register a
@@ -199,38 +198,35 @@ export default function RequestsPage() {
             variant="bar"
             title="قراءة سريعة للطلبات"
             readings={readings}
-            empty="ملفات الطلبات في النطاق الحالي مكتملة، ولا يوجد طلب متوقف. وسّع الفلتر لعرض المزيد."
+            empty="ملفات الطلبات في النطاق الحالي مكتملة، ولا يوجد طلب متوقف."
           />
 
           {/* Note: these four come from the process's six indicators - the remaining two (request
               count and rejection rate) appear in the title and closing line, so they aren't
               repeated as cards. */}
-          <div className="stats4">
+          <StatRow title="مؤشرات طلبات التسجيل">
             <Stat
               label="نسبة الطلبات المعتمدة"
               value={<Num>{pct(k.approvedPct)}</Num>}
-              note={/* doc KPI 2 */ "من المرسَل لا من المسودات"}
+              hint="من الطلبات المرسَلة، لا المسودات"
               bar={{ w: `${k.approvedPct}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة المراجعة"
               value={<Num>{k.avgDays}</Num>}
               unit="أيام"
-              note={/* doc KPI 4 */ "من الإرسال حتى القرار"}
             />
             <Stat
               label="المعادة للاستكمال"
               value={<Num>{pct(k.backPct)}</Num>}
-              note={/* doc KPI 5 */ "توقف لاستكمال النواقص لا رفض"}
               bar={{ w: `${k.backPct}%`, c: 'var(--warn)' }}
             />
             <Stat
               label="اكتمال ملفات المستندات"
               value={<Num>{pct(k.filePct)}</Num>}
-              note={/* doc KPI 6 */ "المرفوع من الإلزامي لكل تصنيف"}
               bar={{ w: `${k.filePct}%`, c: 'var(--ch-1)' }}
             />
-          </div>
+          </StatRow>
 
           <Segments
             active={readList(v.state).length === 1 ? readList(v.state)[0] : ''}
@@ -404,7 +400,6 @@ export default function RequestsPage() {
             <Glass>
               <Empty
                 title="لا توجد طلبات بهذه الفلاتر."
-                note="وسّع النطاق، أو اختر حالة أخرى من الشرائح أعلاه."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
@@ -430,7 +425,6 @@ export default function RequestsPage() {
               </Glass>
               {grouped && (
                 <p className="sub tcen">
-                  التجميع يعرض كل النتائج ·{' '}
                   <span className="num">{countLeaves(groupTree(sorted, group))}</span> مجموعات ·{' '}
                   <button className="lnk" onClick={() => set({ group: undefined })}>
                     إلغاء التجميع
@@ -451,12 +445,8 @@ export default function RequestsPage() {
             </div>
           )}
 
-          {/* Rules 28 and 29 are documented on the screen because they explain the absence of a
-              button - and an absence doesn't explain itself. */}
           <p className="sub tcen">
-            لا يُحذف طلب ولا جهة · المرفوض يُؤرشف بسببه والقائم يُعطَّل
-            (القاعدتان <span className="num">28</span> و<span className="num">29</span>) ·{' '}
-            <span className="num">{k.total}</span> {nounAfter(k.total, NOUN.sentRequest)} في هذا النموذج،
+            <span className="num">{k.total}</span> {nounAfter(k.total, NOUN.sentRequest)}،
             منها <span className="num">{pct(k.rejectedPct)}</span> مرفوضة.
           </p>
         </div>

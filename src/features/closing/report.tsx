@@ -101,9 +101,8 @@ export function ReportFiles({ c, edit, by }: { c: CloseRow; edit: boolean; by: s
     <Glass>
       <Head
         title="ملفات التنفيذ"
-        meta={<span className="sub"><Num>{list.length}</Num> ملف في مخزن المؤسسة</span>}
+        meta={<span className="sub"><Num>{list.length}</Num> ملف</span>}
       />
-      <p className="sub cnote">صور التنفيذ والفيديوهات والعقود مع الجهات المنفّذة · تُرفع هنا مباشرة دفعةً واحدة، وتُعرض في المتصفح دون تنزيل.</p>
       {edit && (
         <label className="btn btn-2 upbtn rptup">
           <input

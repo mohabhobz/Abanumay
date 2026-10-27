@@ -8,10 +8,9 @@ import { ibanOwner } from '@/data/entities/validate'
 import { BANKS } from '@/data/mock/taxonomy'
 import { pickedSay } from '@/data/entities/reasons'
 import { ReasonDialog } from './ReasonDialog'
-import { isTest, markTest, sysEnv } from '@/data/shared/testData'
+import { isTest, markTest } from '@/data/shared/testData'
 import {
-  ACT_SAY, REQ_SAY, accountOf, actState, archiveBlocks, bankLinks, forWho, impactOf, lastRequestOf, reasonOf, reasonText, type ActKey,
-} from '@/data/entities/actions'
+  ACT_SAY, REQ_SAY, actState, archiveBlocks, bankLinks, impactOf, lastRequestOf, reasonOf, reasonText, type ActKey } from '@/data/entities/actions'
 import { Modal, ReasonField } from './SelectionActions'
 import { units } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
@@ -146,7 +145,6 @@ function SensModal({ e, sens, me, onClose }: { e: EntityRow; sens: Sens; me: str
               <span>أدرك أن دفعات {stops === 1 ? 'مشروع واحد' : units.project(stops, true)} ستُوقف</span>
             </label>
           )}
-          {tpl && <p className="sub cnote">{tpl.shown ? 'يظهر السبب للجهة في بوابتها.' : 'سبب داخلي · لا يخرج من النظام.'}</p>}
         </>
       ) : (
         <>
@@ -155,7 +153,6 @@ function SensModal({ e, sens, me, onClose }: { e: EntityRow; sens: Sens; me: str
             <span className="lb">رقم الترخيص</span>
             <span className="fld"><input autoFocus dir="ltr" inputMode="numeric" value={typed} onChange={(x) => setTyped(x.target.value)} aria-label="رقم الترخيص للتأكيد" /></span>
           </label>
-          <p className="sub cnote">{sens === 'revoke' || sens === 'archive' ? 'يُعامَل هذا الإجراء كإجراء لا رجعة فيه حتى تحدّد المؤسسة آلية التراجع عنه.' : 'يُوقف التقديم والصرف حتى رفع التعليق.'}</p>
         </>
       )}
     </Modal>
@@ -172,7 +169,6 @@ export function EntityStatusCard({ e }: { e: EntityRow }) {
   const det = entityDetail(e)
   const lapsed = [...new Set([...expiredMandatory(e), ...(det.licenseExpired ? ['الترخيص'] : []), ...(det.boardExpired ? ['قرار تكليف المجلس'] : [])])]
   const open = openUpdateOf(e.id)
-  const acc = accountOf(e)
   const why = accountWhy(e)
   const [testOn, setTestOn] = useState(() => isTest('entity', e.id))
 
@@ -182,22 +178,16 @@ export function EntityStatusCard({ e }: { e: EntityRow }) {
       <KV rows={[
         ...(why ? [{ k: 'سبب الحالة', v: why }] : []),
         { k: 'صلاحية التقديم', v: e.canApply ? <Tag tone="ok">مفعّلة</Tag> : <Tag tone="mute">موقوفة</Tag> },
-        ...(lapsed.length ? [{ k: 'وثائق منتهية', v: <span className="bad">{lapsed.join('، ')} · الحساب «غير نشط» تلقائيًا حتى التحديث</span> }] : []),
+        ...(lapsed.length ? [{ k: 'وثائق منتهية', v: <span className="bad">{lapsed.join('، ')}</span> }] : []),
         ...(open ? [{ k: 'طلب تحديث', v: <Link className="lnk" to={ROUTES.entityUpdateReview(open.id)}><Mono>{open.id}</Mono> · {UPD_STATE_SAY[open.state]}</Link> }] : []),
         ...(o.statusReason ? [{ k: 'سبب آخر قرار', v: o.statusReason }] : []),
       ]} />
-      {/* Whoever may not decide sees who does · the decisions themselves sit in the action bar */}
-      {(['suspend', 'lift', 'revoke', 'archive', 'deactivate', 'activate'] as ActKey[]).filter((k) => { const x = actState(k, e, role); return x.show && x.grant === 'see' }).map((k) => (
-        <p key={k} className="sub cnote">{ACT_SAY[k]} {forWho(k)}.</p>
-      ))}
-      {acc.block === 'revoked' && <p className="sub cnote">إعادة جهة أُلغي اعتمادها بانتظار قرار المؤسسة · أم يلزمها طلب تسجيل جديد؟</p>}
       {role === 'admin' && (
         /* v3 · 2.4.35 · the admin flags a record as test data · logged · in production it leaves the
            reports, the KPIs, the impact board and the exports */
         <div className="mt-3">
           <Switch
             label="بيانات تجريبية"
-            note={sysEnv() === 'prod' ? 'مفعّل: الجهة ومشاريعها خارج التقارير والمؤشرات ولوحة الأثر والتصدير، وتُعلَّم «تجريبي» في القوائم · ويمكن أرشفتها بلا قيود' : 'النظام في بيئة «اختبار» · تظهر البيانات التجريبية كغيرها'}
             on={testOn}
             onChange={(v) => { markTest('entity', e.id, v, me, role); setTestOn(isTest('entity', e.id)) }}
           />
@@ -268,8 +258,8 @@ export function EntityActionDock({ e }: { e: EntityRow }) {
           <ReasonDialog kind={off ? 'statusOff' : 'statusOn'} tone={off ? 'btn-d' : 'btn-p'}
             title={`${ACT_SAY[flip]} · ${e.name}`}
             subject={off
-              ? `يتوقف التقديم والصرف ما دامت الجهة «غير نشط» · ${i.stopped.length ? `دفعات ${units.project(i.stopped.length, true)} تتوقف` : 'لا مشاريع قائمة تتأثر'} · وتُبلَّغ الجهة`
-              : lapsed.length ? `يبقى الحساب «غير نشط» بعد الإعادة لانتهاء ${lapsed.join(' و')}` : 'يعود الحساب «نشطًا» ويُستأنف التقديم والصرف · وتُبلَّغ الجهة'}
+              ? (i.stopped.length ? `دفعات ${units.project(i.stopped.length, true)} تتوقف` : undefined)
+              : lapsed.length ? `يبقى الحساب «غير نشط» لانتهاء ${lapsed.join(' و')}` : undefined}
             confirm={ACT_SAY[flip]} onClose={() => setFlip(null)}
             onConfirm={(p) => {
               setEntityStatus(e.id, off ? 'inactive' : 'lift', pickedSay(p), me, off
@@ -282,7 +272,6 @@ export function EntityActionDock({ e }: { e: EntityRow }) {
       {blocked && (
         <Modal title={`ما يمنع أرشفة ${e.name}`} icon={icons.folder} onClose={() => setBlocked(false)}
           foot={<button type="button" className="btn btn-2" onClick={() => setBlocked(false)}>حسنًا</button>}>
-          <p className="sub cnote">لا تُؤرشف الجهة وعليها ارتباط قائم · أنهِ ما يلي أولًا ثم أعد المحاولة.</p>
           <ul className="payq-ck">
             {blocks.map((b) => (
               <li key={b.label}>
@@ -306,7 +295,7 @@ export function EntityRequestsTab({ e }: { e: EntityRow }) {
   if (rows.length === 0) {
     return (
       <Glass>
-        <Empty title="لا طلبات مسجّلة لهذه الجهة." note="سُجّلت الجهة قبل بوابة التسجيل · وتظهر هنا طلبات التحديث التي ترسلها من بوابتها." />
+        <Empty title="لا طلبات مسجّلة لهذه الجهة." />
       </Glass>
     )
   }
@@ -363,12 +352,12 @@ export function BankActions({ entityId, b }: { entityId: string; b: BankAccount 
         </button>
       </div>
       {ask === 'disable' && (
-        <ReasonDialog kind="bankDisable" title={`تعطيل الحساب · ${b.bank}`} subject={`${b.accountName} · ${tail} · لا يُصرف عليه حتى يُفعَّل من جديد.`}
+        <ReasonDialog kind="bankDisable" title={`تعطيل الحساب · ${b.bank}`} subject={`${b.accountName} · ${tail}`}
           confirm="عطّل الحساب" onClose={() => setAsk(null)}
           onConfirm={(p) => { setBankStatus(entityId, b.id, 'غير مفعل', me, pickedSay(p)); setAsk(null) }} />
       )}
       {ask === 'delete' && (
-        <ReasonDialog kind="bankDelete" title={`حذف الحساب · ${b.bank}`} subject={`${b.accountName} · ${tail} · غير مسجَّل في مشروع ولا ارتباط مالي عليه · الحذف لا رجعة فيه.`}
+        <ReasonDialog kind="bankDelete" title={`حذف الحساب · ${b.bank}`} subject={`${b.accountName} · ${tail}`}
           confirm="احذف نهائيًا" onClose={() => setAsk(null)}
           onConfirm={(p) => { deleteBank(entityId, b.id, pickedSay(p), me); setAsk(null) }} />
       )}
@@ -445,7 +434,6 @@ export function AddBank({ entityId }: { entityId: string }) {
             </span>
           </div>
           {tried && issues.length > 0 && <p className="bad cnote">{issues.join(' · ')}</p>}
-          <p className="sub cnote">يُفعَّل الحساب فور الحفظ ويُسجَّل في سجل الجهة باسمك.</p>
         </Modal>
       )}
     </>

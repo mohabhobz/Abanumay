@@ -1,3 +1,4 @@
+import { demoIban } from '@/lib/iban'
 /**
  * Sample data shaped like the live system.
  *
@@ -96,7 +97,7 @@ export const project: Project = {
   bank: {
     name: 'مصرف الإنماء',
     account: 'جمعية النوابغ التعليمية',
-    iban: 'SA0000000000000000000000',
+    iban: demoIban('project-fixture'),
     status: 'مفعل',
   },
 

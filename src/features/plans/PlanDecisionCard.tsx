@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, Person, Tag } from '@/components/ui'
+import { Link, useLocation } from 'react-router-dom'
+import { DockActions, DateText, Glass, Head, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { meOf, readRole } from '@/data/roles'
 import { planOfProject, planStageLabel } from '@/data/mock/plans'
@@ -14,9 +14,9 @@ import { projectRows } from '@/data/mock/projects'
    external project has neither a plan nor an agreement, and a regular project's plan is optional ·
    the grants manager decides it */
 const KIND_SAY = {
-  portfolio: { t: 'محفظة · تتطلب خطة دائمًا', s: 'لا يُعدَّل القرار · خطة المحفظة شرط لتنفيذ مشاريعها الفرعية' },
-  external: { t: 'مشروع خارجي · بلا خطة ولا اتفاقية', s: 'لا تُنشأ للمشروع الخارجي خطة في النظام ولا اتفاقية · يُصرف ويُغلق مباشرة' },
-  regular: { t: 'مشروع عادي · الخطة اختيارية', s: 'يقرّر مدير المنح «يتطلب خطة» أو «لا يتطلب خطة» · واقتراح القاعدة أدناه' },
+  portfolio: { t: 'محفظة · تتطلب خطة دائمًا' },
+  external: { t: 'مشروع خارجي · بلا خطة ولا اتفاقية' },
+  regular: { t: 'مشروع عادي · الخطة اختيارية' },
 } as const
 
 /* «خطة العمل» · the plan decision on the project (12.2.1 · 12.2.2 · 12.4.31 – 12.4.33).
@@ -30,13 +30,13 @@ const SOURCE_SAY = { approval: 'مع توصية الاعتماد', change: 'تع
 
 export function PlanDecisionCard({ projectId, approved }: { projectId: string; approved: boolean }) {
   usePlans()
+  const { pathname } = useLocation()
   const role = readRole()
   const d = planDecisionOf(projectId)
   const plan = planOfProject(projectId)
   const rule = planRuleSays(projectId)
   const orig = originalDecision(projectId)
   const hist: PlanDecision[] = [...planDecisionHistory(projectId), ...(orig && planDecisionHistory(projectId).length ? [orig] : [])]
-  const [reason, setReason] = useState('')
   const [said, setSaid] = useState('')
   const me = meOf(role)
   const pr = projectRows.find((x) => x.id === projectId)
@@ -46,12 +46,11 @@ export function PlanDecisionCard({ projectId, approved }: { projectId: string; a
 
   return (
     <Glass>
-      <Head title="خطة العمل" meta={d ? <Tag tone={d.needs ? 'teal' : 'mute'}>{d.needs ? 'يتطلب خطة' : 'لا يتطلب خطة'}</Tag> : <span className="sub">لم يُقرَّر بعد</span>} />
+      <Head title="خطة العمل" hint={/* doc 4.4.2 */ `تقترح القاعدة خطة من ${nf.format(APPROVAL_RULES.planFrom)} ريال أو لمدة تتجاوز السنة`} meta={d ? <Tag tone={d.needs ? 'teal' : 'mute'}>{d.needs ? 'يتطلب خطة' : 'لا يتطلب خطة'}</Tag> : <span className="sub">لم يُقرَّر بعد</span>} />
       <ul className="apv-list">
         <li>
           <span className="apv-t">
             <b>{KIND_SAY[kind].t}</b>
-            <span className="sub">{KIND_SAY[kind].s}</span>
           </span>
         </li>
         {d && (
@@ -68,13 +67,13 @@ export function PlanDecisionCard({ projectId, approved }: { projectId: string; a
         <li>
           <span className="apv-t">
             <b>اقتراح القاعدة: {rule ? 'يتطلب خطة' : 'لا يتطلب خطة'}</b>
-            <span className="sub">من {nf.format(APPROVAL_RULES.planFrom)} ريال أو مدة تتجاوز السنة · والقرار لمدير المنح{/* doc 4.4.2 */}</span>
           </span>
         </li>
         {plan && (
           <li>
             <span className="apv-t">
-              <b><Link className="tlink" to={ROUTES.plan(plan.id)}>{plan.id}</Link> · {planStageLabel(plan.stage)}</b>
+              {/* Client 27 Oct · on the plan's own page its number is text · a link there went nowhere */}
+              <b>{pathname === ROUTES.plan(plan.id) ? <span className="num">{plan.id}</span> : <Link className="tlink" to={ROUTES.plan(plan.id)}>{plan.id}</Link>} · {planStageLabel(plan.stage)}</b>
               <span className="sub">{plan.drafter === 'entity' ? 'تكتبها الجهة' : 'يكتبها المشرف بالنيابة'}</span>
             </span>
           </li>
@@ -83,24 +82,27 @@ export function PlanDecisionCard({ projectId, approved }: { projectId: string; a
 
       {mayChange && d && (
         <div className="apv-row mt-3">
-          <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="سبب تعديل القرار · إلزامي" aria-label="سبب تعديل قرار الخطة" /></span>
-          <button type="button" className="btn btn-2 btn-sm" disabled={!reason.trim()} onClick={() => { const out = changePlanDecision(projectId, !d.needs, reason, me); setSaid(out[0] ?? ''); if (!out.length) setReason('') }}>
-            {d.needs ? 'حوّله إلى «لا يتطلب خطة»' : 'حوّله إلى «يتطلب خطة»'}
-          </button>
+          {/* Client 26 Oct · the reason in the decision's popup */}
+          <DockActions
+            actions={[{ label: d.needs ? 'حوّله إلى «لا يتطلب خطة»' : 'حوّله إلى «يتطلب خطة»', kind: 'btn-2 btn-sm', needsNote: true }]}
+            subject={d.needs && plan && plan.stage !== 'cancelled' ? 'تعديل قرار خطة المشروع · يلغي الخطة ويوقف إجراءاتها' : 'تعديل قرار خطة المشروع'}
+            placeholder="سبب تعديل القرار"
+            onRun={(_a, n) => { const out = changePlanDecision(projectId, !d.needs, n, me); setSaid(out[0] ?? ''); return out }}
+          />
         </div>
       )}
       {mayChange && !d && (
         <div className="apv-row mt-3">
-          <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="سبب القرار · إلزامي" aria-label="سبب تعديل قرار الخطة" /></span>
-          {[true, false].map((needs) => (
-            <button key={String(needs)} type="button" className={`btn ${needs === rule ? 'btn-p' : 'btn-2'} btn-sm`} disabled={!reason.trim()} onClick={() => { const out = changePlanDecision(projectId, needs, reason, me); setSaid(out[0] ?? ''); if (!out.length) setReason('') }}>
-              {needs ? 'يتطلب خطة' : 'لا يتطلب خطة'}
-            </button>
-          ))}
+          {/* Client 26 Oct · the reason in the decision's popup */}
+          <DockActions
+            actions={[true, false].map((needs) => ({ label: needs ? 'يتطلب خطة' : 'لا يتطلب خطة', kind: `${needs === rule ? 'btn-p' : 'btn-2'} btn-sm`, needsNote: true, needs }))}
+            subject="قرار خطة المشروع"
+            placeholder="سبب القرار"
+            onRun={(a, n) => { const out = changePlanDecision(projectId, a.needs, n, me); setSaid(out[0] ?? ''); return out }}
+          />
         </div>
       )}
       {said && <p className="bad cnote">{said}</p>}
-      {mayChange && d?.needs && plan && plan.stage !== 'cancelled' && <p className="sub cnote">التحويل إلى «لا يتطلب خطة» يلغي الخطة ويوقف إجراءاتها.{/* doc 12.4.32 */}</p>}
 
       {hist.length > 1 && (
         <>

@@ -1,3 +1,4 @@
+import { demoIban } from '@/lib/iban'
 import type { EntityRow } from '@/types/domain'
 import { BANKS, BANK_REJECT_REASONS, ENTITY_DOCS } from './taxonomy'
 import { overlayOf } from '@/data/entities/store'
@@ -52,6 +53,8 @@ export interface BankAccount {
   reason?: string
   certificate: string
   attachment?: string
+  /** A demo account the fixtures generated (not one the entity entered) */
+  seeded?: boolean
 }
 
 export type EntityEventKind = 'reg' | 'accept' | 'reject' | 'stop' | 'edit' | 'bank' | 'doc'
@@ -216,8 +219,9 @@ export function entityDetail(e: EntityRow): EntityDetail {
       bank,
       shortName: e.name.split(' ').slice(0, 2).join(' '),
       accountName: e.name,
-      /* A validly formatted fake IBAN (SA + 22 digits) using non-real numbers */
-      iban: `SA${pad(int(10, 99))}XXXX${String(int(1000, 9999))}XXXXXXXXXXXX`,
+      /* A well-formed fictional IBAN · full digits, valid check digits */
+      iban: demoIban(`${e.id}-b${i + 1}`, bank),
+      seeded: true,
       status,
       reason: status === 'غير مفعل' ? pick(BANK_REJECT_REASONS) : undefined,
       certificate: `شهادة-بنكية-${bank.replace(/\s/g, '-')}.pdf`,

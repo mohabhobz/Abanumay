@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import {
-  DateField, DateText, Glass, Head, Icon, icons, Num, Person, Select, Switch, Tabs, Tag,
-} from '@/components/ui'
+  DateField, DateText, Glass, Head, Icon, icons, Person, Select, Switch, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES, NAV } from '@/app/routes'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -66,10 +65,6 @@ export default function PreferencesPage() {
           <header>
             <div>
               <h1 className="ptitle">التفضيلات والإشعارات</h1>
-              <p className="sub mt-1">
-                تخصّك وحدك وتُحفظ فور تغييرها · أما ما يغيّر النظام لكل المستخدمين ففي{' '}
-                <Link className="tlink" to={ROUTES.settings}>إعدادات النظام</Link>
-              </p>
             </div>
             <Person name={user.name} size="lg" quiet={false} />
           </header>
@@ -114,9 +109,6 @@ function NotifyTab({ roleKey, roleName }: { roleKey: string; roleName: string })
             </button>
           }
         />
-        <p className="sub cnote">
-          الرسالة النصية للعاجل وحده، فتبقى تعني «الآن» · وما عليه قفل لا يتحرك العمل بدونه.
-        </p>
         <div className="tblwrap">
           <table className="tbl nfm">
             <thead>
@@ -131,7 +123,6 @@ function NotifyTab({ roleKey, roleName }: { roleKey: string; roleName: string })
                 <tr className="nfm-g">
                   <th colSpan={4} scope="rowgroup">
                     <b>{g.label}</b>
-                    <span className="sub">{g.note}</span>
                   </th>
                   <td className="nfm-f">
                     {g.key === 'security' || g.key === 'decisions' ? (
@@ -194,7 +185,7 @@ function NotifyTab({ roleKey, roleName }: { roleKey: string; roleName: string })
       <div className="g2">
         <div className="col">
           <Glass>
-            <Head title="الملخّص" meta={<span className="sub">لما ليس فوريًا</span>} />
+            <Head title="الملخّص" />
             <div className="pf-row">
               <span className="lb">وقت الملخّص اليومي</span>
               <Select
@@ -204,36 +195,22 @@ function NotifyTab({ roleKey, roleName }: { roleKey: string; roleName: string })
                 onChange={(x) => setP((y) => ({ ...y, digestAt: x ?? '07:30' }))}
               />
             </div>
-            <p className="sub cnote">
-              يصلك بترتيب صفحة «اليوم»: ما ينتظرك، ثم المتأخر، ثم ما تغيّر ·
-              {summaryGroups.length
-                ? <> ويضم الآن <Num>{summaryGroups.length}</Num> مجموعات: {summaryGroups.map((g) => g.label).join('، ')}.</>
-                : ' وكل المجموعات الآن فورية، فلا ملخّص.'}
-            </p>
           </Glass>
 
           <Glass>
             <Head title="أخبار المؤسسة والرسائل التوعوية" meta={<Tag tone="mute">موافقة صريحة</Tag>} />
             <Switch
               label="أوافق على استلام الأخبار والرسائل التوعوية"
-              note={
-                p.news.on
-                  ? <>وافقت في <DateText>{p.news.at}</DateText> · يمكنك سحب الموافقة في أي وقت</>
-                  : 'غير مفعّلة افتراضيًا · رسائل العمل تصلك دون حاجة إلى هذه الموافقة'
-              }
+              note={p.news.on ? <>وافقت في <DateText>{p.news.at}</DateText></> : undefined}
               on={p.news.on}
               onChange={(on) => setP((x) => ({ ...x, news: { on, at: on ? today() : '' } }))}
             />
-            <p className="sub cnote">
-              يشترط نظام حماية البيانات الشخصية موافقة صريحة موثّقة لكل رسالة غير تشغيلية.
-            </p>
           </Glass>
 
           <Glass>
-            <Head title="ساعات الهدوء" meta={<span className="sub">على أسبوع العمل في المملكة</span>} />
+            <Head title="ساعات الهدوء" />
             <Switch
               label="لا رسائل نصية ولا بريد خارج ساعات العمل"
-              note="الإشعار العاجل يتجاوزها · وما سواه يُجمع ويصلك عند انتهائها"
               on={p.quiet.on}
               onChange={(on) => setP((x) => ({ ...x, quiet: { ...x.quiet, on } }))}
             />
@@ -288,7 +265,6 @@ function DelegateTab({ me }: { me: string }) {
           />
           <Switch
             label="فعّل التفويض خلال غيابي"
-            note="تنتقل مهامك إلى من تختاره طوال المدة، ثم تعود إليك تلقائيًا"
             on={d.on}
             onChange={(on) => setD((x) => ({ ...x, on, who: me }))}
           />
@@ -346,17 +322,7 @@ function DelegateTab({ me }: { me: string }) {
                 {d.note && <span className="sub pf-deleg-n">{d.note}</span>}
               </span>
             </div>
-          ) : (
-            <p className="sub">يظهر هنا الشريط الذي يراه زملاؤك على مشاريعك ومهامك أثناء غيابك.</p>
-          )}
-        </Glass>
-        <Glass>
-          <Head title="قواعد التفويض" meta={<Tag tone="mute">قاعدة</Tag>} />
-          <ul className="pf-rules">
-            <li>يعتمد المفوَّض إليه ضمن حدوده هو في مصفوفة الاعتماد · وما يتجاوزها يُرفع إلى المستوى التالي.</li>
-            <li>يُسجَّل كل إجراء باسم المفوَّض إليه مع عبارة «نيابةً عن» في سجل المشروع.</li>
-            <li>لا يُفوَّض إلا لزميل في الدور نفسه أو أعلى · ويصله إشعار إلزامي ببداية التفويض.</li>
-          </ul>
+          ) : null}
         </Glass>
       </div>
       <AssistantAside title="قراءة التفويض" cta="اقرأ التفويض" empty="لا تفويض الآن." readings={readings} ask={false} />
@@ -401,7 +367,7 @@ function DisplayTab() {
         </Glass>
 
         <Glass>
-          <Head title="التقويم" meta={<span className="sub">لكل التواريخ في النظام</span>} />
+          <Head title="التقويم" />
           <div className="seg" role="radiogroup" aria-label="التقويم">
             {([['gregory', 'ميلادي'], ['hijri', 'هجري'], ['both', 'الاثنان']] as const).map(([k, l]) => (
               <button key={k} type="button" role="radio" aria-checked={d.cal === k}
@@ -411,7 +377,7 @@ function DisplayTab() {
             ))}
           </div>
           <p className="sub cnote">
-            تاريخ اليوم يظهر هكذا: <b>{readDate(sample, d.cal)}</b> · والهجري بتقويم أم القرى.
+            تاريخ اليوم يظهر هكذا: <b>{readDate(sample, d.cal)}</b>
           </p>
           <div className="pf-row">
             <span className="lb">اللغة</span>
@@ -466,34 +432,31 @@ function A11yTab() {
               </button>
             ))}
           </div>
-          <p className="sub cnote">
-            يكبر كل النص في النظام، والحقول والأزرار تبقى بارتفاعها فلا ينقص شيء منها.
-          </p>
         </Glass>
 
         <Glass>
           <Head title="الرؤية" />
           <div className="pf-sw">
-            <Switch label="نص أعرض" note="خطوط أثقل في كل النظام · للرؤية الضعيفة" on={a.bold} onChange={(bold) => setA({ bold })} />
-            <Switch label="تباين أعلى" note="النص الثانوي أغمق، وحدود البطاقات والحقول أوضح" on={a.contrast} onChange={(contrast) => setA({ contrast })} />
-            <Switch label="خط تحت الروابط" note="فلا يعتمد تمييز الرابط على اللون وحده" on={a.links} onChange={(links) => setA({ links })} />
-            <Switch label="تباعد أوسع للنص" note="مسافة أكبر بين الكلمات والسطور · دون تفريق الحروف العربية" on={a.spacing} onChange={(spacing) => setA({ spacing })} />
+            <Switch label="نص أعرض" on={a.bold} onChange={(bold) => setA({ bold })} />
+            <Switch label="تباين أعلى" on={a.contrast} onChange={(contrast) => setA({ contrast })} />
+            <Switch label="خط تحت الروابط" on={a.links} onChange={(links) => setA({ links })} />
+            <Switch label="تباعد أوسع للنص" on={a.spacing} onChange={(spacing) => setA({ spacing })} />
           </div>
         </Glass>
 
         <Glass>
           <Head title="الحركة والتنقّل" />
           <div className="pf-sw">
-            <Switch label="إيقاف الحركة" note={a.motion === 'reduce' ? 'متوقفة في كل النظام' : 'تتبع إعداد جهازك'}
+            <Switch label="إيقاف الحركة"
               on={a.motion === 'reduce'} onChange={(on) => setA({ motion: on ? 'reduce' : 'system' })} />
-            <Switch label="إطار تركيز واضح" note="إطار عريض على العنصر الحالي عند التنقّل بلوحة المفاتيح" on={a.focus} onChange={(focus) => setA({ focus })} />
+            <Switch label="إطار تركيز واضح" on={a.focus} onChange={(focus) => setA({ focus })} />
           </div>
         </Glass>
 
         {/* A live sample built from the system's own parts, so the user sees the effect on a real
             card, field and button rather than a description of it. */}
         <Glass className="pf-prev">
-          <Head title="معاينة" meta={<span className="sub">تتغيّر مع اختيارك</span>} />
+          <Head title="معاينة" />
           <div className="kpi glass pf-kpi">
             <span className="kpi-h"><span className="kpi-k">ينتظر قرارك</span></span>
             <span className="kpi-v num">2</span>

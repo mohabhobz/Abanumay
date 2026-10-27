@@ -1,6 +1,6 @@
 import { mayApprovePlan } from '@/data/plans/auth'
-import { useRef } from 'react'
-import { Num, Person } from '@/components/ui'
+import { useRef, useState } from 'react'
+import { DecisionDialog, Num, Person } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import { planIssues, waitingReview } from '@/data/mock/plans'
 import type { CurrentUser, DecisionKind, PlanRow, PlanStage } from '@/types/domain'
@@ -78,21 +78,19 @@ export interface PlanActionDockProps {
   plan: PlanRow
   grant: number
   actions: PlanAction[]
-  note: string
-  onNote: (v: string) => void
-  onTake: (a: PlanAction) => void
+  onTake: (a: PlanAction, note: string) => void
   /** The dock links to the first activity awaiting review - for an approved plan. */
   onReview: () => void
 }
 
 export function PlanActionDock({
-  user, plan, grant, actions, note, onNote, onTake, onReview,
+  user, plan, grant, actions, onTake, onReview,
 }: PlanActionDockProps) {
   const bar = useRef<HTMLDivElement>(null)
   useProximity(bar)
 
   const issues = planIssues(plan, grant)
-  const needNote = actions.some((a) => a.needsNote)
+  const [pick, setPick] = useState<PlanAction | null>(null)
   const queue = waitingReview(plan).length
 
   /* Note: an approved plan's dock is a queue, not an approval. Showing approval buttons on an
@@ -107,8 +105,6 @@ export function PlanActionDock({
             <Person name={user.name} size="lg" quiet={false} />
             <span className="decsent">
               <b><Num>{queue}</Num> {nounAfter(queue, NOUN.activity)}</b> بانتظار قبولك
-              <span className="decsep" />
-              لا يُحتسب إنجازًا قبل المراجعة{/* doc rule 14 */}
             </span>
           </div>
           <button className="btn btn-p" onClick={onReview}>راجع أول نشاط</button>
@@ -129,30 +125,14 @@ export function PlanActionDock({
           </span>
         </div>
 
-        {/* The field and buttons form one group that wraps together, so the field doesn't separate
-            from "Return" when the dock grows to two lines. */}
+        {/* Client 26 Oct · the bar holds the buttons only · each one confirms in its popup, with the
+            reason (a return) asked there */}
         <div className="payact-g">
-        {needNote && (
-          <label className="payact-n">
-            <span className="vis-h">ملاحظات الإعادة</span>
-            <input
-              value={note}
-              onChange={(e) => onNote(e.target.value)}
-              placeholder="سبب الإعادة وما يلزم تعديله · إلزامي"
-            />
-          </label>
-        )}
-
         <div className="rowf gp-2">
           {noteFirst(actions).map((x) => {
             /* Note: the reason is written, not hidden in color - and the first violation is named,
                since "something's wrong" makes the user search for it. */
-            const stop =
-              (x.needsNote && !note.trim())
-                ? 'اكتب سبب الإعادة أولًا'
-                : (x.gated && issues.length > 0)
-                  ? issues[0].say
-                  : ''
+            const stop = x.gated && issues.length > 0 ? issues[0].say : ''
             return (
               <button
                 key={x.label}
@@ -160,7 +140,7 @@ export function PlanActionDock({
                 data-needs-note={x.needsNote ? '' : undefined}
                 disabled={Boolean(stop)}
                 title={stop || x.why}
-                onClick={() => onTake(x)}
+                onClick={() => setPick(x)}
               >
                 {x.label}
               </button>
@@ -169,6 +149,18 @@ export function PlanActionDock({
         </div>
         </div>
       </div>
+      {pick && (
+        <DecisionDialog
+          title={pick.label}
+          tone={pick.kind === 'btn-d' ? 'btn-d' : 'btn-p'}
+          subject={<>خطة {plan.projectName} · {pick.why}</>}
+          note={pick.needsNote ? 'required' : false}
+          notePlaceholder="سبب الإعادة وما يلزم تعديله"
+          stops={pick.gated ? issues.map((x) => x.say) : []}
+          onClose={() => setPick(null)}
+          onConfirm={(n) => onTake(pick, n)}
+        />
+      )}
     </div>
   )
 }

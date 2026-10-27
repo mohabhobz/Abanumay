@@ -71,7 +71,7 @@ export function RegCard({ r }: { r: RegRequest }) {
           <Icon name={r.governanceClaim > 0 ? icons.check : icons.alert} size="sm" />
           <span>
             {r.governanceClaim > 0
-              ? <>درجة الحوكمة المُقرّة <span className="num">{r.governanceClaim}</span><span className="sub"> · بإقرار الجهة</span></>
+              ? <>درجة الحوكمة المُقرّة <span className="num">{r.governanceClaim}</span></>
               : 'لم تُجرِ الجهة تقييم حوكمة · وأقرّت بدرجة صفر'}
           </span>
           {/* audit UI-053 · the source belongs to the sentence it qualifies, not alone at the row's far end */}

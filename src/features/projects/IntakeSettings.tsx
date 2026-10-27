@@ -1,13 +1,12 @@
 import { meOf, readRole } from '@/data/roles'
 import { calendarSnap, rederiveEnds } from '@/data/intake/flow'
 import { useMemo, useState } from 'react'
-import {
-  DateField, FieldSelect, Glass, Head, Icon, icons, MultiSelect, Num, Person, Switch, Tag, CheckChip } from '@/components/ui'
+import { FieldMultiSelect,
+  DateField, FieldSelect, Glass, Head, Icon, icons, Num, Person, Switch, Tag } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
 import { CfgNum } from '@/features/settings/CfgEdit'
 import { FIELDS_BY_TRACK, GOALS_BY_FIELD, OWNERS } from '@/data/mock/taxonomy'
 import { projectRows } from '@/data/mock/projects'
-import { MONEY_LIMITS } from '@/data/mock/settings'
 import {
   ALL_FIELDS, CYCLE, DISTRIBUTION_LABEL, TODAY, WEEKDAYS, saveCycle, type CycleSetup, type Distribution,
 } from '@/data/intake/cycle'
@@ -40,7 +39,6 @@ export function CycleTab() {
 
   const badPeriod = d.to < d.from
   const open = ALL_FIELDS.filter((f) => d.domains[f]?.open).length
-  const cap = MONEY_LIMITS.find((l) => l.key === 'projectsPerEntity')?.value ?? 0
   const live = TODAY >= d.from && TODAY <= d.to
 
   return (
@@ -65,21 +63,16 @@ export function CycleTab() {
           </label>
         </div>
         {badPeriod && <p className="sub cnote"><Tag tone="warn">فترة غير صحيحة</Tag> نهاية الفترة تسبق بدايتها.</p>}
-        <p className="sub cnote">
-          خلال الفترة تظهر للجهات <b className="num">{open}</b> مجالات مفتوحة فقط، وخارجها لا يُقبل طلب جديد ·
-          وحدّ طلبات الجهة في الدورة <b className="num">{cap}</b> (يُعدَّل من «الحدود المالية والزمنية»).
-        </p>
       </Glass>
 
       <Glass>
         <Head title="مشرفو الدورة" meta={<span className="sub"><Num>{d.supervisors.length}</Num> مشرفين</span>} />
         <div className="cfgrow">
-          <MultiSelect
+          <FieldMultiSelect
             label="المشرفون المحدَّدون لهذه الدورة"
             values={d.supervisors}
             options={[...OWNERS]}
             people
-            wide
             onChange={(v) => patch((x) => {
               x.supervisors = v
               /* A supervisor removed from the cycle leaves every domain too */
@@ -96,8 +89,8 @@ export function CycleTab() {
                 <Person name={s} />
                 <span className="sub trim1">{domains.length ? domains.join('، ') : 'بلا مجال بعد'}</span>
                 <span className="pc-sp" />
-                <MultiSelect
-                  all="التخصص في الأهداف"
+                <FieldMultiSelect
+                  placeholder="التخصص في الأهداف"
                   values={d.specialties[s] ?? []}
                   options={goals}
                   onChange={(v) => patch((x) => { x.specialties[s] = v })}
@@ -106,7 +99,6 @@ export function CycleTab() {
             )
           })}
         </ul>
-        <p className="sub cnote">التخصص يقرؤه توزيع «حسب تخصص المشرف»: يذهب الطلب لمن هدفه ضمن تخصصه، وإلا لأقلّهم عبئًا.</p>
       </Glass>
 
       <Glass className="tblcard">
@@ -128,39 +120,32 @@ export function CycleTab() {
             ))}
           </tbody>
         </table>
-        <p className="sub cnote">لا يُفتح مجال قبل ربطه بمشرف واحد على الأقل · وللمجال أكثر من مشرف، وللمشرف أكثر من مجال.</p>
       </Glass>
 
       <Glass>
-        <Head title="تقويم المدد" meta={<span className="sub">أيام عمل المؤسسة · وسياسة احتساب المدة</span>} />
-        <p className="sub cnote">أيام عمل المؤسسة أدناه تحسب مدد المراحل والتصعيد (SLA) · ومدة تنفيذ المشروع تُحسب بأيام تنفيذه من الأسبوع التي تحدّدها الجهة، وفق السياسة التالية.</p>
+        <Head title="تقويم المدد" />
         {/* v3 · 3.4.34 · whether the weekend and the holidays count inside a project's execution duration */}
         <Switch
           label="تدخل العطلة الأسبوعية ضمن مدة التنفيذ"
-          note="موقوف: يُحسب من أيام تنفيذ المشروع وحدها · مفعّل: تُحسب كل أيام الأسبوع"
           on={Boolean(d.countWeekend)}
           onChange={(v) => patch((x) => { x.countWeekend = v })}
         />
         <Switch
           label="تدخل الإجازات الرسمية ضمن مدة التنفيذ"
-          note="موقوف: تُستبعد الإجازات أدناه من المدة · مفعّل: تُحسب ضمنها"
           on={Boolean(d.countHolidays)}
           onChange={(v) => patch((x) => { x.countHolidays = v })}
         />
-        <div className="cfgchips">
-          {WEEKDAYS.map((w, i) => {
-            const on = d.weekend.includes(i)
-            return (
-              <CheckChip
-                key={w}
-                on={on}
-                onToggle={() => patch((x) => { x.weekend = on ? x.weekend.filter((n) => n !== i) : [...x.weekend, i].sort() })}
-              >
-                {w}{on && <b>عطلة</b>}
-              </CheckChip>
-            )
-          })}
-        </div>
+        {/* Client 26 Oct · one multi-choice control everywhere · the menu with chips under it */}
+        <label className="regf">
+          <span className="lb">أيام العطلة الأسبوعية</span>
+          <FieldMultiSelect
+            values={d.weekend.map((i) => WEEKDAYS[i]!)}
+            options={WEEKDAYS}
+            label="أيام العطلة الأسبوعية"
+            placeholder="أيام العطلة"
+            onChange={(xs) => patch((x) => { x.weekend = xs.map((w) => WEEKDAYS.indexOf(w as (typeof WEEKDAYS)[number])).filter((n) => n >= 0).sort() })}
+          />
+        </label>
         <ul className="cfglist">
           {[...d.holidays].sort((a, b) => a.date.localeCompare(b.date)).map((h) => (
             <li key={`${h.date}-${h.name}`}>
@@ -196,14 +181,13 @@ export function CycleTab() {
 
       <Glass>
         <Head title="بيانات العرض التجريبية" meta={<Tag tone="mute">النموذج الأولي</Tag>} />
-        <p className="sub cnote">الطلبات والدراسات والإحالات التي تُجرَّب على النموذج تُحفظ في هذا المتصفح · أعدها لحالتها الأولى قبل أي عرض.</p>
         <button type="button" className="btn btn-2" onClick={resetIntake}>أعد بيانات الاستقبال لحالتها الأولى</button>
       </Glass>
 
       {dirty && (
         <SaveBar
           count={1}
-          sentence={<>تعديلات على «{d.name}»<span className="decsep" /><span className="sub">تسري على البوابة والإسناد فور الحفظ</span></>}
+          sentence={<>تعديلات على «{d.name}»</>}
           onSave={() => {
             const before = calendarSnap()
             saveCycle(d)
@@ -236,8 +220,8 @@ function DomainGroup({ track, fields, d, patch }: {
           <tr key={f}>
             <td>{f}</td>
             <td>
-              <MultiSelect
-                all="بلا مشرف"
+              <FieldMultiSelect
+                placeholder="بلا مشرف"
                 values={dm.supervisors}
                 options={d.supervisors}
                 people
@@ -303,7 +287,6 @@ export function CriteriaTab() {
           title="معايير الدراسة"
           meta={sum === 100 ? <Tag tone="ok">المجموع <Num>{100}</Num></Tag> : <Tag tone="warn">المجموع <Num>{sum}</Num> · يجب أن يكون <Num>{100}</Num></Tag>}
         />
-        <p className="sub cnote">يقيّم المشرف كل معيار من <Num>{1}</Num> إلى <Num>{5}</Num>، وتُحسب الدرجة من <Num>{100}</Num> نقطة بالأوزان · والمعايير تُعدَّل هنا بلا تعديل برمجي.</p>
         <ul className="cfglist cfgedit">
           {d.map((c, i) => (
             <li key={c.key}>
@@ -341,7 +324,7 @@ export function CriteriaTab() {
       {dirty && (
         <SaveBar
           count={1}
-          sentence={<>تعديل معايير الدراسة<span className="decsep" /><span className="sub">الدراسات المسجّلة تُعاد درجتها بالأوزان الجديدة</span></>}
+          sentence={'تعديل معايير الدراسة'}
           onSave={() => { saveCriteria(d); setSaved(structuredClone(d)) }}
           onDiscard={() => setD(structuredClone(saved))}
           disabled={sum !== 100}
@@ -364,13 +347,12 @@ export function ConsultantsTab() {
     <>
       <Glass>
         <Head title="المستشارون" meta={<span className="sub"><Num>{d.list.length}</Num> مستشارين</span>} />
-        <p className="sub cnote">يُضاف المستشار من هنا مباشرةً بلا مسار اعتماد · ويُربط بمجال أو أكثر، ورأيه استشاري غير ملزم.</p>
         <ul className="cfglist">
           {d.list.map((c, i) => (
             <li key={c.key} className="itk-sup">
               <Person name={c.name} />
-              <MultiSelect
-                all="بلا مجال"
+              <FieldMultiSelect
+                placeholder="بلا مجال"
                 values={c.domains}
                 options={ALL_FIELDS}
                 onChange={(v) => setOne(i, (x) => ({ ...x, domains: v }))}
@@ -400,10 +382,9 @@ export function ConsultantsTab() {
         </div>
       </Glass>
       <Glass>
-        <Head title="انتظار الرأي" meta={<Tag tone="warn">تعارض في الوثيقة</Tag>} />
+        <Head title="انتظار الرأي" />
         <Switch
           label="لا يُحال المشروع لمدير المنح قبل وصول رأي المستشار"
-          note={/* doc 3.4.23 · step 19 */ "قاعدة تشترطه وخطوة في الإجراء تحيل دون انتظار · الإعداد يحسم أيّهما يسري حتى تقرّر المؤسسة"}
           on={d.waitForOpinion}
           onChange={(v) => setD((x) => ({ ...x, waitForOpinion: v }))}
         />
@@ -411,7 +392,7 @@ export function ConsultantsTab() {
       {dirty && (
         <SaveBar
           count={1}
-          sentence={<>تعديل المستشارين<span className="decsep" /><span className="sub">الإحالات القائمة تحتفظ بمدتها</span></>}
+          sentence={'تعديل المستشارين'}
           onSave={() => { saveConsultants(d); setSaved(structuredClone(d)) }}
           onDiscard={() => setD(structuredClone(saved))}
           disabled={d.list.some((c) => !c.name.trim())}
@@ -441,7 +422,6 @@ export function ProspectsTab() {
           title="الجهات المقترح استقطابها"
           meta={<FieldSelect value={year} label="سنة المنح" options={years} onChange={setYear} />}
         />
-        <p className="sub cnote">قائمة تواصل لا تسجيل · الجهة تسجّل من البوابة كالمعتاد، وهذه القائمة من نحرص على دعوته في سنة {year}.</p>
         <table className="tbl">
           <thead>
             <tr>

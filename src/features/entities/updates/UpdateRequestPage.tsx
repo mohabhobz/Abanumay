@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { isPortalPreview } from '@/data/session'
 import { ReadOnly } from '@/components/shell/ReadOnly'
 import { Link, useNavigate } from 'react-router-dom'
-import { DateField, DateText, Glass, Head, Icon, KV, Mono, Num, Tag, icons } from '@/components/ui'
+import { BankGrid, BankCard, DateField, DateText, Glass, Head, Icon, KV, Mono, Num, Tag, icons } from '@/components/ui'
 import { DocList, UploadButton } from '@/components/docs'
 import { Background } from '@/components/shell'
 import Logo from '@/assets/LogoColor'
@@ -84,7 +84,7 @@ export default function UpdateRequestPage() {
       <>
         <Background />
         <div className="app"><div className="shell"><div className="viewstack"><div className="screen col">
-          <Glass><p className="sub cnote">الجهة غير موجودة · افتح هذه الخدمة من بوابة الجهة.</p></Glass>
+          <Glass><p className="sub cnote">الجهة غير موجودة.</p></Glass>
         </div></div></div></div>
       </>
     )
@@ -141,11 +141,10 @@ export default function UpdateRequestPage() {
                   <p className="sub mt-1">
                     طلب <Mono>{reqId}</Mono>
                     {existing && <> · {UPD_STATE_SAY[existing.state]}</>}
-                    {' · '}بيانات الاتصال والأشخاص تُطبَّق فور الإرسال، والهوية والترخيص والحسابات والوثائق باعتماد المؤسسة
                   </p>
                 </div>
               </header>
-              {preview && <p className="sub cnote"><Tag tone="mute">معاينة للقراءة فقط</Tag> طلب التحديث ترسله الجهة من حسابها</p>}
+              {preview && <p className="sub cnote"><Tag tone="mute">معاينة للقراءة فقط</Tag></p>}
               <ReadOnly on={preview}>
 
               {existing?.state === 'completion' && existing.note && (
@@ -157,7 +156,7 @@ export default function UpdateRequestPage() {
               {expired.length > 0 && !locked && phase === 'form' && (
                 <div className="ptl-res no">
                   <Icon name={icons.alert} size="sm" />
-                  <div><b>وثائق منتهية: {expired.join('، ')}</b><p>ارفع النسخة السارية مع تاريخ نهاية صلاحيتها أدناه · تعود الجهة نشطة عند اعتمادها.</p></div>
+                  <div><b>وثائق منتهية: {expired.join('، ')}</b><p>ارفع النسخة السارية أدناه.</p></div>
                 </div>
               )}
 
@@ -181,7 +180,6 @@ export default function UpdateRequestPage() {
                 <Glass>
                   <Head title="طلبك تحت المراجعة" meta={<Tag tone="warn">{UPD_STATE_SAY.review}</Tag>} />
                   <KV rows={existing!.changes.map((c) => ({ k: c.label, v: <>{show(c.from)} ← <b>{show(c.to)}</b>{c.direct ? ' · طُبّق' : ''}</> }))} />
-                  <p className="sub cnote">لا يُعدَّل الطلب وهو عند المراجع · ستصلك النتيجة، أو يُعاد إليك للاستكمال.</p>
                 </Glass>
               ) : phase === 'otp' ? (
                 <Glass>
@@ -201,7 +199,7 @@ export default function UpdateRequestPage() {
                           return (
                             <Field
                               key={fx.key}
-                              f={changed ? { ...f, hint: `الحالي: ${cur[fx.key] || '—'}` } : f}
+                              f={{ ...f, hint: changed ? `الحالي: ${cur[fx.key] || '—'}` : undefined }}
                               value={val[fx.key] ?? ''}
                               parent={f.dependsOn ? val[f.dependsOn] ?? '' : ''}
                               onChange={(x) => setVal((s) => {
@@ -226,35 +224,30 @@ export default function UpdateRequestPage() {
                   {d.banks.some((b) => b.status === 'مفعل') && (
                     <Glass>
                       <Head title="الحسابات الحالية" meta={<Tag tone="warn">التعديل باعتماد</Tag>} />
-                      <ul className="rgbanks">
-                        {d.banks.filter((b) => b.status === 'مفعل').map((b, i) => {
+                      <BankGrid>
+                        {d.banks.filter((b) => b.status === 'مفعل').map((b) => {
                           const editing = banks.some((x) => x.replaces === b.id)
                           return (
-                            <li key={b.id}>
-                              <span className="rgbank-n num">{i + 1}</span>
-                              <div className="rgbank-b">
-                                <div className="rgbank-t"><b>{b.bank}</b><span className="sub">· {b.accountName} · {b.shortName}</span></div>
-                                <div className="sub"><Mono>{b.iban}</Mono></div>
-                              </div>
-                              <button
-                                type="button"
-                                className="btn btn-2 btn-sm"
-                                disabled={editing}
-                                aria-label={`عدّل الحساب ${b.shortName || b.bank}`}
-                                onClick={() => setBanks((s) => [...s, { id: `ed${Date.now()}`, bankName: b.bank, bankHolder: b.accountName, shortName: b.shortName, iban: '', replaces: b.id }])}
-                              >
-                                {editing ? 'تعديله في الطلب' : 'عدّل الحساب'}
-                              </button>
-                            </li>
+                            <BankCard key={b.id} bank={b.bank} iban={b.iban} holder={b.accountName} purpose={b.shortName} status={b.status}
+                              actions={
+                                <button
+                                  type="button"
+                                  className="btn btn-2 btn-sm"
+                                  disabled={editing}
+                                  aria-label={`عدّل الحساب ${b.shortName || b.bank}`}
+                                  onClick={() => setBanks((s) => [...s, { id: `ed${Date.now()}`, bankName: b.bank, bankHolder: b.accountName, shortName: b.shortName, iban: '', replaces: b.id }])}
+                                >
+                                  {editing ? 'تعديله في الطلب' : 'عدّل الحساب'}
+                                </button>
+                              } />
                           )
                         })}
-                      </ul>
+                      </BankGrid>
                     </Glass>
                   )}
 
                   <Glass>
                     <Head title="حسابات بنكية جديدة أو معدَّلة" meta={<Tag tone="warn">باعتماد</Tag>} />
-                    <p className="sub cnote">الحساب المعدَّل يحلّ محلّ الحالي بعد اعتماده ومطابقته بوثيقته · ويُعطَّل الحالي ولا يُحذف.</p>
                     <BankRows banks={banks} onChange={setBanks} min={0} idPrefix="nb" replacing={Object.fromEntries(d.banks.map((b) => [b.id, b.shortName || b.bank]))} />
                   </Glass>
 
@@ -301,9 +294,7 @@ export default function UpdateRequestPage() {
                   <Glass>
                     <Head title="قبل الإرسال" meta={gaps.length ? <Tag tone="warn"><Num>{gaps.length}</Num> ملاحظة</Tag> : <Tag tone="ok">جاهز</Tag>} />
                     {gaps.length > 0 && <ul className="payq-ck">{gaps.map((x) => <li key={x} className="no"><Icon name={icons.alert} size="sm" /><span>{x}</span></li>)}</ul>}
-                    {waits && !gaps.length && <p className="sub cnote">في الطلب ما يحتاج إلى اعتماد · يصير حساب الجهة «معلقًا» حتى يُبتّ فيه: مشاريعك القائمة مستمرة ولا تقديم جديد.</p>}
-                    {otpTo.length > 0 && !gaps.length && <p className="sub cnote">غيّرت بريدًا أو جوالًا · يُرسل رمز تحقّق إلى القيمة الجديدة قبل الإرسال.</p>}
-                    {saved && <p className="sub cnote">حُفظ الطلب مسودة · يُستكمل من البوابة في أي وقت.</p>}
+                    {saved && <p className="sub cnote" role="status">حُفظ الطلب مسودة.</p>}
                     <footer className="payq-f">
                       <span className="sub payq-when"><Num>{changes.length}</Num> حقول · <Num>{banks.length}</Num> حسابات · <Num>{docs.length}</Num> وثائق</span>
                       <button className="btn btn-2" disabled={nothing} onClick={() => { saveUpdate(payload(), false); setSaved(true) }}>احفظ مسودة</button>

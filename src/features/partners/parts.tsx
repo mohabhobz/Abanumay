@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { DateField, DateText, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Tag, icons, CheckChip } from '@/components/ui'
+import { FieldMultiSelect, DockActions, DateField, DateText, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Tag, icons } from '@/components/ui'
 import { DocReadNote, UploadButton, useDocReads } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -12,9 +12,8 @@ import {
   PTYPE_SAY, addEhOp, closeEhsanProject, ehCloseChecks, ehCloseOf, ehGate, ehMoney, ehOpsOf, ehScheduleOf, isStrategic,
   EXT_KIND, EXT_CREATE, EXEC_STATES, EXT_CLOSE_OUTCOME_SAY, type ExtCloseOutcome, decideExternalClosing, ehExecLog, ehExecOf, extFilesOf, externalParties, recordExec, type ExecState,
   paysOf, addExtDoc, extDocsOf, pfOfEntity, profileOf, recordEhsanPay, reviewEhsanPay, routeProject, proposeRoute, decideRoute, routeProposalOf, saveEhReport, saveEhSchedule,
-  setPartnerTypes, typeAllowed, usePartners, viaEhsan, PF_STAGE_SAY, PF_STAGE_TONE, decidePartner,
-  EH_STATE_SAY, EH_STATE_TONE, type EhSlot, type EhsanPay, type PayTarget, type PType,
-} from '@/data/partners/store'
+  setPartnerTypes, usePartners, viaEhsan, PF_STAGE_SAY, PF_STAGE_TONE, decidePartner,
+  EH_STATE_SAY, EH_STATE_TONE, type EhSlot, type EhsanPay, type PayTarget, type PType } from '@/data/partners/store'
 import { flowOf } from '@/data/intake/flow'
 import { paidOf, usePayments } from '@/data/payments/store'
 import { payRequests } from '@/data/mock/disbursements'
@@ -68,12 +67,6 @@ export function PayForm({ target, max, onDone }: { target: PayTarget; max: numbe
   }
   return (
     <div className="ptn-form">
-      {target.kind === 'project' && (
-        <p className="sub cnote">
-          لا تصرف الإدارة المالية أي مبلغ دون إذن صرف من النظام{/* doc 9.4.5 */} · ترفع متطلبات الدفعة نيابةً عن الجهة من{' '}
-          <Link className="lnk" to={ROUTES.paymentNew(target.projectId)}>جدول الدفعات</Link>، وتُسجَّل عملية المنصة هنا بعد صرف الإذن.
-        </p>
-      )}
       <div className="regfields">
         <label className="regf"><span className="lb">المبلغ المنفّذ</span><MoneyField value={amount} onChange={setAmount} label="المبلغ المنفّذ" /><span className="sub regf-h">المتبقي <span className="num">{nf.format(Math.max(0, max))}</span></span></label>
         <label className="regf"><span className="lb">رقم العملية على المنصة</span><span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="رقم العملية على منصة إحسان" /></span></label>
@@ -94,14 +87,13 @@ export function PayForm({ target, max, onDone }: { target: PayTarget; max: numbe
 /** The payments recorded on one target · with their state and the finance desk's word */
 export function PayList({ list, finance }: { list: EhsanPay[]; finance?: boolean }) {
   const { user } = useRole()
-  const [note, setNote] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
   /* Re-audit 17 Oct · the last one reviewed empties the list · its message still shows */
   if (!list.length) return <><p className="sub cnote">لا دفعات مسجلة بعد.</p><Said said={said} /></>
-  const act = (id: string, a: 'confirm' | 'return') => {
+  const act = (id: string, a: 'confirm' | 'return', note: string) => {
     const out = reviewEhsanPay(id, a, note, user.name)
     setSaid(out.length ? { bad: out } : { ok: a === 'confirm' ? 'تأكيد الدفعة' : 'إعادة الدفعة' })
-    if (!out.length) setNote('')
+    return out
   }
   return (
     <>
@@ -118,8 +110,13 @@ export function PayList({ list, finance }: { list: EhsanPay[]; finance?: boolean
                 {finance && (
                   <td>{p.state === 'review' ? (
                     <span className="rowf gp-2">
-                      <button type="button" className="btn btn-p btn-sm" onClick={() => act(p.id, 'confirm')}>تأكيد</button>
-                      <button type="button" className="btn btn-2 btn-sm" onClick={() => act(p.id, 'return')}>إعادة</button>
+                      {/* Client 26 Oct · the decision confirms in its popup · the return's reason there */}
+                      <DockActions
+                        actions={[{ label: 'إعادة', kind: 'btn-2 btn-sm', needsNote: true, a: 'return' as const }, { label: 'تأكيد', kind: 'btn-p btn-sm', a: 'confirm' as const }]}
+                        subject={<>دفعة {p.ref} · {nf.format(p.amount)} ريال</>}
+                        placeholder="سبب الإعادة"
+                        onRun={(x, n) => act(p.id, x.a, n)}
+                      />
                     </span>
                   ) : <span className="sub">{p.reviewedBy ?? '—'}</span>}</td>
                 )}
@@ -128,9 +125,6 @@ export function PayList({ list, finance }: { list: EhsanPay[]; finance?: boolean
           </tbody>
         </table>
       </div>
-      {finance && list.some((p) => p.state === 'review') && (
-        <label className="regf mt-2"><span className="lb">ملاحظة الإعادة</span><span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة الإعادة" placeholder="إلزامية عند الإعادة" /></span></label>
-      )}
       <Said said={said} />
     </>
   )
@@ -199,10 +193,10 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
     const out = ceo ? routeProject(row.id, platform, t, user.name, party, role.key) : proposeRoute(row.id, platform, t, why, user.name, party, role.key)
     setSaid(out.length ? { bad: out } : { ok: ceo ? (platform ? 'التوجيه عبر الجهة الخارجية' : 'الدعم المباشر') : 'اقتراح التوجيه للمدير التنفيذي' })
   }
-  const decide = (accept: boolean) => {
+  const decide = (accept: boolean, why: string) => {
     const out = decideRoute(row.id, accept, why, user.name, role.key)
     setSaid(out.length ? { bad: out } : { ok: accept ? 'إقرار التوجيه' : 'رفض الاقتراح' })
-    if (!out.length) setWhy('')
+    return out
   }
   const mine = (sup && !prop) || ceo
   /* v3 · 11.4.11 · a portfolio is never supported through an external party */
@@ -211,15 +205,19 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
     <Glass>
       <Head title="الدعم عبر جهة خارجية" meta={row.platform ? <Tag tone="teal">{EXT_KIND}</Tag> : <Tag tone="mute">دعم مباشر</Tag>} />
       <KV rows={[
-        { k: 'الجهة الخارجية', v: row.platform ? (row.externalId ? <Link className="tlink" to={ROUTES.entity(row.externalId)}>{row.platform}</Link> : row.platform) : 'لا جهة خارجية · الجهة تستلم مباشرة' },
+        { k: 'الجهة الخارجية', v: row.platform ? (row.externalId ? <Link className="tlink" to={ROUTES.entity(row.externalId)}>{row.platform}</Link> : row.platform) : 'لا جهة خارجية' },
         ...(strategic ? [{ k: 'نوع المشروع', v: PTYPE_SAY[type] }] : []),
         ...(prop ? [{ k: 'اقتراح بانتظار المدير التنفيذي', v: <>{prop.platform ? `عبر ${entityById(prop.party ?? '860')?.name ?? 'جهة خارجية'}` : 'دعم مباشر'} · <Person name={prop.by} />{prop.note ? ` · ${prop.note}` : ''}</> }] : []),
       ]} />
       {ceo && prop && (
         <div className="apv-row mt-3">
-          <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="ملاحظة على اقتراح التوجيه" placeholder="سبب الرفض" /></span>
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => decide(false)}>ارفض الاقتراح</button>
-          <button type="button" className="btn btn-p btn-sm" onClick={() => decide(true)}>أقرّ التوجيه</button>
+          {/* Client 26 Oct · the decision confirms in its popup · the rejection's reason there */}
+          <DockActions
+            actions={[{ label: 'ارفض الاقتراح', kind: 'btn-2 btn-sm', needsNote: true, accept: false }, { label: 'أقرّ التوجيه', kind: 'btn-p btn-sm', accept: true }]}
+            subject={<>توجيه {row.name}</>}
+            placeholder="سبب الرفض"
+            onRun={(x, n) => decide(x.accept, n)}
+          />
         </div>
       )}
       {mine ? (
@@ -228,16 +226,13 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
           {!row.platform && <FieldSelect value={party} onChange={setParty} label="الجهة الخارجية" options={parties.map((e) => ({ value: e.id, label: e.name }))} />}
           <button type="button" className="btn btn-2 btn-sm" disabled={Boolean(row.platform) || !party} onClick={() => set(true, 'independent')}>توجيه عبر الجهة الخارجية</button>
           {row.platform && <button type="button" className="btn btn-2 btn-sm" onClick={() => set(false, 'independent')}>دعم مباشر</button>}
-          {sup && <span className="sub">يُرفع اقتراحًا · يقرّه المدير التنفيذي</span>}
-          {strategic && typeAllowed(row.entityId, 'portfolio') && <span className="sub">التصنيف «محفظة» من الدراسة · يُفعَّل مساره بعد الاعتماد</span>}
         </div>
-      ) : (
-        <p className="sub cnote">{study ? (prop ? 'الاقتراح عند المدير التنفيذي' : 'يقترحه مشرف المنح في الدراسة ويقرّه المدير التنفيذي') : 'حُدّد قبل الاعتماد · لا يتغيّر بعده'}</p>
-      )}
+      ) : study && prop ? (
+        <p className="sub cnote">الاقتراح عند المدير التنفيذي</p>
+      ) : null}
       {/* v3 · 3.2.17 · an approved project classified a portfolio · the supervisor opens its path */}
       {portfolioNext && (
         <div className="apv-row mt-3">
-          <span className="sub">اعتُمد المشروع مصنَّفًا محفظة · يُفعَّل مسارها وفق إجراء إدارة المحافظ</span>
           <button type="button" className="btn btn-p btn-sm" onClick={() => set(false, 'portfolio')}>فعّل مسار المحفظة</button>
         </div>
       )}
@@ -289,13 +284,13 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
           { k: 'الجهة الخارجية', v: <Link className="tlink" to={ROUTES.entity(row.externalId ?? row.entityId)}>{row.platform}</Link> },
           ...(vals.method ? [{ k: 'طريقة التحويل أو التنفيذ', v: vals.method }] : []),
           ...(vals.funding ? [{ k: 'مصدر التمويل', v: vals.funding }] : []),
-          { k: 'الاتفاقية الداخلية', v: <span className="sub">لا تلزم · قد لا توجد اتفاقية أصلًا{/* doc 11.2.6 */}</span> },
+          { k: 'الاتفاقية الداخلية', v: <span className="sub">لا تلزم</span> },
           /* v3 · 12.2.1 · 11.4.5 · an external project has no plan · a plan from before stays readable */
-          { k: 'الخطة', v: plan ? <Link className="tlink" to={ROUTES.plan(plan.id)}>خطة سابقة للاطلاع · لا تُشترط للصرف ولا للإغلاق</Link> : <span className="sub">لا تُنشأ له خطة · ما يرد من الجهة يُحفظ مرفقًا{/* doc 11.4.5 */}</span> },
+          { k: 'الخطة', v: plan ? <Link className="tlink" to={ROUTES.plan(plan.id)}>خطة سابقة للاطلاع</Link> : <span className="sub">لا تلزم</span> },
           /* v3 · 11.2.6 · the external agreement or memorandum (perhaps tripartite) kept as a reference */
           { k: 'الوثيقة الخارجية', v: (
             <span className="rowf gp-2">
-              {extDocsOf(row.id).length ? extDocsOf(row.id).map((d) => <Tag key={d.file} tone="ok"><Icon name={icons.clip} size="sm" /> {d.file}</Tag>) : <span className="sub">لم تُسجَّل · إن وُجدت</span>}
+              {extDocsOf(row.id).length ? extDocsOf(row.id).map((d) => <Tag key={d.file} tone="ok"><Icon name={icons.clip} size="sm" /> {d.file}</Tag>) : <span className="sub">لم تُسجَّل</span>}
               {auth && !closed && <UploadButton label="سجّل الاتفاقية أو المذكرة (PDF)" onPick={(f) => r(addExtDoc(row.id, f.name, user.name), 'الوثيقة الخارجية')} />}
             </span>
           ) },
@@ -308,14 +303,13 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
       </Glass>
 
       <Glass>
-        <Head title="جدول الدفعات" meta={<span className="sub">من الوثيقة الخارجية · أو دفعة واحدة</span>} />
+        <Head title="جدول الدفعات" />
         {g.schedule
           ? <SlotsEditor slots={sched} total={m.value} terms upTo locked={!auth || closed || started} onSave={(s) => saveEhSchedule(row.id, s, user.name)} />
           : <p className="sub cnote">{g.why}</p>}
-        <p className="sub cnote">
-          {started ? 'بدأ الصرف على الجدول · يُعدَّل بقرار تعديل القيمة.' : 'سجّل الدفعات كبيانات منظمة (القيمة والتاريخ والمتطلبات والشروط) · وإن لم تتضمن الوثيقة دفعات فدفعة واحدة وفق الواقع المالي · لا يتجاوز المجموع القيمة المعتمدة.'}{/* doc 11.2.7 · 11.2.8 */}
-          {' '}الصرف بإذن صرف من النظام{/* doc 11.2.9 */} · <Link className="lnk" to={ROUTES.paymentNew(row.id)}>ارفع متطلبات الدفعة نيابةً عن الجهة</Link>.
-        </p>
+        <div className="apv-row mt-2">
+          <Link className="btn btn-2 btn-sm" to={ROUTES.paymentNew(row.id)}>ارفع متطلبات الدفعة نيابةً عن الجهة</Link>
+        </div>
       </Glass>
 
       <Glass>
@@ -342,20 +336,19 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
             </span>
           </div>
         )}
-        <p className="sub cnote">يسجّل صاحب الصلاحية إثباتات التحويل والتنفيذ الواردة من الجهة الخارجية ويحدّث حالة التنفيذ{/* doc 11.2.11 */}.</p>
       </Glass>
 
       {/* a party that executes on its own platform · its operations recorded after the permit's transfer */}
       {(paysOf({ kind: 'project', projectId: row.id }).length > 0 || vals.method === 'تنفيذ عبر منصة الجهة الخارجية' || row.externalId === '860') && (
         <Glass>
-          <Head title="عمليات منصة الجهة الخارجية" meta={<span className="sub">بعد صرف الإذن · تؤكّدها المالية</span>} />
+          <Head title="عمليات منصة الجهة الخارجية" />
           <PayList list={paysOf({ kind: 'project', projectId: row.id })} finance={fin} />
           {sup && !closed && (g.pay ? <PayForm target={{ kind: 'project', projectId: row.id }} max={m.left} /> : <p className="sub cnote">{g.why}</p>)}
         </Glass>
       )}
 
       <Glass>
-        <Head title="متابعة المشروع" meta={<span className="sub">ما يرد من الجهة الخارجية ينعكس هنا</span>} />
+        <Head title="متابعة المشروع" />
         <ul className="plchg">
           {ehOpsOf(row.id).slice().reverse().map((o, i) => (
             <li key={`${o.at}-${i}`}>
@@ -411,7 +404,6 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
             </div>
           </>
         )}
-        <p className="sub cnote">لا تقرير ختامي اعتيادي ولا تقييم إلزامي{/* doc 11.4.12 */} · عند الاعتماد يصير «مكتمل»، أو «مغلق بوفر»، أو «ملغى»، أو «أعيد توجيه الدعم» بقرار ومستند · ويُحرَّر غير المصروف إلى بنده{/* doc 11.2.14 */}.</p>
       </Glass>
     </>
   )
@@ -426,12 +418,6 @@ export function PartnerCard({ entityId }: { entityId: string }) {
   const p = profileOf(entityId)
   if (!p) return null
   const mgr = role.key === 'grants-manager'
-  const toggle = (t: PType) => {
-    const next = p.allowed.includes(t) ? p.allowed.filter((x) => x !== t) : [...p.allowed, t]
-    if (!next.length) { setSaid({ bad: ['نوع واحد على الأقل'] }); return }
-    setPartnerTypes(entityId, next, user.name)
-    setSaid({ ok: 'الأنواع المسموحة' })
-  }
   const pfs = pfOfEntity(entityId)
   return (
     <Glass>
@@ -439,16 +425,23 @@ export function PartnerCard({ entityId }: { entityId: string }) {
       <Head title={<>الشراكة الاستراتيجية · <Link className="tlink" to={ROUTES.entity(entityId)}>{p.name || entityById(entityId)?.name || entityId}</Link></>} meta={<Tag tone={p.state === 'approved' ? 'ok' : p.state === 'review' ? 'warn' : 'no'}>{p.state === 'approved' ? 'شريك استراتيجي معتمد' : p.state === 'review' ? 'بانتظار اعتماد مدير المنح' : 'مرفوض'}</Tag>} />
       <KV rows={[
         { k: 'نوع الشراكة', v: 'شريك استراتيجي' },
-        { k: 'الدفعات', v: 'تُطلب على مستوى المحفظة وفق إجراء صرف الدفعات' },
+        { k: 'الدفعات', v: 'على مستوى المحفظة' },
         { k: 'أنواع المشاريع المسموحة', v: p.allowed.map((t) => PTYPE_SAY[t]).join(' · ') },
         { k: 'المحافظ', v: pfs.length ? <span className="ptn-chips">{pfs.map((x) => <Link key={x.id} className="tlink" to={ROUTES.portfolio(x.id)}>{x.name} <Tag tone={PF_STAGE_TONE[x.stage]}>{PF_STAGE_SAY[x.stage]}</Tag></Link>)}</span> : <span className="sub">لا محافظ بعد</span> },
       ]} />
       {mgr && p.state === 'approved' && (
         <div className="apv-row mt-3">
-          <span className="sub">الأنواع المسموحة</span>
-          {(['independent', 'portfolio'] as PType[]).map((t) => (
-            <CheckChip key={t} on={p.allowed.includes(t)} onToggle={() => toggle(t)}>{PTYPE_SAY[t]}</CheckChip>
-          ))}
+          <FieldMultiSelect
+            values={p.allowed}
+            options={(['independent', 'portfolio'] as PType[]).map((t) => ({ value: t, label: PTYPE_SAY[t] }))}
+            label="الأنواع المسموحة"
+            placeholder="الأنواع المسموحة"
+            onChange={(xs) => {
+              if (!xs.length) { setSaid({ bad: ['نوع واحد على الأقل'] }); return }
+              setPartnerTypes(entityId, xs as PType[], user.name)
+              setSaid({ ok: 'الأنواع المسموحة' })
+            }}
+          />
         </div>
       )}
       {mgr && p.state === 'review' && (
@@ -470,7 +463,6 @@ export function EhsanNoAgreement({ children }: { children?: ReactNode }) {
   return (
     <Glass>
       <Head title="الاتفاقية" meta={<Tag tone="teal">لا تلزم</Tag>} />
-      <p className="prose">مشروع لجهة خارجية · لا تلزم الاتفاقية الإلكترونية الداخلية، وقد لا توجد اتفاقية أصلًا · وإن وُجدت تُسجَّل الاتفاقية أو المذكرة الخارجية (وقد تكون ثلاثية الأطراف) بصيغة PDF مرجعًا من بطاقة المشروع، ويُسجَّل جدول دفعاتها بيانات منظمة ويُصرف بإذن صرف من النظام.</p>
       {children}
     </Glass>
   )

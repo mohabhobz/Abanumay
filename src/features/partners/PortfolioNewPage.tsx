@@ -60,7 +60,7 @@ export default function PortfolioNewPage() {
           <header>
             <div>
               <h1 className="ptitle">{asPartner ? 'طلب محفظة' : from ? 'تحويل المشروع إلى محفظة' : 'محفظة جديدة'}</h1>
-              <p className="sub mt-1">{from ? `من المشروع ${from.id} · يُؤرشف بعد التحويل وتبدأ المحفظة مسار الاعتماد` : 'تُدرس وتُعتمد كاملةً مرة واحدة · ثم الخطة والاتفاقية · ثم المشاريع الفرعية'}</p>
+              {from && <p className="sub mt-1">من المشروع {from.id}</p>}
             </div>
           </header>
 
@@ -74,11 +74,10 @@ export default function PortfolioNewPage() {
                     {fixed ? <span className="fld"><input value={prof?.name ?? ''} readOnly aria-label="الشريك الاستراتيجي" /></span> : (
                       <FieldSelect value={entityId} onChange={setEntity} label="الشريك الاستراتيجي" options={options.map((p) => ({ value: p.entityId, label: p.name }))} />
                     )}
-                    <span className="sub regf-h">الجهات المعتمدة بنوع «شريك استراتيجي» والمسموح لها بالمحافظ وحدها</span>
                   </label>
                   <label className="regf">
                     <span className="lb">منصة الشريك</span>
-                    <span className="fld"><input value="تُطلب الدفعات على مستوى المحفظة وفق إجراء صرف الدفعات" readOnly aria-label="الدفعات" /></span>
+                    <span className="fld"><input value="على مستوى المحفظة" readOnly aria-label="الدفعات" /></span>
                   </label>
                 </div>
               </Glass>
@@ -89,7 +88,7 @@ export default function PortfolioNewPage() {
                   <label className="regf"><span className="lb">اسم المحفظة</span><span className="fld"><input value={name} onChange={(e) => setName(e.target.value)} aria-label="اسم المحفظة" /></span></label>
                   <label className="regf"><span className="lb">القيمة الإجمالية</span><MoneyField value={total} onChange={setTotal} label="قيمة المحفظة" /></label>
                   <label className="regf"><span className="lb">المسار</span><FieldSelect value={track} onChange={(v) => { setTrack(v); setField('') }} label="المسار" options={[...TRACKS]} /></label>
-                  <label className="regf"><span className="lb">المجال</span><FieldSelect value={field} onChange={setField} label="المجال" options={FIELDS_BY_TRACK[track] ?? []} /><span className="sub regf-h">يرثه كل مشروع فرعي</span></label>
+                  <label className="regf"><span className="lb">المجال</span><FieldSelect value={field} onChange={setField} label="المجال" options={FIELDS_BY_TRACK[track] ?? []} /></label>
                 </div>
                 <label className="regf mt-3"><span className="lb">أهداف المحفظة</span><span className="fld"><textarea rows={2} value={goals} onChange={(e) => setGoals(e.target.value)} aria-label="أهداف المحفظة" /></span></label>
                 <label className="regf mt-3"><span className="lb">وصف مختصر</span><span className="fld"><textarea rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} aria-label="وصف المحفظة" /></span></label>

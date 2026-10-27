@@ -42,11 +42,7 @@ export function TestDataCard() {
   return (
     <Glass>
       <Head title="بيئة النظام والبيانات التجريبية" meta={<Tag tone={env === 'prod' ? 'ok' : 'warn'}>{ENV_SAY[env]}</Tag>} />
-      <p className="sub">
-        في «إنتاج» تخرج الجهات والمشاريع المعلّمة تجريبية من التقارير والمؤشرات ولوحة الأثر والتصدير، وتُعلَّم «تجريبي» في القوائم ·
-        وفي «اختبار» تظهر كغيرها · المرفوض الحقيقي يبقى سجلًا تاريخيًا ولا يُحذف، والتجريبي يُؤرشف بلا قيود.
-      </p>
-      <div className="apv-row mt-2">
+      <div className="apv-row">
         <FieldSelect label="بيئة النظام" value={env} disabled={!admin} options={(Object.keys(ENV_SAY) as SysEnv[]).map((v) => ({ value: v, label: ENV_SAY[v] }))} onChange={(v) => pick(v as SysEnv)} />
       </div>
       {admin && (
@@ -69,7 +65,6 @@ export function TestDataCard() {
           ))}
         </ul>
       ) : <p className="sub cnote">لا سجلات معلّمة تجريبية.</p>}
-      <p className="sub cnote">الفصل الفعلي بين بيئتي الاختبار والإنتاج يكون على الخادم عند الربط · {admin ? 'كل تغيير يُسجَّل في سجل الإعدادات' : 'يغيّرها مدير النظام'}</p>
     </Glass>
   )
 }

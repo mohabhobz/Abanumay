@@ -2,8 +2,7 @@ import { planKind } from '@/data/approvals/store'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Num, Tag, icons,
-} from '@/components/ui'
+  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Num, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
@@ -74,10 +73,9 @@ export default function PlanNewPage() {
           <div className="screen col">
             <BackTo label="الخطط" onClick={() => navigate(ROUTES.plans)} />
             <Glass>
-              <Head title="لهذا المشروع خطة بالفعل" meta={<Tag tone="mute">خطة واحدة للمشروع</Tag>} />
+              <Head title="لهذا المشروع خطة بالفعل" />
               <Empty
                 title={`فُتحت لمشروع «${has.projectName}» الخطة ${has.id}.`}
-                note="للمشروع خطة واحدة، فيكون التعديل على الخطة الموجودة لا بفتح خطة أخرى."
                 actions={
                   <Link className="btn btn-p" to={ROUTES.plan(has.id)}>افتح الخطة</Link>
                 }
@@ -98,10 +96,6 @@ export default function PlanNewPage() {
           <header>
             <div>
               <h1 className="ptitle">فتح خطة تنفيذ لمشروع</h1>
-              <p className="sub mt-1">
-                قرار بأن المشروع يتطلب خطة عمل · وتُكتب المراحل والأنشطة
-                في المحرّر بعد الفتح
-              </p>
             </div>
             {/* doc BPD-012 */}
           </header>
@@ -115,7 +109,6 @@ export default function PlanNewPage() {
             {options.length === 0 ? (
               <Empty
                 title="كل المشاريع المعتمدة لها خطط."
-                note="تُفتح الخطة لمشروع معتمد له قيمة منحة، أما المشروع الذي ما زال في الدراسة فليس له مبلغ تُقاس عليه الخطة."
               />
             ) : (
               <>
@@ -135,9 +128,6 @@ export default function PlanNewPage() {
                       label="المشروع"
                       placeholder="اختر مشروعًا معتمدًا"
                     />
-                    <span className="sub regf-h">
-                      لا تظهر في القائمة المشاريع التي لها خطة، فللمشروع خطة واحدة
-                    </span>
                   </label>
 
                   {/* Note: this choice is recorded and can't change afterward - the "drafted by"
@@ -154,10 +144,6 @@ export default function PlanNewPage() {
                       onChange={(x) => set({ by: x === 'supervisor' ? 'supervisor' : undefined })}
                       label="كاتب المسودة"
                     />
-                    <span className="sub regf-h">
-                      تنص الوثيقة على أن الجهة هي من تكتب الخطة، والكتابة بالنيابة استثناء
-                      يُسجَّل، لأن ما كتبته الجهة وما كُتب عنها لا يُراجعان بالطريقة نفسها
-                    </span>
                   </label>
                 </div>
 
@@ -180,19 +166,11 @@ export default function PlanNewPage() {
                   />
                 )}
 
-                {/* Note: this sentence states what happens after the click - a button that doesn't
-                    say where it leads makes the user hesitate. */}
-                <p className="sub cnote">
-                  يُنشئ الفتح خطة <b>مسودة</b> فارغة وينقلك إلى المحرّر، ويمكن للجهة
-                  كتابتها من بوابة المنح. ولا يبدأ القياس ولا حساب الانحراف قبل أن
-                  يعتمدها مدير المنح ويثبّت النسخة المرجعية.
-                </p>
-
                 {needReason && (
                   <label className="regf regf-w">
                     <span className="lb">سبب فتح الخطة<b className="regf-r" aria-label="إلزامي">*</b></span>
                     <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: تعدّد مراحل التنفيذ وتوزّعها على فصلين دراسيين" aria-label="سبب فتح الخطة" /></span>
-                    <span className="sub regf-h">لا يوجد قرار موثّق بأن المشروع يتطلب خطة · يُسجَّل الفتح قرارًا باسمك وسببه{/* doc 12.4.33 */}</span>
+                    <span className="sub regf-h">لا يوجد قرار موثّق بأن المشروع يتطلب خطة{/* doc 12.4.33 */}</span>
                   </label>
                 )}
 

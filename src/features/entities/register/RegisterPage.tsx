@@ -263,7 +263,7 @@ export default function RegisterPage() {
   /* The sticky card takes its height from its actual position - short with visible content before
      it sticks, and it grows as you scroll down until it fills the screen. */
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
 
   const at = FORM_STAGES.findIndex((x) => x.key === tab)
   const first = at <= 0
@@ -323,10 +323,10 @@ export default function RegisterPage() {
      directly - rule 32). */
   const line = (
     <span className="decsent">
-      {phase === 'terms' && <>اقرأ الضوابط الخمسة وأقرّ بها قبل فتح النموذج</>}
+      {phase === 'terms' && <>ضوابط قبول الجهة</>}
       {phase === 'form' && (
         draft
-          ? <>حُفظ الطلب <b>مسودةً</b>{/* doc rule 12 */}، ويمكن إكماله في أي وقت</>
+          ? <>حُفظ الطلب <b>مسودةً</b>{/* doc rule 12 */}</>
           : <>
               {/* Note: the count runs over the whole journey, not the form alone - the entity has
                   already passed the account stage, so starting the count at "1 of 5" here tells
@@ -465,10 +465,6 @@ export default function RegisterPage() {
           <header>
             <div>
               <h1 className="ptitle">طلب تسجيل جهة جديدة</h1>
-              <p className="sub mt-1">
-                ما يُقدَّم هنا <b>طلب</b> لا حساب · وتُنشأ الجهة بعد اعتماد
-                صاحب الصلاحية في المؤسسة{/* doc rule 2 · v3 0.ent.2 */}
-              </p>
             </div>
             {/* The count badge in the page header was removed - a single count now lives in the
                 dock. */}
@@ -478,10 +474,7 @@ export default function RegisterPage() {
             <div className="col">
               {phase === 'terms' && (
                 <Glass>
-                  <Head
-                    title="ضوابط قبول الجهة"
-                    meta={<span className="sub">من بوّابة التسجيل في النظام العامل</span>}
-                  />
+                  <Head title="ضوابط قبول الجهة" />
                   <ul className="regterms">
                     {REG_TERMS.map((t, i) => (
                       <li key={t}>
@@ -548,16 +541,6 @@ export default function RegisterPage() {
                   />
                   </Glass>
 
-                  {/* Note: the request is saved against an account, and the entity needs to see
-                      that. The account screen has already passed, and this line is the only trace
-                      of it left in the form - without it the entity would ask "why did I create
-                      this account". */}
-                  {regAccount.email && (
-                    <p className="sub tcen">
-                      يُحفظ الطلب على <Mono>{regAccount.email}</Mono> · يمكن تركه
-                      والعودة إليه، وتصل إليه الإشعارات.
-                    </p>
-                  )}
 
                   {FORM_STAGES.filter((s) => s.key === tab).map((s) => (
                     <Glass key={s.key}>
@@ -569,7 +552,6 @@ export default function RegisterPage() {
                             : <Tag tone="ok">مكتمل</Tag>
                         }
                       />
-                      <p className="sub cnote">{s.note}</p>
 
                       {s.key === 'docs' ? (
                         <>
@@ -608,9 +590,7 @@ export default function RegisterPage() {
                               anyone has made a mistake makes red mean nothing once a mistake
                               actually happens. */}
                           <p className="sub cnote">
-                            يمنع منعًا باتًا رفع بيانات الشركة أو أي ملفات محظورة
-                            أخرى · والملفات المرفوعة تُسجَّل باسم مدخل البيانات في سجل
-                            التدقيق{/* doc rule 30 */}.
+                            يمنع منعًا باتًا رفع بيانات الشركة أو أي ملفات محظورة أخرى.
                           </p>
 
                           <ul className="regdocs">
@@ -705,7 +685,7 @@ export default function RegisterPage() {
                           {s.fields.map((f) => (
                             <Field
                               key={f.key}
-                              f={f}
+                              f={{ ...f, hint: undefined }}
                               value={val[f.key] ?? ''}
                               parent={f.dependsOn ? val[f.dependsOn] ?? '' : ''}
                               onChange={(x) => setField(f.key, x)}
@@ -719,7 +699,7 @@ export default function RegisterPage() {
                           message states which entity it conflicts with. */}
                       {/* 2.4.10 · the other main data must not repeat either */}
                       {dups.filter((d) => d.field !== 'iban' && s.fields.some((f) => f.key === d.field)).map((d) => (
-                        <p key={d.field} className="bad cnote">{d.label} مسجَّل لـ«{d.who}» · تحقّق منه قبل الإرسال.</p>
+                        <p key={d.field} className="bad cnote">{d.label} مسجَّل لـ«{d.who}».</p>
                       ))}
                       {/* Batch 8 · spelling and formatting of what was typed · a one-click fix when it's certain */}
                       {s.fields.filter((f) => f.kind === 'text').flatMap((f) => textIssues(val[f.key] ?? '').map((x, i) => (
@@ -731,15 +711,15 @@ export default function RegisterPage() {
                       {s.key === 'id' && clash && (
                         <p className="bad cnote">
                           رقم الترخيص <Mono>{val.licenseNo}</Mono> مسجَّل لـ
-                          «{clash.name}» بنفس التصنيف · لا يتكرر الترخيص إلا إذا اختلف التصنيف.{/* doc rule 8 · 9 */}
+                          «{clash.name}» بنفس التصنيف.{/* doc rule 8 · 9 */}
                         </p>
                       )}
 
                       {s.key === 'docs' && (
                         <p className="sub cnote">
-                          الإلزام يتغيّر بتصنيف الجهة · التصنيف الحالي{' '}
-                          {type ? <b>{type}</b> : <span className="bad">لم يُختر بعد</span>}،
-                          والمطلوب{' '}
+                          التصنيف{' '}
+                          {type ? <b>{type}</b> : <span className="bad">لم يُختر بعد</span>}
+                          {' · '}المطلوب{' '}
                           <span className="num">
                             {REG_DOCS.filter((d) => docRequired(d, type)).length}
                           </span>{' '}
@@ -789,8 +769,7 @@ export default function RegisterPage() {
                       The entity needs this number when contacting the institution, and a
                       fourteen-character string is easy for the eye to mistype. */}
                   <p className="sub cnote">
-                    رقمك المرجعي <CopyId>{v.req ?? reqId}</CopyId> · احتفظ به، فبه
-                    تُتابَع حالة الطلب.
+                    رقمك المرجعي <CopyId>{v.req ?? reqId}</CopyId>
                   </p>
                   <ul className="payq-ck regsent">
                     <li className="ok">
@@ -806,15 +785,11 @@ export default function RegisterPage() {
                     <li className="no">
                       <Icon name={icons.alert} size="sm" />
                       <span>
-                        <b>لم يُنشأ حساب بعد</b> · اسم المستخدم يصل بعد الاعتماد وحده
+                        <b>لم يُنشأ حساب بعد</b>
                       </span>
                       {/* doc rule 2 */}
                     </li>
                   </ul>
-                  <p className="sub cnote">
-                    السطر الأخير مكتوب عمدًا: الجهة التي تظن أنها سُجّلت تبقى
-                    بانتظار بريد لن يصل، ثم تتصل لتسأل.
-                  </p>
                   {foot}
                 </Glass>
               )}
@@ -846,7 +821,7 @@ export default function RegisterPage() {
                 <AnalysisCard
                   title="مراجعة مساعد أبانمي"
                   cta="راجع طلبي"
-                  empty="لا يوجد مانع في هذه الخطوة · انتقل إلى الخطوة التالية."
+                  empty="لا يوجد مانع في هذه الخطوة."
                   ask={inside}
                   onAsk={() => window.dispatchEvent(
                     new KeyboardEvent('keydown', { key: 'k', metaKey: true }),

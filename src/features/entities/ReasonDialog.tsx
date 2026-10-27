@@ -52,7 +52,6 @@ export function ReasonDialog({ kind, title, subject, confirm, tone = 'btn-d', on
               <textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} aria-label={other ? 'نص السبب' : 'ملاحظة'} placeholder={other ? 'السبب كما يُسجَّل في سجل الطلب' : 'اختيارية · تُضاف إلى السبب في السجل'} />
             </span>
           </label>
-          <p className="sub cnote">يُسجَّل السبب في السجل باسمك ووقته · والقائمة تُعدَّل من إعدادات الجهات.</p>
         </div>
         <div className="mf">
           <button type="button" className={`btn ${tone}`} disabled={!ok} title={!reason ? 'اختر السبب أولًا' : other && !text.trim() ? 'اكتب السبب' : undefined} onClick={() => onConfirm({ reason, text: text.trim() })}>

@@ -1,4 +1,4 @@
-import { Glass, Head, KV, Money, Stat, Tag, Riyal, Num } from '@/components/ui'
+import { StatRow, Glass, Head, KV, Money, Stat, Tag, Riyal, Num } from '@/components/ui'
 import { docTitle, pathOf, yearById } from '@/data/mock/budgetTree'
 import { HOLD_STAGE_SAY, fundingReport, linkOf, lineBalances, planOf, useBudget, type HoldStage } from '@/data/budget/store'
 import { FundingCard } from '@/features/funding/FundingCard'
@@ -38,16 +38,16 @@ export function FundingTab({ row }: { row: ProjectRow }) {
 
   return (
     <>
-      <div className="stats4">
-        <Stat label="حالة الربط المالي" value={status} note={l ? `نوع الحجز: ${HOLD_STAGE_SAY[l.stage]}` : multi ? 'يُحجز كل سنة من خطتها' : 'لم يُربط المشروع ببند ميزانية بعد'} />
+      <StatRow title="الربط المالي">
+        <Stat label="حالة الربط المالي" value={status} note={l ? `نوع الحجز: ${HOLD_STAGE_SAY[l.stage]}` : undefined} />
         <Stat label="المبلغ المرتبط" value={<Num>{rep?.totals.amount ?? multi?.years.reduce((a, y) => a + y.amount, 0) ?? 0}</Num>} unit={<Riyal />} note={years ? `ميزانية ${years}` : '—'} />
-        <Stat label="المصروف منه" value={<Num>{rep?.totals.paid ?? 0}</Num>} unit={<Riyal />} note="ما صُرف فعلًا على بنود الربط" />
-        <Stat label={l?.stage === 'closed' ? 'أُعيد للبنود' : 'المتبقي'} value={<Num>{l?.stage === 'closed' ? rep?.totals.released ?? 0 : rep?.totals.remaining ?? 0}</Num>} unit={<Riyal />} note={l?.stage === 'closed' ? 'الوفر عاد إلى مخصص البند' : 'محجوز للمشروع ولم يُصرف'} />
-      </div>
+        <Stat label="المصروف منه" value={<Num>{rep?.totals.paid ?? 0}</Num>} unit={<Riyal />} />
+        <Stat label={l?.stage === 'closed' ? 'أُعيد للبنود' : 'المتبقي'} value={<Num>{l?.stage === 'closed' ? rep?.totals.released ?? 0 : rep?.totals.remaining ?? 0}</Num>} unit={<Riyal />} />
+      </StatRow>
 
       {rep && rep.rows.length > 0 && (
         <Glass>
-          <Head title="أثر الربط على البنود" meta={<span className="sub">المتاح في البند قبل حجز المشروع وبعده</span>} />
+          <Head title="أثر الربط على البنود" />
           <KV
             rows={rep.rows.map((r) => {
               const b = r.doc ? lineBalances(r.doc, r.share.nodeId) : undefined

@@ -63,6 +63,8 @@ export function persist(key: string, value: unknown): void {
 export const isConfigured = (key: string): boolean => read(key) !== null
 
 export const CFG = {
+  /** Client sheet 26 Oct (#112) · tracks, fields and goals added from the budget settings */
+  taxonomy: 'ab-cfg-taxonomy',
   approval: 'ab-cfg-approval',
   limits: 'ab-cfg-limits',
   planLimits: 'ab-cfg-plan-limits',

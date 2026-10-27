@@ -94,7 +94,7 @@ export function EntityFlow({ entity }: { entity: EntityRow }) {
     return (
       <Glass className="ejr ejr-none">
         <span className="ejr-ht">رحلة الريال في هذه الجهة</span>
-        <p>لم تُمنح هذه الجهة أي مبلغ حتى الآن · الجهة مسجَّلة ولم تدخل دورة صرف بعد.</p>
+        <p>لم تُمنح هذه الجهة أي مبلغ حتى الآن.</p>
       </Glass>
     )
   }

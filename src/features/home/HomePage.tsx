@@ -8,7 +8,7 @@ import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
 import { onToast, toast } from '@/data/feedback'
 import { rowGo } from '@/lib/rowGo'
-import { LANE_NOTE, LANE_SAY, todayFor, type Lane, type TodayItem } from './today'
+import { LANE_SAY, todayFor, type Lane, type TodayItem } from './today'
 import { setTrail } from './trail'
 
 /* «اليوم» · the person's working day on one screen (client brief, 17 Oct · layout reworked 18 Oct
@@ -95,7 +95,7 @@ export default function HomePage() {
                   <p className="sub">
                     {day.progress.today
                       ? <>أنجزت <span className="num">{day.progress.today}</span> {day.progress.today === 1 ? 'إجراءً' : 'إجراءات'} اليوم، ولا شيء آخر ينتظرك.</>
-                      : 'لا شيء ينتظرك الآن · ما يصلك يظهر هنا أولًا.'}
+                      : 'لا شيء ينتظرك الآن.'}
                   </p>
                 </div>
               </Glass>
@@ -197,7 +197,7 @@ export default function HomePage() {
                   <ul>
                     {day.progress.moved.slice(0, 3).map((m) => <li key={m.href}><Icon name={icons.check} size="sm" /><Link to={m.href}>{m.text}</Link></li>)}
                   </ul>
-                ) : <p className="sub">ما يتقدّم بعد خطوتك يظهر هنا: مشروع اعتُمد، دفعة صُرفت، مشروع أُغلق.</p>}
+                ) : <p className="sub">لا شيء بعد.</p>}
               </div>
             </Glass>
           </div>
@@ -226,7 +226,6 @@ export default function HomePage() {
                     <b>{LANE_SAY[l]}</b>
                     <span className="num tday-n">{rows.length}</span>
                   </div>
-                  <p className="sub tday-col-n">{LANE_NOTE[l]}</p>
                   {rows.length ? (
                     <ul className="tday-cards">
                       {(all ? rows : rows.slice(0, SHOW)).map((i) => <Card key={key(i)} i={i} go={go} />)}

@@ -9,7 +9,7 @@ import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
 import { payRequestById } from '@/data/mock/disbursements'
-import { nf, NOUN, nounAfter, pct, projectCode, riyals } from '@/lib/format'
+import { nf, pct, projectCode, riyals } from '@/lib/format'
 import { projectById } from '@/data/mock/projects'
 import { printArea } from '@/lib/export'
 import { basisOfRequest, usePayments } from '@/data/payments/store'
@@ -59,7 +59,7 @@ export default function OrderPage() {
           <div className="screen col">
             <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
             <Glass>
-              <Empty title="السجل غير موجود." note="ربما أُغلق، أو أن الرابط قديم." />
+              <Empty title="السجل غير موجود." />
             </Glass>
           </div>
         </div>
@@ -110,9 +110,8 @@ export default function OrderPage() {
               <Empty
                 title="أمر الصرف لم يُنشأ بعد."
                 note={
-                  `${r.state === 'supervisor' || r.state === 'returned' ? 'متطلبات الدفعة لم تُعتمد بعد' : r.state === 'eligible' ? 'الدفعة مؤهلة للصرف ولم يُنشأ إذنها بعد' : r.state === 'exec' ? 'إذن الصرف ما زال بانتظار المدير التنفيذي' : r.state === 'closed' ? 'رُفض إذن الصرف نهائيًّا' : 'إذن الصرف ما زال بانتظار مدير المنح'}. ` +
-                  /* doc 9.4.11 · 9.2.15 */ 'لا يُنفَّذ الصرف قبل اكتمال كل الاعتمادات، ويُنشأ الأمر ' +
-                  'بعد اعتماد الإدارة المالية.'
+                  /* doc 9.4.11 · 9.2.15 · the record's own state only */
+                  `${r.state === 'supervisor' || r.state === 'returned' ? 'متطلبات الدفعة لم تُعتمد بعد' : r.state === 'eligible' ? 'الدفعة مؤهلة للصرف ولم يُنشأ إذنها بعد' : r.state === 'exec' ? 'إذن الصرف ما زال بانتظار المدير التنفيذي' : r.state === 'closed' ? 'رُفض إذن الصرف نهائيًّا' : 'إذن الصرف ما زال بانتظار مدير المنح'}.`
                 }
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payment(r.id))}>
@@ -211,11 +210,7 @@ export default function OrderPage() {
                     </tr>
                   </tfoot>
                 </table>
-                {r.sources.length > 1 && (
-                  <p className="sub cnote">
-                    تُلزم القواعد {/* doc rule 12 */} بالصرف وفق هذا التوزيع المعتمد عند تعدّد المصادر.
-                  </p>
-                )}
+
               </section>
 
               {/* Bank account - the spec's second output. */}
@@ -275,10 +270,7 @@ export default function OrderPage() {
                 })}
               </section>
 
-              <p className="sub cnote">
-                أرشفة المستندات والتقارير والمرفقات مربوطة بالطلب <Mono>{r.id}</Mono>{/* doc rule 21 · output 4 */} ·{' '}
-                <Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}.
-              </p>
+
             </Glass>
           )}
         </div>

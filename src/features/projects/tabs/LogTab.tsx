@@ -252,10 +252,6 @@ export function LogTab({ events, entityName, entityLogo }: LogTabProps) {
         </ol>
       )}
 
-      <div className="sub mt-4">
-        كل إجراء يحمل: القسم · المنفّذ · الوقت · المدة مقابل حدّ القسم · وحقول خاصة بنوعه.
-        الحدّ <Mono>900</Mono> ساعة مطبَّق على كل الأقسام في النظام الحالي، قيمة واحدة للجميع لا حدّ خاص بكل قسم.
-      </div>
     </Glass>
   )
 }

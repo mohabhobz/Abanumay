@@ -112,7 +112,6 @@ export default function LatePage() {
             <div className="pmain">
               <h1 className="ptitle">الطلبات المتأخرة والمتعثرة</h1>
               <p className="sub mt-1">
-                آلية التصعيد · البند 3 ·{' '}
                 <span className="num">{k.stuck}</span> متعثر و
                 <span className="num">{k.late}</span> متأخر عن مدة المرحلة
               </p>
@@ -135,7 +134,7 @@ export default function LatePage() {
           <Glass>
             <Head
               title="مدد المراحل"
-              meta={<Link className="lnk" to={ROUTES.escalation}>المتأخر في جميع الإجراءات</Link>}
+              meta={<span className="rowf gp-2"><Link className="lnk" to={ROUTES.escalationSettings}>آلية التصعيد</Link><Link className="lnk" to={ROUTES.escalation}>المتأخر في جميع الإجراءات</Link></span>}
             />
             <div className="paylim">
               {PAY_STATES.filter((s) => PAY_LIMIT[s.key]).map((s) => (
@@ -146,18 +145,13 @@ export default function LatePage() {
                 </span>
               ))}
             </div>
-            <p className="sub cnote">
-              تُضبط المدد وقاعدة التعثر من <Link className="lnk" to={ROUTES.escalationSettings}>آلية التصعيد</Link> صلاحيةً لمدير النظام مباشرة بلا مسار موافقات ·
-              ويُطلق التجاوز تنبيهًا <b>مرة واحدة</b>، والتعثّر تنبيهًا <b>يوميًا</b> حتى
-              اتخاذ الإجراء أو الانتقال.
-            </p>
+
           </Glass>
 
           {rows.length === 0 ? (
             <Glass>
               <Empty
                 title="لا يوجد طلب متأخر أو متعثر."
-                note="كل الطلبات المفتوحة ضمن مدة مرحلتها."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
                     العودة إلى صندوق الصرف

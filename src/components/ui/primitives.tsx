@@ -1,3 +1,4 @@
+import { Hint } from './Hint'
 import { forwardRef, useEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from './Icon'
@@ -22,10 +23,10 @@ export const Glass = forwardRef<HTMLDivElement, GlassProps>(function Glass(
   )
 })
 
-export function Head({ title, meta }: { title: ReactNode; meta?: ReactNode }) {
+export function Head({ title, meta, hint }: { title: ReactNode; meta?: ReactNode; hint?: string }) {
   return (
     <div className="hd">
-      <h3>{title}</h3>
+      <h3>{title}{hint && <Hint text={hint} />}</h3>
       {meta && <span className="meta">{meta}</span>}
     </div>
   )
@@ -402,37 +403,40 @@ export function Stat({
   value,
   unit,
   note,
-  bar,
+  hint,
 }: {
   label: ReactNode
   value: ReactNode
   unit?: ReactNode
+  /** The figure's context (its basis, its count) · read behind the (i), with the hint */
   note?: ReactNode
+  /** Kept for the callers · a KPI card no longer draws a bar (see below) */
   bar?: StatBar
+  /** Client 26 Oct · how the figure is computed · behind an (i), not a gray line under it */
+  hint?: string
 }) {
+  /* Client 27 Oct · «مرة البار تحت ومرة في النص ومرة في كلام هنا ومرة لا» · every KPI card in the
+     system reads the same: its name, then its figure · nothing under it. A bar on some cards and a
+     note on others made each card in a row a different card, and the row as tall as its fullest one.
+     How a figure is computed and what it rests on sit behind the (i) beside the name. */
+  const tip = hint || note ? <>{hint}{hint && note ? ' · ' : ''}{note}</> : null
   return (
     <div className="glass stat">
-      <div className="lb">{label}</div>
+      <div className="lb">{label}{tip && <Hint text={tip} />}</div>
       <div className="v">
         {value}
         {unit && <small>{unit}</small>}
       </div>
-      {/* The bar **takes up its space whether it's shown or not**. The four stats in one row are
-          equal height (a grid), so the one without a bar was left with all its empty space at the
-          bottom: 16.8 on top and 29.2 below in the same row. The reserved slot gives all four the
-          same layout, so the spacing above and below matches without the rows shifting against each
-          other. */}
-      <div className="bar" aria-hidden={!bar} data-empty={bar ? undefined : ''}>
-        {bar && <i style={{ width: bar.w, background: bar.c }} />}
-      </div>
-      {note && (
-        <div
-          className="mut trim1 mt-2"
-          title={typeof note === 'string' ? note : undefined}
-        >
-          {note}
-        </div>
-      )}
     </div>
+  )
+}
+
+/** Client 27 Oct · a row of KPI cards carries its own title, like any other section of the page */
+export function StatRow({ title, meta, three, id, children }: { title: string; meta?: ReactNode; three?: boolean; id?: string; children: ReactNode }) {
+  return (
+    <section className="rpsec kpirow" aria-label={title} id={id}>
+      <Head title={title} meta={meta} />
+      <div className={`stats4${three ? ' n3' : ''}`}>{children}</div>
+    </section>
   )
 }

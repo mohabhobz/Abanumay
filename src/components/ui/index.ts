@@ -30,3 +30,8 @@ export { CheckChip, type CheckChipProps } from './CheckChip'
 /* Client 24 Oct · one editor for every data section · its «تعديل» button */
 export { EditModal, EditButton, type EditField, type EditChange, type EditKind, type EditModalProps } from './EditModal'
 export { OrgName } from './OrgName'
+/* Client 26 Oct · every action-bar decision confirms in one popup · its reason inside it */
+export { DecisionDialog, DockActions, type DecisionDialogProps, type DockAction } from './DecisionDialog'
+export { Hint } from './Hint'
+export { StatRow } from './primitives'
+export { BankCard, BankGrid, type BankCardProps } from './BankCard'

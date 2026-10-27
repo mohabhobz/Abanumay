@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Glass, Head, Icon, icons, Money, Num } from '@/components/ui'
+import { Stat, Glass, Head, Icon, icons, Money, Num } from '@/components/ui'
 import { CountBars, SaudiMap } from '@/components/charts'
 import { ROUTES } from '@/app/routes'
 import { impact, type ImpactRow } from '@/data/impact'
@@ -27,7 +27,7 @@ export function ImpactPanel({ full = false }: { full?: boolean }) {
   /* Client, 8 Oct · separate cards, not one card holding cards · the heading sits on the page */
   const card = (title: string, rows: ReturnType<typeof bars>, hue: 'c2' | 'c3' | 'c4' | 'c5') => (
     <Glass className="impc-c">
-      <Head title={title} meta={<span className="sub">بعدد المستفيدين</span>} />
+      <Head title={title} />
       <CountBars rows={rows} total={m.estimated} unit="مستفيد" hue={hue} note="من المستفيدين كلهم" />
     </Glass>
   )
@@ -36,38 +36,23 @@ export function ImpactPanel({ full = false }: { full?: boolean }) {
       <div className="impc-top">
         <h2 className="impc-t">الأثر</h2>
         {full
-          ? <span className="sub">لمن وصلت المنح وأين · {countOf(m.projects, NOUN.project)} مموَّلًا</span>
+          ? <span className="sub">{countOf(m.projects, NOUN.project)} مموَّلًا</span>
           : <Link className="lnk" to={ROUTES.reportTab('impact')}>التقرير الكامل<Icon name={icons.chevron} size="sm" /></Link>}
       </div>
 
-      <div className="impc-ks">
-        <Glass className="impc-k">
-          <span className="impc-kl">المستفيدون · تقدير الجهات</span>
-          <b className="impc-kv num">{nf.format(m.estimated)}</b>
-          <span className="impc-kn sub">في {countOf(m.projects, NOUN.project)} مموَّلًا{m.subProjects ? <> · منها <Num>{m.subProjects}</Num> فرعي في المحافظ</> : null}</span>
-        </Glass>
-        <Glass className="impc-k">
-          <span className="impc-kl">المُتحقّق · من التقارير الختامية</span>
-          <b className="impc-kv num">{m.reportedProjects ? nf.format(m.reached) : '—'}</b>
-          <span className="impc-kn sub">
-            {m.reportedProjects ? <>مقابل تقدير <Num>{m.reportedEstimate}</Num> في {countOf(m.reportedProjects, NOUN.project)}</> : 'لم يُرسل تقرير ختامي بعد'}
-          </span>
-        </Glass>
-        <Glass className="impc-k">
-          <span className="impc-kl">نسبة التحقّق</span>
-          <b className="impc-kv num">{m.rate === null ? '—' : pct(m.rate)}</b>
-          <span className="impc-kn sub">المُتحقّق ÷ تقدير المشاريع نفسها</span>
-        </Glass>
-        <Glass className="impc-k">
-          <span className="impc-kl">تكلفة المستفيد</span>
-          <b className="impc-kv">{m.costPer === null ? '—' : <Money>{m.costPer}</Money>}</b>
-          <span className="impc-kn sub">الممنوح ÷ المستفيدين المقدَّرين</span>
-        </Glass>
+      {/* Client 27 Oct · the KPI row is the system's one stat card · one height, one inset */}
+      <div className="stats4">
+        <Stat label="المستفيدون · تقدير الجهات" value={<Num>{m.estimated}</Num>}
+          note={<>في {countOf(m.projects, NOUN.project)} مموَّلًا{m.subProjects ? <> · منها <Num>{m.subProjects}</Num> فرعي في المحافظ</> : null}</>} />
+        <Stat label="المُتحقّق · من التقارير الختامية" value={m.reportedProjects ? <Num>{m.reached}</Num> : '—'}
+          note={m.reportedProjects ? <>مقابل تقدير <Num>{m.reportedEstimate}</Num> في {countOf(m.reportedProjects, NOUN.project)}</> : 'لم يُرسل تقرير ختامي بعد'} />
+        <Stat label="نسبة التحقّق" hint="المُتحقّق ÷ تقدير المشاريع نفسها" value={m.rate === null ? '—' : pct(m.rate)} />
+        <Stat label="تكلفة المستفيد" hint="الممنوح ÷ المستفيدين المقدَّرين" value={m.costPer === null ? '—' : <Money>{m.costPer}</Money>} />
       </div>
 
       {full && (
         <Glass className="impc-c impc-map">
-          <Head title="الخريطة بالمناطق" meta={<span className="sub">المستفيدون والممنوح لكل منطقة</span>} />
+          <Head title="الخريطة بالمناطق" />
           <SaudiMap
             unit="مستفيدًا"
             amounts
@@ -85,7 +70,7 @@ export function ImpactPanel({ full = false }: { full?: boolean }) {
 
       {full && (
         <Glass className="impc-c tblcard">
-          <Head title="التقدير مقابل المُتحقّق" meta={<span className="sub">لكل مشروع أرسل تقريره الختامي</span>} />
+          <Head title="التقدير مقابل المُتحقّق" />
           {m.pairs.length ? (
             <div className="tblwrap">
               <table className="tbl">
@@ -111,7 +96,7 @@ export function ImpactPanel({ full = false }: { full?: boolean }) {
                 </tbody>
               </table>
             </div>
-          ) : <p className="sub">لم يُرسل تقرير ختامي بعد · تظهر المقارنة مع أول تقرير يذكر عدد المستفيدين الفعلي.</p>}
+          ) : <p className="sub">لم يُرسل تقرير ختامي بعد.</p>}
         </Glass>
       )}
     </section>

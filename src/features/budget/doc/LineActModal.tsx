@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Icon, MultiSelect, icons } from '@/components/ui'
+import { FieldMultiSelect, Icon, icons } from '@/components/ui'
 import { childrenOf, pathOf, type BudgetDoc, type BudgetNode } from '@/data/mock/budgetTree'
 import { CYCLE } from '@/data/intake/cycle'
-import { lineDeps, ownersOf, setLineOwners, setLineStatus } from '@/data/budget/store'
+import { ownersOf, setLineOwners, setLineStatus } from '@/data/budget/store'
 
 /* A line on an approved budget · its structure is fixed (changes go through an operation request),
    but two things stay open to whoever settings name: its status, and the supervisors of a domain.
@@ -17,7 +17,6 @@ export function LineActModal({ doc, node, me, mayStatus, onClose }: {
 }) {
   const [reason, setReason] = useState('')
   const [owners, setOwners] = useState<string[]>(ownersOf(node))
-  const dep = lineDeps(doc, node.id)
   const below = (id: string): number => childrenOf(doc.nodes, id).reduce((a, k) => a + 1 + below(k.id), 0)
   const n = below(node.id)
   const domain = node.kind === 'main' && node.parentId !== null && doc.nodes.find((x) => x.id === node.parentId)?.kind === 'main'
@@ -35,13 +34,8 @@ export function LineActModal({ doc, node, me, mayStatus, onClose }: {
         <div className="mb col">
           {mayStatus && (
             <>
-              <p className="sub cnote">
-                {node.active
-                  ? <>إيقاف البند يمنع ربط مشاريع جديدة عليه{n ? <> ويوقف معه <b className="num">{n}</b> بندًا تحته</> : null} · ويبقى ما عليه من حجز والتزام وصرف كما هو.</>
-                  : 'تفعيل البند يعيده للتقديم والربط · ويعود معه ما أوقفه إيقافه وحده.'}
-              </p>
-              {node.active && dep.projects.length > 0 && (
-                <p className="sub cnote">عليه <b className="num">{dep.projects.length}</b> مشروع قائم · لا يتأثر بالإيقاف.</p>
+              {node.active && n > 0 && (
+                <p className="sub cnote">يتوقف معه <b className="num">{n}</b> بندًا تحته.</p>
               )}
               <label className="regf">
                 <span className="lb">السبب{node.active && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
@@ -52,15 +46,15 @@ export function LineActModal({ doc, node, me, mayStatus, onClose }: {
           {domain && (
             <label className="regf">
               <span className="lb">مشرف المنح المسؤول</span>
-              <MultiSelect
+              <FieldMultiSelect
                 label="مشرف المنح المسؤول"
-                all="بلا إسناد"
+                placeholder="بلا إسناد"
                 people
                 values={owners}
                 options={CYCLE.supervisors.map((s) => ({ value: s, label: s }))}
                 onChange={setOwners}
               />
-              <span className="sub regf-h">يُوزَّع عليه ما يرد من مشاريع المجال في دورة الاستقبال</span>
+
             </label>
           )}
         </div>

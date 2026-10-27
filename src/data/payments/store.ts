@@ -136,7 +136,7 @@ export function repOf(projectId: string): { name: string; title: string } {
     a masked seed IBAN isn't an account */
 export function accountOf(entityId: string): ReturnType<typeof banksOf>[number] | undefined {
   const e = entityById(entityId)
-  const real = e ? entityDetail(e).banks.find((b) => b.status === 'مفعل' && !/[X•]/.test(b.iban)) : undefined
+  const real = e ? entityDetail(e).banks.find((b) => b.status === 'مفعل' && !b.seeded && !/[X•]/.test(b.iban)) : undefined
   if (real) return { id: real.id, bank: real.bank, purpose: real.shortName, iban: real.iban, active: true }
   return banksOf(entityId)[0]
 }

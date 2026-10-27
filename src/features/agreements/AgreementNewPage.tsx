@@ -188,10 +188,7 @@ export default function AgreementNewPage() {
           <header>
             <div>
               <h1 className="ptitle">إعداد اتفاقية</h1>
-              <p className="sub mt-1">
-                المحطة الأولى من <span className="num">5</span> · ينتج عنها <b>مسودة</b>،
-                ولا تُرسل إلى الجهة إلا بعد اعتماد المؤسسة
-              </p>
+
             </div>
             {/* Count tag removed from the page header - the single count lives in the doc. */}
           </header>
@@ -216,7 +213,7 @@ export default function AgreementNewPage() {
                   : <Tag tone="ok">مكتمل</Tag>
               }
             />
-            <p className="sub cnote">{stage.note}</p>
+
 
             {tab === 'project' && (
               <>
@@ -238,15 +235,13 @@ export default function AgreementNewPage() {
                         label: `${p.name}${p.blocked ? ` · ${p.blocked}` : p.additional ? ` · اتفاقية إضافية لـ ${p.additional}` : ''}`,
                       }))}
                     />
-                    <span className="sub regf-h">
-                      مشروع واحد فقط{/* doc rule 2 */}
-                    </span>
+                    {/* doc rule 2 · one project only */}
                   </label>
                 </div>
 
                 {opt?.additional && (
                   <p className="sub cnote">
-                    للمشروع اتفاقية سارية <b>{opt.additional}</b> · هذه اتفاقية إضافية تحلّ محلها عند سريانها، فتبقى اتفاقية سارية واحدة.
+                    للمشروع اتفاقية سارية <b>{opt.additional}</b> · هذه اتفاقية إضافية.
                   {/* doc 8.4.25 */}</p>
                 )}
                 {project && (
@@ -291,16 +286,12 @@ export default function AgreementNewPage() {
                             {kind === k.key && <CheckMark />}
                           </span>
                           <b>{k.label}</b>
-                          <span className="sub trim1">· {k.note}</span>
                         </span>
                       </label>
                     </li>
                   ))}
                 </ul>
-                <p className="sub cnote">
-                  يُحدَّد النوع عند الإنشاء و<b>لا يتغيّر</b> بعد ذلك إلا بإصدار
-                  جديد{/* doc rule 3 */}.
-                </p>
+
 
                 <div className="regfields">
                   {kind === 'ورقية' ? (
@@ -316,7 +307,7 @@ export default function AgreementNewPage() {
                         </label>
                         {paperCopy ? <Tag tone="ok">{paperCopy}</Tag> : <span className="sub">لا نسخة بعد</span>}
                       </span>
-                      <span className="sub regf-h">تُعدّ خارج النماذج وتُرفع هنا · ثم تُرفع النسخة الموقّعة عند وصولها{/* doc 8.4.16 */}</span>
+
                     </div>
                   ) : (
                   <label className="regf regf-w">
@@ -330,9 +321,7 @@ export default function AgreementNewPage() {
                       label="النموذج المعتمد"
                       placeholder="اختر النموذج"
                     />
-                    <span className="sub regf-h">
-                      يُحدَّد بحسب مصدر التمويل وحجم المنحة والظهور الإعلامي{/* doc rule 4 */}
-                    </span>
+
                   </label>
                   )}
 
@@ -361,7 +350,7 @@ export default function AgreementNewPage() {
                         aria-label="صفة الموقّع"
                       />
                     </span>
-                    <span className="sub regf-h">ممثل الجهة المخوّل بالتوقيع · مدخل في الوثيقة</span>
+
                   </label>
                 </div>
               </>
@@ -373,13 +362,12 @@ export default function AgreementNewPage() {
                     {/* v3 · 6.4.4 · 7.4.6 · the body's payment guidance · the schedule is drawn here */}
                     {payPlanOf(projectId)?.note && <p className="sub cnote">توجيهات الصرف من جهة الاعتماد: {payPlanOf(projectId)!.note}</p>}
                     <ScheduleEditor rows={rows} amount={amount} onChange={setRows} projectId={projectId} />
-                    {windowOf(projectId).from && <p className="sub cnote">مدة التنفيذ في الخطة من <DateText>{windowOf(projectId).from!}</DateText> إلى <DateText>{windowOf(projectId).to ?? ''}</DateText> · تقع الدفعات داخلها.</p>}
+                    {windowOf(projectId).from && <p className="sub cnote">مدة التنفيذ في الخطة من <DateText>{windowOf(projectId).from!}</DateText> إلى <DateText>{windowOf(projectId).to ?? ''}</DateText></p>}
                   </>
-                : <p className="sub cnote">اختر المشروع أولًا · يُطابَق الجدول مع قيمة المنحة.</p>
+                : <p className="sub cnote">اختر المشروع أولًا.</p>
             )}
 
-            {tab === 'terms' && !project && <p className="sub cnote">اختر المشروع أولًا · تُدرج بنود النموذج وشروط قرار الاعتماد تلقائيًّا.</p>}
-            {tab === 'text' && !project && <p className="sub cnote">اختر المشروع أولًا · يُعرض النص ببيانات المشروع.</p>}
+            {(tab === 'terms' || tab === 'text') && !project && <p className="sub cnote">اختر المشروع أولًا.</p>}
 
             {/* Rules are stated at their own stage, not in a message after submission. */}
             {issuesIn(tab).map((i) => (
@@ -427,7 +415,7 @@ export default function AgreementNewPage() {
           )}
           {tab === 'text' && project && (
             <>
-              <AgreementTextCard parts={text} note="البيانات مسترجعة من المشروع والجهة والميزانية والخطة · وتُعدَّل في مصدرها لا هنا." />
+              <AgreementTextCard parts={text} />
               <ReviewCard hints={hints} onAdd={(c) => setClauses((xs) => [...xs, c])} onTemplate={kind === 'إلكترونية' ? setTemplate : undefined} />
             </>
           )}
@@ -437,10 +425,7 @@ export default function AgreementNewPage() {
               <Glass>
                 <Head title="محطات الاتفاقية" meta={<span className="sub">خمس محطات</span>} />
                 <Steps items={steps} flow="ladder" />
-                {/* Rule 25 - this line prevents a wrong assumption from the first screen. */}
-                <p className="sub cnote">
-                  انتقال الاتفاقية بين محطاتها <b>لا يغيّر حالة المشروع</b>{/* doc rule 25 */}.
-                </p>
+
               </Glass>
               {/* Client 23 Oct · «ما يمنع الإرسال» opens from the action bar · not a card in the page */}
             </div>

@@ -84,10 +84,6 @@ export default function UpdatesPage() {
           <header>
             <div>
               <h1 className="ptitle">طلبات تحديث بيانات الجهات</h1>
-              <p className="sub mt-1">
-                تُطبَّق بيانات الاتصال فور إرسالها · وتنتظر هنا الهوية والترخيص والحسابات البنكية
-                والوثائق المجدَّدة، ويُعلَّق نشاط الجهة حتى يُبتّ فيها
-              </p>
             </div>
           </header>
 
@@ -116,7 +112,7 @@ export default function UpdatesPage() {
           </Glass>
 
           {rows.length === 0 ? (
-            <Glass><Empty title="لا توجد طلبات تحديث بهذه الفلاتر." note="تُرسل الجهة طلب التحديث من بوابتها، فيظهر هنا." /></Glass>
+            <Glass><Empty title="لا توجد طلبات تحديث بهذه الفلاتر." /></Glass>
           ) : (
             <Glass className="tblcard">
               <DataTable

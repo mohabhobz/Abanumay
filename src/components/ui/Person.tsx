@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import { isNobody, isPerson, person } from '@/data/people'
+import { Icon } from './Icon'
+import { icons } from './icons'
 
 /* 11 Oct · audit UI-068 and five more · two Arabic initials in bold are wider than a 28px box in
    some faces («س‌ف» measured 30px), so they were cut at its edges. The letters keep their size in
@@ -61,7 +63,9 @@ export function Face({ name, size = 'sm' }: { name: string; size?: PersonProps['
   const box = size === 'lg' ? '34' : size === 'md' ? '32' : '28'
   const title = p.title ? `${p.name}، ${p.title}` : p.name
   if (p.photo) return <img className={`pht pht-${box}`} src={p.photo} alt="" title={title} />
-  return <Initials text={p.initial} box={box} title={title} />
+  /* Client 27 Oct · a person with no photo reads a person icon, not two Arabic letters */
+  void Initials
+  return <span className={`av av-${box} av-ic`} title={title} aria-hidden="true"><Icon name={icons.user} size="sm" /></span>
 }
 
 export function Person({ name, empty = 'بلا مالك', size = 'sm', bare, quiet = true }: PersonProps) {

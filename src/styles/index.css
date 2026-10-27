@@ -1339,8 +1339,6 @@ small{font-size:var(--fs-1)}
    its neighbours'. Each card takes the row's tracks (label · value · bar · line) through subgrid, so
    the tallest label sets the label track for all of them and every value starts on the same line. */
 .stats4{grid-auto-rows:auto}
-.stats4>.stat{display:grid;grid-row:span 4;grid-template-rows:subgrid;row-gap:0;align-content:start}
-.stats4>.stat>.lb{align-self:end}
 .li{display:grid;grid-template-columns:1fr auto;gap:var(--sp-3) var(--sp-5);align-items:center;
   padding:var(--sp-5) var(--sp-6);cursor:pointer;transition:transform var(--mo-2) var(--ease-std);text-align:right;width:100%}
 .li:hover{transform:translateX(-3px)}
@@ -6587,6 +6585,9 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
      rides up. The column stretches the row, and the row extends the sticky
      element to the end of the scroll. */
   .hasg2>.g2>.col:first-child{padding-bottom:clamp(calc(var(--sp-12) * 2 + var(--sp-3)), 17vh, calc(var(--sp-12) * 2 + var(--sp-9)))}
+  /* Client 26 Oct · the empty band under the grid · the reserved room is only for a grid that ends the
+     page · a card after it (the plan's phases, a tab's full-width table) starts one gap below */
+  .hasg2>.g2:has(~ .glass, ~ section, ~ .tblcard)>.col:first-child{padding-bottom:0}
   /* The reports panel is an exception: its sticky column is capped at the bottom
      of the cards (`capSelector`), so it ends with them without needing extra
      sticking space — the padding here was leaving a gap to scroll through for no
@@ -7737,8 +7738,8 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
 
 /* Modal backdrop: opaque, closes on click */
 .bmask{position:fixed;inset:0;z-index:80;display:grid;place-items:center;
-  padding:var(--sp-5);background:rgba(var(--baseC),.55);
-  -webkit-backdrop-filter:var(--mat-2);backdrop-filter:var(--mat-2)}
+  padding:var(--sp-5);background:rgba(var(--baseC),.2);
+  -webkit-backdrop-filter:blur(14px) saturate(1.25);backdrop-filter:blur(14px) saturate(1.25)}
 .bmask .modal{width:min(480px,100%);max-width:none}
 .bmask .modal .mb{display:flex;flex-direction:column;gap:var(--sp-4)}
 .bmask .modal .mf{align-items:center}
@@ -9036,3 +9037,263 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .ibx-sw-spent{background:var(--ch-1)}
 .ibx-sw-reserved{background:var(--ch-2)}
 .ibx-sw-remaining{background:var(--ch-4)}
+/* Client 26 Oct · a multiple choice in a form · the field keeps its one size and the picks sit under it as
+   chips at the control height, each with its × · «أخرى» types its name at the foot of the open list */
+.fmsel{display:flex;flex-direction:column;align-items:stretch;gap:var(--sp-3);min-width:0;width:100%}
+.fmsel>.fldsel{width:100%}
+.fmsel-c{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.fmsel-chip{display:inline-flex;align-items:center;gap:var(--sp-2);max-width:100%;
+  padding-block:var(--pb-md);padding-inline:var(--sp-4) var(--sp-2);border-radius:var(--r1);
+  font-size:var(--fs-2);line-height:var(--lh-md);color:var(--t1);
+  background:var(--ctl-bg);box-shadow:inset 0 0 0 1px var(--ctl-line)}
+.fmsel-chip.warn{box-shadow:inset 0 0 0 1px var(--warn)}
+.fmsel-chip-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmsel-chip-t.lnk{color:var(--warn-ink, var(--t1))}
+.fmsel-x{display:grid;place-items:center;flex:none;padding:var(--sp-1);border:0;border-radius:var(--r0);
+  background:none;color:var(--t3);cursor:pointer;transition:color var(--mo-2) var(--ease-std),background var(--mo-2) var(--ease-std)}
+.fmsel-x:hover{color:var(--t1);background:var(--ctl-quiet-h)}
+.fmsel-o{display:flex;flex-direction:column;gap:var(--sp-2);padding:var(--sp-3)}
+.fmsel-o>.fld{width:100%}
+/* Client 26 Oct · a field beside a multi-select keeps its own height · the chips under the select
+   grow that row, the input next to it stays at --h-md instead of stretching to the row */
+.regfields:not(:has(>:not(.regf)))>.regf>.fld:not(.fld-a),
+.regfields:not(:has(>:not(.regf)))>.regf>.fldsel,
+.regfields:not(:has(>:not(.regf)))>.regf>.fmsel{align-self:start}
+/* Client sheet 26 Oct (#112) · tracks › fields › goals in three columns */
+.taxgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap);align-items:start}
+@media (max-width:1100px){.taxgrid{grid-template-columns:minmax(0,1fr)}}
+.taxadd{display:flex;gap:var(--sp-2);align-items:center}
+.taxadd>.fld{flex:1 1 auto;min-width:0}
+.taxadd>.btn{flex:none}
+.taxlist li{padding-block:0}
+.taxpick{all:unset;cursor:pointer;flex:1 1 auto;min-width:0;display:flex;align-items:center;min-block-size:var(--h-md)}
+.taxpick b{font-family:var(--fd);font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.taxpick:focus-visible{outline:2px solid var(--edge-i);outline-offset:2px;border-radius:var(--r0)}
+/* Client 26 Oct · the (i) beside a card title · the guidance behind it */
+.hint{all:unset;display:inline-grid;place-items:center;inline-size:var(--sp-6,24px);block-size:var(--sp-6,24px);
+  margin-inline-start:var(--sp-2);border-radius:var(--r0);color:var(--t3-g);cursor:help;vertical-align:middle}
+.hint:hover,.hint:focus-visible{color:var(--t1);background:var(--ctl-quiet-h)}
+.hint:focus-visible{outline:2px solid var(--edge-i);outline-offset:1px}
+.hint-tip{position:fixed;z-index:1000;transform:translateX(-50%);max-inline-size:min(340px,calc(100vw - 32px));
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--r1);background:var(--pop);color:var(--t1);
+  box-shadow:var(--sh-pop, 0 8px 24px rgb(0 0 0 / .14)),inset 0 0 0 1px var(--edge-1);
+  font-size:var(--fs-1);line-height:var(--lh-1, 1.6);pointer-events:none;white-space:normal}
+/* Client 27 Oct · KPI cards · one height in a row, and the same inset on every side · the subgrid
+   tracks were sizing the label row from the (i) button and the parent's gap, so the cards read
+   34px of air above the label and 40px under the bar against 24px at the sides. Each card is now a
+   column with the one inset (`--pad`) all round · the label keeps one line box (its (i) sits inside
+   it) · the bar slot is always there, so a row of cards with and without a bar ends on one line;
+   the grid stretches every card in the row to the tallest. */
+.stats4{align-items:stretch}
+.stats4>.stat,.stats>.stat,.stat{display:flex;flex-direction:column;justify-content:flex-start;
+  grid-row:auto;grid-template-rows:none;padding:var(--pad);box-sizing:border-box;min-width:0}
+.stat>.lb{display:flex;align-items:center;gap:var(--sp-1);min-block-size:var(--lh-2,1.5em);
+  line-height:var(--lh-2,1.5);align-self:stretch}
+.stat>.lb>.hint{inline-size:1.25em;block-size:1.25em;margin:0;flex:none}
+.stat>.v{margin-top:var(--sp-2);line-height:1.1}
+.stat>.bar{margin-top:var(--sp-4);flex:none}
+.stat>.mut{margin-top:var(--sp-3)}
+/* A row where one card carries a line under its bar · the others keep their bar on the card's
+   bottom inset instead of leaving the line's room as air under it */
+.stat>.v:has(+ .bar:last-child){margin-bottom:var(--sp-4)}
+.stat>.bar:last-child{margin-top:auto}
+/* the line under a card's bar sits on its bottom inset too · a row whose labels wrap differently
+   still ends every card on the same line */
+.stat>.mut:last-child{margin-top:auto;padding-top:var(--sp-3)}
+.stat>.bar:has(+ .mut:last-child){margin-bottom:0}
+/* Client 27 Oct · «خلي الأكشنز في آخر كل رو» · in every row of the system the actions sit on its end
+   side (the left), together · the row's text and fields keep the start side and run to the actions,
+   however long they get. The first action takes the free space before it; the ones after follow it. */
+.apv-row>:is(.btn,a.btn,.upbtn):not(.btn ~ *):not(:first-child),
+.apv-row>:is(.btn,a.btn):first-child:only-of-type,
+.cfgrow>:is(.btn,.cfgadd):not(.btn ~ *),
+.screen li>:is(.btn,a.btn):not(.btn ~ *):not(:first-child){margin-inline-start:auto}
+.apv-row>:is(.btn,a.btn)~:is(.btn,a.btn),.cfgrow>.btn~.btn{margin-inline-start:0}
+.apv-row:not(:has(>:not(.btn,a.btn,.upbtn))){justify-content:flex-end}
+/* the popup actions' own group (DockActions) counts as the row's actions too */
+.apv-row>.rowf:has(>.btn[data-needs-note], >.btn){margin-inline-start:auto}
+/* the KPI row's title sits one step above its cards, like a card's head above its content */
+.kpirow{gap:var(--sp-3)}
+.kpirow>.hd{margin:0}
+/* a date figure keeps one line beside its neighbours (its own size is already smaller) */
+.stats4>.stat>.v:has(>.date),.stats4>.stat>.v>.date{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stats4>.stat>.v:has(>.date){line-height:1.1;min-block-size:calc(var(--fd-3) * 1.1);display:flex;align-items:flex-end}
+.stats4>.stat>.v:has(>.date){font-size:var(--fs-4);overflow:visible;text-overflow:clip}
+.stats4>.stat>.v>.date{overflow:visible;text-overflow:clip}
+/* Client 27 Oct · the hovered step's reading floats under the arc · it takes no room at rest, so the
+   arc sits centred against the title beside it */
+.garc>.fanfoot{position:absolute;inset-inline:0;top:calc(100% - var(--sp-5));margin:0;z-index:5;pointer-events:none}
+.garc>.fanfoot>.fhl{min-height:0}
+/* the header centres the arc and the title on one line on every page */
+@media (min-width:821px){
+  .phead:has(>.pgates){align-items:center}
+  .phead>.pgates{align-self:center}
+}
+/* Client 27 Oct · the pinned tabs · a little taller, and once stuck a frosted band over the page
+   (the cards read through it, blurred) instead of a flat white strip · it spans the screen's side
+   gutters by its own box, so the blur covers them too */
+.tabs-pin{--tab-gut:clamp(var(--sp-7), 3vw, var(--sp-9));padding-block:var(--sp-3) 0}
+.tabs-pin[data-stuck]{margin-inline:calc(-1 * var(--tab-gut));padding-inline:var(--tab-gut);
+  background:color-mix(in srgb, var(--pop) 58%, transparent);
+  -webkit-backdrop-filter:blur(18px) saturate(1.35);backdrop-filter:blur(18px) saturate(1.35);
+  box-shadow:inset 0 -1px 0 var(--edge-1),0 8px 24px -16px rgb(0 0 0 / .18)}
+/* tabs inside a card (a plan's versions) keep a breath from what follows them */
+.glass .tabs:not(.tabs-pin){margin-bottom:var(--sp-5)}
+/* Client 27 Oct · the assistant's column · its card fills the room beside the page down to the
+   decision bar and no further · what it holds scrolls inside it */
+@media (min-width:961px){
+  .aiside{max-height:var(--ai-max,none)}
+  .aiside>.aicard.aicard{max-height:var(--ai-max,none);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+  .aiside>.aicard.aicard .aiscroll{flex:1 0 auto}
+}
+/* Client 27 Oct · nothing ever ends under the decision bar · a page whose grid is followed by more
+   cards keeps the bar's room at its own end, so its last card scrolls up clear of the bar */
+@media (min-width:961px){
+  .hasdock>.screen.hasg2:has(>.g2 ~ :is(.glass,section,div:not(.dockslot))){
+    padding-bottom:clamp(calc(var(--sp-12) * 2 + var(--sp-6)), 17vh, calc(var(--sp-12) * 2 + var(--sp-12)))}
+  .hasg2 .g2 ~ .glass:last-child{padding-bottom:var(--pad)}
+}
+/* Client 27 Oct · «دايمًا يكون في آخر الكارت من تحت» · a card's footer row (its date and its call to
+   action) always sits on the card's bottom inset, whatever the card holds above it · the gap the
+   list before it asked for stays a floor, not a fixed push */
+.glass>.payq-f,.glass>footer,.glass>.dlist+.payq-f,.glass>.payq-ck+.payq-f{margin-top:auto}
+.glass:has(>.payq-f){display:flex;flex-direction:column}
+.glass>.payq-ck:has(+ .payq-f){margin-bottom:var(--sp-5)}
+.glass>.dlist:has(+ .payq-f){margin-bottom:var(--sp-5)}
+/* A card's own actions · a foot under a divider, one breath from the content, on the end side */
+.cardfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--sp-2);
+  margin-top:var(--sp-6);padding-top:var(--sp-5);box-shadow:inset 0 1px 0 var(--edge-1)}
+/* a row of buttons that ends a card keeps a breath above it and sits on the end side */
+.glass>:is(.rowf,.apv-row):last-child:has(>.btn,>a.btn){margin-top:var(--sp-5)}
+.glass>.rowf:last-child:not(:has(>:not(.btn,a.btn))){justify-content:flex-end}
+/* Client 27 Oct · the payment's account, drawn as the bank card · display only */
+.bankcard{position:relative;isolation:isolate;overflow:hidden;max-inline-size:420px;aspect-ratio:1.62;
+  display:flex;flex-direction:column;justify-content:space-between;gap:var(--sp-4);
+  padding:var(--sp-6);border-radius:var(--r3, 18px);color:#fff;
+  background:linear-gradient(135deg,#1F4F4A 0%,#2F6E66 48%,#3E8C7F 100%);
+  box-shadow:0 18px 36px -22px rgb(15 60 55 / .55),inset 0 1px 0 rgb(255 255 255 / .18)}
+.bankcard::after{content:'';position:absolute;inset:auto -30% -55% auto;inline-size:75%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle,rgb(255 255 255 / .16),transparent 65%);z-index:-1}
+.bankcard.off{background:linear-gradient(135deg,#5b6563,#7d8785)}
+.bankcard-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3)}
+.bankcard-b{font-family:var(--fd);font-size:var(--fs-4);font-weight:600}
+.bankcard-s{font-size:var(--fs-1);padding:2px var(--sp-3);border-radius:var(--rp);background:rgb(255 255 255 / .16)}
+.bankcard-i{font-size:var(--fs-5);letter-spacing:.12em;text-align:center;font-variant-numeric:tabular-nums}
+.bankcard-f{display:flex;justify-content:space-between;gap:var(--sp-4)}
+.bankcard-f>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bankcard-f b{font-weight:600;font-size:var(--fs-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bankcard-k{font-size:var(--fs-0, 11px);opacity:.72}
+@media (min-width:961px){
+  /* centred while there is room, from the top once its content is taller (it scrolls, never clips) */
+  .aiside>.aicard.aicard{justify-content:safe center}
+  .aiside>.aicard.aishut{align-items:safe center}
+}
+/* Client 27 Oct · a face without a photo · the person icon, centred in the same box */
+.av.av-ic{display:inline-grid;place-items:center;color:var(--t2)}
+.av.av-ic svg{inline-size:60%;block-size:60%}
+/* rows that carry a face keep their own breath · the face no longer eats into the row above */
+.kv dd>.prs,.kv dd>.chips>.prs{margin-block:0}
+/* Bank accounts as cards · a grid, each card with its own foot (document · decision · actions) */
+.bankgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:var(--sp-6) var(--gap);margin-top:var(--sp-2)}
+.bankitem{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0}
+.bankitem>.bankcard{max-inline-size:none;inline-size:100%}
+.bankitem-f{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0}
+.bankitem-c{display:flex;flex-direction:column;gap:var(--sp-3);min-width:0}
+.bankitem-c>.dfile,.bankitem-c>*{min-width:0}
+.bankitem-a{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--sp-2)}
+.bankitem-a>.tag:first-child{margin-inline-end:auto}
+.bankitem-a .mt-3,.bankitem-a .mt-2{margin-top:0}
+.bankitem-a>.rowf{display:contents}
+.bankitem-a>p.cnote{margin:0;flex-basis:100%;text-align:start}
+/* Client 27 Oct · a large popup for a table edited in place (an agreement's payment schedule) */
+.bmask .modal.modal-xl{width:min(1240px,calc(100vw - 48px));max-width:none}
+.modal.modal-xl .mb{max-height:min(74vh,820px);overflow:auto}
+.modal .mh>.pc-sp{flex:1}
+/* the schedule's rows keep a breath between them · a payment's basis, its condition and its added
+   conditions read as one group, the next payment one row-gap below */
+.t-sched:has(input) tbody td{vertical-align:top;padding-block:var(--sp-5)}
+.t-sched tbody td>.pbasis+*,.t-sched tbody td>.fld+.pcond{margin-top:var(--sp-3)}
+.t-sched:has(input) tbody td:not(:has(.fld,.fldsel,.dfld,button)){padding-top:calc(var(--sp-5) + var(--sp-3))}
+.bankgrid{grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr))}
+.bankcard-i{font-size:var(--fs-4);letter-spacing:.06em;overflow-wrap:anywhere;line-height:1.35}
+.bankitem-a{flex-wrap:wrap}
+.bankitem-a .btn{flex:none}
+.glass>.bankgrid{margin-top:var(--sp-6)}
+.bankitem{max-inline-size:420px}
+.bankgrid{grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),420px))}
+/* Client 27 Oct (round 16) ─────────────────────────────────────────────────────────────── */
+/* the pinned tabs stay above a list's search and filter bar when both reach the top */
+.tabs-pin{z-index:30}
+/* a blocking notice reads in the system's one notice colour (the warn tint) · its icon keeps the red */
+.ptl-res.no{background:rgba(var(--warnC),.09)}
+/* list rows (a decision, a plan, a member) read at the card's text size, like a key/value list */
+.apv-list{font-size:var(--fs-2)}
+.apv-t b{font-weight:500}
+.apv-t .sub{font-size:var(--fs-1)}
+
+/* Tables · one look for a cell's second line in every table · the first line is the value (body
+   size, primary ink), the line under it is small and quiet, whatever it holds (a code, a date, a
+   count, a missing note), and both lines start on the cell's start edge */
+.tbl td{text-align:start}
+.tbl td :is(.mono,.date){text-align:start}
+.tbl td.acttbl-2>*,.tbl td>:is(b,.tlink,.tname)+:is(.mono,.sub,.date,span),.tbl td>div.sub,.tbl td>.sub:not(:first-child){
+  display:block;font-size:var(--fs-1);color:var(--t3);font-weight:400;margin-top:var(--sp-1);line-height:var(--lh-ui)}
+.tbl td.acttbl-2>*:first-child{font-size:var(--fs-2);color:var(--t1);margin-top:0}
+.tbl td.acttbl-2>b:first-child,.tbl td.acttbl-2>.acttbl-n{font-weight:600}
+.tbl td.acttbl-2>.mono{direction:ltr;unicode-bidi:isolate;text-align:right;font-family:var(--fm)}
+.tbl td .bad-ink{color:var(--t3)}
+.tbl td.acttbl-2>.acttbl-l{color:var(--t1);font-size:var(--fs-2)}
+
+/* Popups · one backdrop for every popup in the system · a light veil with a real blur, so the page
+   reads through it instead of a white sheet */
+
+/* the hover reading of a cut text in a table · small, under it, the whole text */
+.trimtip{position:fixed;z-index:1100;max-inline-size:min(420px,calc(100vw - 32px));pointer-events:none;
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--r1);background:var(--pop);color:var(--t1);
+  font-size:var(--fs-1);line-height:var(--lh-ui);white-space:normal;
+  box-shadow:0 8px 24px -12px rgb(0 0 0 / .22),inset 0 0 0 1px var(--edge-1)}
+/* Client 27 Oct · the bank card, redrawn as a real card (ISO 85.6 × 54 · 1.586) in the system's own
+   green · chip, contactless mark, the IBAN embossed in groups of four, holder and purpose below */
+.bankcard{max-inline-size:360px;inline-size:100%;aspect-ratio:1.586;padding:var(--sp-5) var(--sp-6);gap:0;
+  border-radius:14px;color:#fff;justify-content:space-between;
+  background:
+    radial-gradient(120% 90% at 0% 100%,rgb(148 214 3 / .18),transparent 55%),
+    radial-gradient(90% 80% at 100% 0%,rgb(0 165 155 / .45),transparent 60%),
+    linear-gradient(155deg,#1b5a5a 0%,var(--green) 55%,#0d3133 100%);
+  box-shadow:0 22px 40px -26px rgb(10 40 40 / .7),0 2px 6px -2px rgb(10 40 40 / .3),inset 0 1px 0 rgb(255 255 255 / .14)}
+.bankcard::after{inset:-40% auto auto -30%;inline-size:80%;background:radial-gradient(circle,rgb(255 255 255 / .10),transparent 62%)}
+.bankcard.off{background:linear-gradient(155deg,#76807f,#525b5a 60%,#3e4544)}
+.bankcard-b{font-size:var(--fs-3);letter-spacing:.01em}
+.bankcard-s{font-size:var(--fs-0, 11px);background:rgb(255 255 255 / .14);box-shadow:inset 0 0 0 1px rgb(255 255 255 / .18)}
+.bankcard-m{display:flex;align-items:center;justify-content:flex-start;gap:var(--sp-3)}
+.bankcard-chip{position:relative;display:grid;grid-template-rows:repeat(3,1fr);inline-size:42px;block-size:32px;border-radius:6px;
+  padding:5px 0;background:linear-gradient(135deg,#e9edf0,#b9c2c7 45%,#dfe4e7 70%,#a9b3b8);box-shadow:inset 0 0 0 1px rgb(0 0 0 / .12)}
+.bankcard-chip>i{border-block-start:1px solid rgb(0 0 0 / .16)}
+.bankcard-chip>i:first-child{border:0}
+.bankcard-chip::after{content:'';position:absolute;inset:4px 14px;border-inline:1px solid rgb(0 0 0 / .16)}
+.bankcard-nfc{inline-size:22px;block-size:22px;fill:none;stroke:rgb(255 255 255 / .75);stroke-width:1.6;stroke-linecap:round;transform:scaleX(-1)}
+.bankcard-i{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:clamp(13px,1.05vw,16px);
+  letter-spacing:.08em;text-align:start;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  text-shadow:0 1px 0 rgb(0 0 0 / .35);color:rgb(255 255 255 / .95)}
+.bankcard-f{align-items:flex-end}
+.bankcard-f b{font-size:var(--fs-1);letter-spacing:.02em}
+.bankcard-p{text-align:end;align-items:flex-end}
+/* several accounts · a grid of cards of one size, each with its foot under it */
+.bankgrid{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),340px));gap:var(--sp-7) var(--sp-6);justify-content:start}
+.bankitem{max-inline-size:340px}
+.bankcard{container-type:inline-size}
+.bankcard-i{font-size:clamp(11px,4.5cqi,17px);letter-spacing:.03em;overflow:visible;text-overflow:clip}
+/* an account with its documents and actions reads as one row: the card on the start side, what is
+   done to it beside it · several accounts stack as rows, one divider between them */
+.bankgrid:has(.bankitem-f){grid-template-columns:minmax(0,1fr);gap:0}
+.bankgrid:has(.bankitem-f)>.bankitem{max-inline-size:none;flex-direction:row;align-items:stretch;gap:var(--sp-7);padding-block:var(--sp-6)}
+.bankgrid:has(.bankitem-f)>.bankitem+.bankitem{box-shadow:inset 0 1px 0 var(--edge-1)}
+.bankgrid:has(.bankitem-f)>.bankitem:first-child{padding-top:0}
+.bankgrid:has(.bankitem-f)>.bankitem:last-child{padding-bottom:0}
+.bankgrid:has(.bankitem-f)>.bankitem>.bankcard{flex:0 0 340px}
+.bankgrid:has(.bankitem-f)>.bankitem>.bankitem-f{flex:1 1 auto;justify-content:space-between;gap:var(--sp-4)}
+@media (max-width:900px){
+  .bankgrid:has(.bankitem-f)>.bankitem{flex-direction:column}
+  .bankgrid:has(.bankitem-f)>.bankitem>.bankcard{flex:none;max-inline-size:360px}
+}
+.tbl td>*+.mono,.tbl td.acttbl-2>.mono{font-family:inherit;letter-spacing:.02em}

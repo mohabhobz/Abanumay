@@ -104,7 +104,6 @@ export function EditModal({ title, fields, onClose, onSave, note }: EditModalPro
             <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التعديل" placeholder="اختياري · يُسجَّل مع التعديل في السجل" /></span>
           </label>
           {bad.map((b) => <p key={b} className="bad cnote" role="alert">{b}</p>)}
-          <p className="sub cnote">يُسجَّل التعديل في السجل باسمك ووقته · بالقيمة قبله وبعده.</p>
         </div>
         <div className="mf">
           <button type="button" className="btn btn-p" disabled={!changes.length} title={changes.length ? undefined : 'لم يتغيّر شيء'} onClick={save}>

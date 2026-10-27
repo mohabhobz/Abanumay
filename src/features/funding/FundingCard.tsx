@@ -4,7 +4,6 @@ import type { ProjectRow } from '@/types/domain'
 import { holderOf } from '@/data/holders'
 import { readRole } from '@/data/roles'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
-import { BUDGET_RULES } from '@/data/budget/rules'
 import {
   HOLD_STAGE_SAY, LINK_CHANGE_SAY, docOf, fundingIssues, fundingReport, linkHistory, linkOf, planOf, useBudget,
   type HoldStage, type LinkShare,
@@ -82,15 +81,9 @@ export function FundingCard({ row }: { row: ProjectRow }) {
 
       {!rep && multi ? (
         <p className="sub cnote">
-          متعدد السنوات · {multi.years.map((y) => `${yearById(y.yearId)?.name ?? ''} ${nf.format(y.amount)}${y.heldAt ? ' محجوزة' : ' التزام'}`).join(' · ')} · يُحجز كل سنة من خطته المالية لا من ربط منفصل.
+          متعدد السنوات · {multi.years.map((y) => `${yearById(y.yearId)?.name ?? ''} ${nf.format(y.amount)}${y.heldAt ? ' محجوزة' : ' التزام'}`).join(' · ')}
         {/* doc 1.4.49 */}</p>
-      ) : !rep ? (
-        <p className="sub cnote">
-          {BUDGET_RULES.holdAt === 'approval'
-            ? 'يُربط المشروع ببند أو أكثر عند التوصية · ويُحجز المبلغ عند الاعتماد النهائي وفق السياسة المالية.'
-            : 'يُربط المشروع ببند أو أكثر في دراسة مدير المنح · ويُحجز المبلغ مبدئيًّا عند توصيته بالموافقة · ويثبت نهائيًّا عند الاعتماد.'}
-        </p>
-      ) : (
+      ) : !rep ? null : (
         <div className="fnd-scroll">
           <table className="tbl" aria-label="توزيع تمويل المشروع على الميزانيات">
             <colgroup><col className="fnd-c1" /><col /><col /><col /><col /></colgroup>

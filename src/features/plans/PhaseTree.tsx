@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useEffect, useState } from 'react'
 import { DateField, DateText, Icon, Money, Mono, Num, Tag, icons } from '@/components/ui'
 import { phaseDone } from '@/data/mock/plans'
@@ -88,7 +89,7 @@ export function PhaseTree(props: PhaseTreeProps) {
             </button>
 
             {!shut && (ph.activities.length === 0 ? (
-              <p className="sub cnote acttbl-empty">المرحلة بلا أنشطة · تُقاس المرحلة بأنشطتها، فلا يوجد ما يُراجَع.</p>
+              <p className="sub cnote acttbl-empty">المرحلة بلا أنشطة.</p>
             ) : (
               <div className="tblwrap acttbl-w">
                 <table className="tbl acttbl">
@@ -120,14 +121,15 @@ export function PhaseTree(props: PhaseTreeProps) {
                           {/* the serial rides under the name · ten narrow columns cut both of them */}
                           <td className="acttbl-2"><b className="acttbl-n" title={a.name}>{a.name}</b><Mono>{actSerial(planId, a.id)}</Mono></td>
                           <td className="acttbl-2"><span className="sub" title={a.needs.join(' · ')}>{a.needs.length ? a.needs.join(' · ') : 'بلا شاهد'}</span></td>
-                          <td className="acttbl-2"><DateText>{a.from}</DateText><DateText>{a.to}</DateText></td>
+                          {/* Client 27 Oct · the start, then «حتى» the end on its own quieter line */}
+                          <td className="acttbl-2 acttbl-d"><span><DateText>{a.from}</DateText></span><span className="sub">حتى <DateText>{a.to}</DateText></span></td>
                           <td><Tag tone={PROGRESS_TONE[st]}>{PROGRESS_SAY[st]}</Tag></td>
                           <td className="acttbl-2">
                             <button type="button" className="tlink acttbl-l" onClick={() => setSheet(a.id)}
                               aria-label={`المرفقات · ${a.name}`}>
-                              المرفقات (<Num>{a.evidence.length}</Num>)
+                              <Num>{a.evidence.length}</Num> {a.evidence.length === 1 ? 'مرفق' : 'مرفقات'}
                             </button>
-                            {missing.length > 0 && <span className="sub">ينقص <Num>{missing.length}</Num></span>}
+                            {missing.length > 0 && <span className="sub bad-ink">ينقص <Num>{missing.length}</Num></span>}
                           </td>
                           <td>{vf ? <Tag tone={vf === 'ok' ? 'ok' : vf === 'no' ? 'no' : 'warn'}>{VERIFY_SAY[vf]}</Tag> : <span className="sub">—</span>}</td>
                           <td>
@@ -182,12 +184,13 @@ function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me =
     return () => window.removeEventListener('keydown', esc)
   }, [onClose])
   return (
+    createPortal(
     <div className="bmask" role="presentation" onClick={onClose}>
       <div className="chrome modal" role="dialog" aria-modal="true" aria-label={`مرفقات النشاط · ${a.name}`} onClick={(e) => e.stopPropagation()}>
         <div className="mh">
           <Icon name={icons.upload} size="md" />
           <b>{a.name}</b>
-          <Mono>{serial}</Mono>
+          <span className="sub mono">{serial}</span>
         </div>
         <div className="mb col">
           <h4 className="fnd-h">المرفقات</h4>
@@ -260,7 +263,9 @@ function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me =
           <button type="button" className="btn btn-2" onClick={onClose}>إغلاق</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
+    )
   )
 }
 

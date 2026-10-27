@@ -8,6 +8,8 @@ import { AssistantOverlay } from '@/features/assistant/AssistantOverlay'
 import { BehalfBar } from '@/features/cross/Behalf'
 import { TodayReturn } from '@/features/home/TodayReturn'
 import { useIsMobile } from '@/hooks/useMediaQuery'
+import { useEvenKpis } from '@/hooks/useEvenKpis'
+import { useTrimTip } from '@/hooks/useTrimTip'
 import { useHashScroll } from '@/hooks/useHashScroll'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -66,6 +68,8 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
   const { pathname } = useLocation()
   useFreshVisit(pathname)
   useHashScroll()
+  useEvenKpis()
+  useTrimTip()
 
   const toggleAssistant = useCallback(() => setAssistantOpen((v) => !v), [])
 

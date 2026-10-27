@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Icon, Num, Person, icons } from '@/components/ui'
+import { DateText, Empty, Glass, Head, Icon, Num, icons } from '@/components/ui'
 import { DocFile, UploadButton } from '@/components/docs'
 import { isolate } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
@@ -54,7 +54,6 @@ export function FollowUpsTab({ projectId, followUps, types, me, onAdd }: FollowU
       {followUps.length === 0 ? (
         <Empty
           title="لا توجد متابعات مسجّلة على هذا المشروع."
-          note="المتابعة توثّق تحديثًا أو منتجًا معرفيًا أو مخاطبة، وتظهر في سجل المشروع بترتيبها الزمني."
         />
       ) : (
         <div className="col-s flush">
@@ -86,7 +85,6 @@ export function FollowUpsTab({ projectId, followUps, types, me, onAdd }: FollowU
 
       <div className="hd fu-add">
         <h3>إضافة متابعة</h3>
-        <span className="meta">اختر النوع ثم اكتب الوصف</span>
       </div>
       <div className="chips">
         {types.filter((t) => !IN_ACTIVITIES.includes(t)).map((t) => (
@@ -100,10 +98,6 @@ export function FollowUpsTab({ projectId, followUps, types, me, onAdd }: FollowU
             {t}
           </button>
         ))}
-      </div>
-      <div className="sub mt-3">
-        الزيارات الميدانية والتواصل مع الجهة تُسجَّل من تبويب{' '}
-        <Link className="lnk" to={ROUTES.projectTab(projectId, 'activities')}>الفعاليات</Link>
       </div>
 
       {type && (
@@ -127,12 +121,8 @@ export function FollowUpsTab({ projectId, followUps, types, me, onAdd }: FollowU
             {file ? <DocFile name={file} /> : (
               <UploadButton label="ارفع مرفقًا للمتابعة" onPick={(f) => setFile(f.name)} />
             )}
-            <span className="sub">أقل من 32 ميجابايت · pdf doc docx txt jpg jpeg gif png xls xlsx</span>
           </div>
           <div className="acts-foot">
-            <span className="sub">
-              يُسجَّل باسم <Person name={me} quiet={false} />
-            </span>
             <span className="pc-sp" />
             {tried && !body.trim() && <span className="sub">ناقص: وصف المتابعة</span>}
             <button type="button" className="btn btn-2" onClick={close}>إلغاء</button>

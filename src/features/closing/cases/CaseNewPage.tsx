@@ -54,7 +54,7 @@ export default function CaseNewPage() {
       <AppLayout assistantContext={assistFor.page('حالة تعثّر')}>
         <div className="viewstack"><div className="screen col">
           <BackTo label="حالات التعثر" onClick={() => navigate(ROUTES.distresses)} />
-          <Glass><Empty title="اختر المشروع من صفحته." note="تُفتح حالة التعثر من تبويب الإغلاق في صفحة المشروع." /></Glass>
+          <Glass><Empty title="اختر المشروع من صفحته." /></Glass>
         </div></div>
       </AppLayout>
     )
@@ -137,18 +137,13 @@ export default function CaseNewPage() {
                 )}
                 {kind === 'reduce' && (
                   <div className="apv-row mt-2">
-                    <span className="sub">ملحق تعديل الاتفاقية{annex ? ` · ${annex}` : <> · إلزامي (<bdi>{/* doc 10.9.5 */}</bdi>)</>}</span>
+                    <span className="sub">ملحق تعديل الاتفاقية{annex ? ` · ${annex}` : ' · إلزامي'}</span>
                     <UploadButton label="ملحق الاتفاقية" onPick={(f) => setAnnex(f.name)} />
                   </div>
                 )}
                 <label className="regf">
                   <span className="lb">نتيجة القرار<b className="regf-r" aria-label="إلزامي">*</b></span>
                   <Select value={pick} allowEmpty={false} all="النتيجة" options={outs.map((o) => ({ value: o, label: OUTCOME_SAY[o] }))} onChange={(x) => setOutcome(x as CaseRow['outcome'])} />
-                  <span className="sub regf-h">{/* doc 10.9.1 – 10.9.3 · 10.4.28 */}
-                    {kind === 'stop' ? 'قبل أي صرف «ملغى» · وبعد الصرف استرداد غير المستخدم، أو إعادة توجيهه، أو «متعثر» وفق القرار'
-                      : kind === 'reduce' ? 'يُسترد فرق ما صُرف فوق القيمة الجديدة أو يُعاد توجيهه'
-                      : 'ملحق يزيد قيمة هذا المشروع، أو مشروع مستقل جديد للجهة نفسها يمرّ بدورة الدراسة والاعتماد'}
-                  </span>
                 </label>
                 {redirect && (
                   <div className="regfields">
@@ -162,7 +157,6 @@ export default function CaseNewPage() {
                     <label className="regf">
                       <span className="lb">الدفعة الإضافية</span>
                       <MoneyField value={extra || (raise ? String(raise) : '')} onChange={setExtra} label="الدفعة الإضافية" />
-                      <span className="sub regf-h">تُضاف إلى جدول الدفعات · وتزيد الحجز بقدر الزيادة</span>
                     </label>
                     <label className="regf">
                       <span className="lb">تاريخ استحقاقها</span>
@@ -185,18 +179,12 @@ export default function CaseNewPage() {
                     { k: 'قيمة المنحة', v: <Money sm>{granted}</Money> },
                     { k: 'المصروف حتى الآن', v: <Money sm>{paid}</Money> },
                     ...(kind === 'stop' ? [{ k: 'موضع الإيقاف', v: phase.say }] : []),
-                    ...(kind === 'reduce' ? [{ k: 'يُطالَب بإعادته', v: claim ? <b className="bad"><Money sm>{claim}</Money></b> : <span className="sub">لا شيء · يُخفَّض الحجز والجدول</span> }] : []),
+                    ...(kind === 'reduce' ? [{ k: 'يُطالَب بإعادته', v: claim ? <b className="bad"><Money sm>{claim}</Money></b> : <span className="sub">لا شيء</span> }] : []),
                     ...(kind === 'increase' ? [{ k: independent ? 'قيمة المشروع المستقل' : 'زيادة الحجز', v: raise ? <Money sm>{raise}</Money> : <span className="sub">—</span> }] : []),
                     { k: 'النتيجة', v: pick ? OUTCOME_SAY[pick] : '—' },
                     { k: 'يعتمده نهائيًّا', v: <>{approver}{/* doc 10.4.11 */}</> },
                   ]}
                 />
-                <p className="sub cnote">
-                  {kind === 'stop'
-                    ? `باعتماد ${approver} تُغلق سجلات الصرف المفتوحة وتُوقف الدفعات القادمة، ويُحرَّر المحجوز غير المصروف إلى مخصص المجال، ويُسترد ما لم يُستخدم أو يُعاد توجيهه.`
-                    : independent ? `باعتماد ${approver} يُفتح طلب مشروع مستقل للجهة مرتبط بهذا المشروع · ولا تتغيّر قيمة المشروع الحالي.`
-                    : `يُحدَّث المشروع بالقيمة الجديدة باعتماد ${approver}، ويتبعه الحجز وجدول الدفعات.`}
-                </p>
               </Glass>
             </div>
 
@@ -285,7 +273,6 @@ function DirectNew({ projectId }: { projectId: string }) {
                   { k: 'مسار الاعتماد', v: DIRECT_PATH.join(' ← ') },
                   { k: 'حالة المشروع بعده', v: 'مشروع مكتمل' },
                 ]} />
-                <p className="sub cnote">لا يتغيّر المشروع قبل اعتماد الإدارة المالية للتسوية في آخر المسار · ولا يمرّ بدورة التقرير الختامي والتقييم.</p>
               </Glass>
             </div>
             <AssistantAside

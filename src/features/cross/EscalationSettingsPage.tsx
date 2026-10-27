@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, MultiSelect, Num, Tag } from '@/components/ui'
+import { FieldMultiSelect, DateText, Glass, Head, Num, Tag } from '@/components/ui'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -81,14 +81,14 @@ export default function EscalationSettingsPage() {
   const putNear = (v: Partial<EscLevel & { days: number }>) => setD((x) => ({ ...x, near: { ...nearNow, ...v } }))
   const putStuck = (p: EscProc, v: number | null) => setD((x) => ({ ...x, stuck: { ...x.stuck, [p]: v } }))
 
-  const level = (k: 'late' | 'stalled', title: string, note: string) => (
+  const level = (k: 'late' | 'stalled', title: string) => (
     <li className="itk-sup">
-      <span className="cfgl"><b>{title}</b><span className="sub">{note}</span></span>
+      <span className="cfgl"><b>{title}</b></span>
       <span className="pc-sp" />
       {admin ? (
         <span className="rowf gp-2">
-          <MultiSelect label={`مستلمو ${title}`} all="اختر المستلمين" values={d[k].to} options={RCPT} onChange={(v) => putLevel(k, { to: v.length ? (v as EscRecipient[]) : d[k].to })} />
-          <MultiSelect label={`قنوات ${title}`} all="اختر القنوات" values={d[k].channels} options={CHNL} onChange={(v) => putLevel(k, { channels: v.includes('app') ? (v as EscChannel[]) : (['app', ...v] as EscChannel[]) })} />
+          <FieldMultiSelect label={`مستلمو ${title}`} placeholder="اختر المستلمين" values={d[k].to} options={RCPT} onChange={(v) => putLevel(k, { to: v.length ? (v as EscRecipient[]) : d[k].to })} />
+          <FieldMultiSelect label={`قنوات ${title}`} placeholder="اختر القنوات" values={d[k].channels} options={CHNL} onChange={(v) => putLevel(k, { channels: v.includes('app') ? (v as EscChannel[]) : (['app', ...v] as EscChannel[]) })} />
         </span>
       ) : (
         <span className="sub">{d[k].to.map((r) => RECIPIENT_SAY[r]).join('، ')} · {d[k].channels.map((c) => CHANNEL_SAY[c]).join('، ')}</span>
@@ -104,35 +104,32 @@ export default function EscalationSettingsPage() {
           <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">آلية التصعيد</h1>
-              <p className="sub mt-1">
-                مدد المراحل في جميع الإجراءات ومستويات التنبيه · تُحسب بأيام عمل المؤسسة وحدها (تُستبعد العطلة الأسبوعية والإجازات الرسمية) · يحرّرها مدير النظام مباشرة بلا مسار موافقات
-                {ESC_RULES.savedAt && <> · آخر حفظ <DateText>{ESC_RULES.savedAt}</DateText>{ESC_RULES.savedBy ? ` · ${ESC_RULES.savedBy}` : ''}</>}
-              </p>
+              {ESC_RULES.savedAt && <p className="sub mt-1">آخر حفظ <DateText>{ESC_RULES.savedAt}</DateText>{ESC_RULES.savedBy ? ` · ${ESC_RULES.savedBy}` : ''}</p>}
             </div>
             <div className="rowf gp-2">
-              {!admin && <Tag tone="mute">للاطلاع · يحرّرها مدير النظام</Tag>}
+              {!admin && <Tag tone="mute">للاطلاع</Tag>}
               <Link className="btn btn-2 btn-sm" to={ROUTES.escalation}>تقرير المتأخر والمتعثر</Link>
             </div>
           </header>
 
           <Glass>
-            <Head title="مستويات التنبيه" meta={<span className="sub">داخل النظام إلزامي في المستويين</span>} />
+            <Head title="مستويات التنبيه" />
             <ul className="cfglist">
               {/* Batch 8 · 0.def.21 · «التنبيه» · a reminder before the limit, not only after it */}
               <li className="itk-sup">
-                <span className="cfgl"><b>تذكير قبل انتهاء المدة</b><span className="sub">تنبيه مرة واحدة حين يقترب الطلب من حدّ مرحلته · صفر يوقفه</span></span>
+                <span className="cfgl"><b>تذكير قبل انتهاء المدة</b></span>
                 <span className="pc-sp" />
                 {admin ? (
                   <span className="rowf gp-2">
                     <CfgNum value={nearNow.days} min={0} label="أيام التذكير قبل انتهاء المدة" suffix="يوم عمل" onChange={(x) => putNear({ days: Math.max(0, x) })} />
-                    <MultiSelect label="مستلمو التذكير" all="اختر المستلمين" values={nearNow.to} options={RCPT} onChange={(v) => putNear({ to: v.length ? (v as EscRecipient[]) : nearNow.to })} />
+                    <FieldMultiSelect label="مستلمو التذكير" placeholder="اختر المستلمين" values={nearNow.to} options={RCPT} onChange={(v) => putNear({ to: v.length ? (v as EscRecipient[]) : nearNow.to })} />
                   </span>
                 ) : (
                   <span className="sub">{nearNow.days ? <>قبل <Num>{nearNow.days}</Num> يوم عمل · {nearNow.to.map((r) => RECIPIENT_SAY[r]).join('، ')}</> : 'متوقف'}</span>
                 )}
               </li>
-              {level('late', 'المستوى الأول · متأخر', 'تنبيه مرة واحدة يوم تجاوز مدة المرحلة')}
-              {level('stalled', 'المستوى الثاني · متعثر', 'تنبيه يومي متكرر حتى اتخاذ الإجراء أو انتقال المرحلة')}
+              {level('late', 'المستوى الأول · متأخر')}
+              {level('stalled', 'المستوى الثاني · متعثر')}
             </ul>
           </Glass>
 
@@ -148,7 +145,7 @@ export default function EscalationSettingsPage() {
                 />
                 <ul className="cfglist">
                   <li className="itk-sup">
-                    <span className="cfgl"><b>يصير الطلب متعثرًا</b><span className="sub">بعد تجاوز مدة المرحلة بعدد من أيام العمل · أو عند ضعفها</span></span>
+                    <span className="cfgl"><b>يصير الطلب متعثرًا</b></span>
                     <span className="pc-sp" />
                     {admin ? (
                       <span className="rowf gp-2">
@@ -196,7 +193,7 @@ export default function EscalationSettingsPage() {
           {admin && changes > 0 && (
             <SaveBar
               count={changes}
-              sentence={<>تعديلات على آلية التصعيد<span className="decsep" /><span className="sub">تُطبَّق فور الحفظ على الاحتساب والتنبيهات والتقارير</span></>}
+              sentence="تعديلات على آلية التصعيد"
               onSave={save}
               onDiscard={discard}
             />

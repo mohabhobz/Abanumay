@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, EntityMark, Glass, Head, Icon, Mono, SearchBox, Tag, icons } from '@/components/ui'
+import { DateText, DockActions, Empty, EntityMark, Glass, Head, Icon, Mono, SearchBox, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { Crumbs } from '@/components/shell'
 import { ROUTES } from '@/app/routes'
@@ -26,7 +25,6 @@ export default function ArchivePage() {
   const may = admin
   const me = meOf(role)
   const rows = query.entities({ archived: true, search: v.q, page: 1, pageSize: 9999, sort: 'name' }).rows
-  const [why, setWhy] = useState<Record<string, string>>({})
 
   return (
     <AppLayout assistantContext={assistFor.page('أرشيف الجهات')}>
@@ -36,11 +34,10 @@ export default function ArchivePage() {
           <header>
             <div>
               <h1 className="ptitle">أرشيف الجهات</h1>
-              <p className="sub mt-1">لا تُحذف جهة أبدًا{/* doc rule 28 */} · المؤرشفة تخرج من القوائم والفلاتر، وتُبحث هنا وحدها{/* doc rule 29 */}</p>
             </div>
           </header>
           {!admin ? (
-            <Glass><Empty title="الأرشيف لمدير النظام وحده" note="الجهات المؤرشفة تخرج من القوائم والفلاتر · ويبحث فيها ويستعيدها مدير النظام." /></Glass>
+            <Glass><Empty title="الأرشيف لمدير النظام وحده" /></Glass>
           ) : <>
 
           <Glass className="ftoolbar">
@@ -53,7 +50,6 @@ export default function ArchivePage() {
             <Glass>
               <Empty
                 title={v.q ? 'لا جهة مؤرشفة بهذا البحث.' : 'لا توجد جهات مؤرشفة.'}
-                note="تُؤرشف الجهة من ملفها بقرار مسبَّب، فتظهر هنا."
               />
             </Glass>
           ) : rows.map((e) => {
@@ -72,15 +68,13 @@ export default function ArchivePage() {
                 <div className="rowf gp-2">
                   <Link className="btn btn-2 btn-sm" to={ROUTES.entity(e.id)}><Icon name={icons.entity} size="sm" /> افتح الملف</Link>
                   {may && (
-                    <>
-                      <label className="payact-n">
-                        <span className="vis-h">سبب الاستعادة</span>
-                        <input value={why[e.id] ?? ''} onChange={(x) => setWhy((s) => ({ ...s, [e.id]: x.target.value }))} placeholder="سبب الاستعادة · إلزامي" />
-                      </label>
-                      <button className="btn btn-p btn-sm" disabled={!why[e.id]?.trim()} onClick={() => archiveEntity(e.id, false, why[e.id].trim(), me)}>
-                        استعد الجهة
-                      </button>
-                    </>
+                    /* Client 26 Oct · the reason in the decision's popup, not a field beside the button */
+                    <DockActions
+                      actions={[{ label: 'استعد الجهة', kind: 'btn-p btn-sm', needsNote: true }]}
+                      subject={e.name}
+                      placeholder="سبب الاستعادة · يُسجَّل في سجل الجهة"
+                      onRun={(_a, n) => { archiveEntity(e.id, false, n, me) }}
+                    />
                   )}
                 </div>
               </Glass>

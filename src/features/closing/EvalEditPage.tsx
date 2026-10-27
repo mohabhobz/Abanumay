@@ -57,7 +57,6 @@ export default function EvalEditPage() {
             <Glass>
               <Empty
                 title="لا يوجد طلب إغلاق بهذا الرقم."
-                note="ارجع إلى صندوق الإغلاق واختر طلبًا منه."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.closings)}>
                     العودة إلى صندوق الإغلاق
@@ -84,10 +83,7 @@ export default function EvalEditPage() {
               <Empty
                 title={canStartEval(c)
                   ? 'اعتُمد التقرير · يمكن بدء التقييم الآن.'
-                  : 'لا يبدأ التقييم قبل اعتماد التقرير الختامي بالكامل من صاحب الصلاحية.'}
-                note={canStartEval(c)
-                  ? /* doc rule 17 */ 'ابدأه من رصيف صفحة الطلب · يُعدّه مشرف المنح، ودورته سجلّ منفصل.'
-                  : /* doc 10.4.9 */ 'يرتبط بدء التقييم باعتماد صاحب الصلاحية المحدد في مصفوفة الصلاحيات.'}
+                  : 'لم يُعتمد التقرير الختامي بعد.'}
                 actions={
                   <Link className="btn btn-p" to={ROUTES.closing(c.id)}>افتح الطلب</Link>
                 }
@@ -113,14 +109,11 @@ export default function EvalEditPage() {
           <header>
             <div>
               <h1 className="ptitle">تقييم المشروع · {c.projectName}</h1>
-              <p className="sub mt-1">
-                {evalApproved(c)
-                  ? /* doc rule 21 */ 'اكتمل الإغلاق · الصفحة للقراءة فقط'
-                  : closed
-                    ? 'التقييم في الاعتماد · يُعدَّل حين يُعاد إلى مشرف المنح'
-                  : <>يُعدّه مشرف المنح بعد اعتماد التقرير الختامي · ودورة اعتماده
-                    مستقلّة بسجلّ منفصل{/* doc rule 17 */}</>}
-              </p>
+              {closed && (
+                <p className="sub mt-1">
+                  {evalApproved(c) ? /* doc rule 21 */ 'اكتمل الإغلاق · الصفحة للقراءة فقط' : 'التقييم في الاعتماد'}
+                </p>
+              )}
             </div>
             {/* Status as text, not a colored tag - the page header isn't a card's status field.
                 Counted the same way as "not blocking". */}
@@ -134,7 +127,7 @@ export default function EvalEditPage() {
           {/* v3 · 3.4.45 · the evaluation reads against the foundation's outputs · the project's reference */}
           {orgOutputsOf(c.projectId).length > 0 && (
             <Glass>
-              <Head title="مخرجات المؤسسة المعتمدة" meta={<span className="sub">المرجع في التقييم</span>} />
+              <Head title="مخرجات المؤسسة المعتمدة" />
               <ul className="outs-ro">{orgOutputsOf(c.projectId).map((o, i) => <li key={i}>{outputLine(o)}</li>)}</ul>
             </Glass>
           )}
@@ -147,11 +140,6 @@ export default function EvalEditPage() {
             {/* Note: open question - are these indicators a fixed list for the institution, or does
                 each project have its own from its plan? The spec doesn't say. What's here is drawn
                 from the project's targets until the client decides. */}
-            <p className="sub cnote">
-              المستهدف بجانب كل مؤشر · والمتحقّق الذي يُكتب هنا هو ما تُبنى عليه
-              المقارنة. وهذه المؤشرات مأخوذة من مستهدفات المشروع إلى أن تحدّد
-              المؤسسة قائمتها (السؤال س-17).
-            </p>
 
             <div className="regfields">
               {ev.indicators.map((i, n) => (
@@ -198,14 +186,8 @@ export default function EvalEditPage() {
                   placeholder="أربع جمعيات من خمس أصبحت لديها خطة مالية معتمدة"
                 />
               </span>
-              <span className="sub regf-h">
-                الأثر ليس تكرارًا للمخرجات · المخرج «36 ورشة»، والأثر «ما تغيّر بعدها»
-              </span>
             </label>
 
-            {/* Note: lessons learned feed into later projects, not a closing checkbox. This is the
-                field most often filled in as a formality in reports, and the line beneath it states
-                where it actually goes. */}
             <label className="regf">
               <span className="lb">
                 الدروس المستفادة<b className="regf-r" aria-label="إلزامي">*</b>
@@ -220,10 +202,6 @@ export default function EvalEditPage() {
                   placeholder="ربط الصرف بمراحل الترخيص قلّل التأخير إلى شهر بدل ثلاثة"
                 />
               </span>
-              <span className="sub regf-h">
-                تُقرأ عند دراسة مشروع مشابه لهذه الجهة أو لغيرها · فما يُكتب هنا
-                يُرجع إليه في الدراسات اللاحقة
-              </span>
             </label>
 
             {!ev.criteria?.length && <label className="regf">
@@ -237,10 +215,6 @@ export default function EvalEditPage() {
                 label="التقدير العام"
                 placeholder="اختر تقديرًا من 5"
               />
-              <span className="sub regf-h">
-                استرشادي · تنص القواعد {/* doc rule 13 */} على أن مخرجات
-                التحليل دعم للمراجعة لا بديل عن اعتماد أصحاب الصلاحية
-              </span>
             </label>}
           </Glass>
 
@@ -257,7 +231,6 @@ export default function EvalEditPage() {
                   </label>
                 ))}
               </div>
-              <p className="sub cnote">الأسئلة والأوزان من إعدادات الإغلاق وقت بدء التقييم · وتغييرها لاحقًا لا يمسّ هذا التقييم{/* doc 10.4.31 */} · وانخفاض الدرجة لا يمنع الإغلاق.</p>
             </Glass>
           )}
 
@@ -281,10 +254,6 @@ export default function EvalEditPage() {
             </div>
           )}
 
-          <p className="sub tcen">
-            الحفظ لا يُرسل التقييم · الإرسال إلى مدير المنح من صفحة الطلب، ودورة اعتماد
-            التقييم منفصلة عن دورة التقرير{/* doc rule 17 */}.
-          </p>
         </div>
       </div>
     </AppLayout>

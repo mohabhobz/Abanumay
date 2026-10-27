@@ -59,7 +59,7 @@
 /* Client 20 Oct (#24) · the portfolio's financial position · six figures, three to a row, then the rulers */
 .pfi-kpi,.pfi-two{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-4);grid-auto-rows:auto}
 .pfi-two{grid-template-columns:repeat(2,minmax(0,1fr))}
-.pfi-kpi>.stat,.pfi-two>.stat{display:grid;grid-row:span 4;grid-template-rows:subgrid;row-gap:0;align-content:start}
+.pfi-kpi>.stat,.pfi-two>.stat{display:flex;flex-direction:column}
 @media (max-width:720px){.pfi-kpi,.pfi-two{grid-template-columns:minmax(0,1fr)}}
 /* Client 20 Oct (#30) · the sub-project's state cell keeps its tag inside the column */
 .subtbl td.subst{max-inline-size:calc(var(--sp-12) * 4)}

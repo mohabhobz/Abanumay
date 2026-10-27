@@ -52,7 +52,7 @@
 .gb-tip .gb-tip-v{fill:var(--t2);font-size:var(--fs-6);font-weight:500}
 
 .gb-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-5)}
-.gb-kpis>.gb-kpi{display:grid;grid-row:span 4;grid-template-rows:subgrid;row-gap:var(--sp-2);align-content:start}
+.gb-kpis>.gb-kpi{display:flex;flex-direction:column;gap:var(--sp-2)}
 /* 11 Oct · audit UI-002 · subgrid rows: a two-line title no longer pushes its number below the others */
 .gb-kpis>.gb-kpi>.gb-kpi-k{align-self:end}
 .gb-kpi-k{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-2);color:var(--t2)}
@@ -159,3 +159,10 @@
   .gb-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .gb-geo-b,.gb-rings-g{grid-template-columns:minmax(0,1fr)}
 }
+/* Client 27 Oct · the board's KPI tiles · the same card as `.stat` · one inset all round, one height
+   in the row (the subgrid sized the label track from the parent's gap, 34–43px over the label) */
+.gb-kpis{align-items:stretch}
+.gb-kpis>.gb-kpi{display:flex;flex-direction:column;gap:var(--sp-2);grid-row:auto;grid-template-rows:none;padding:var(--pad)}
+.gb-kpis>.gb-kpi>.gb-kpi-k{align-self:stretch}
+.gb-kpis>.gb-kpi>.sub:last-child{margin-top:auto}
+.gb-kpis>.gb-kpi>.gb-kpi-k{align-items:flex-start}

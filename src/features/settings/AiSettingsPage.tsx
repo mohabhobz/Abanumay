@@ -15,9 +15,9 @@ const TASKS = Object.keys(AI_TASK_SAY) as AiTask[]
 
 /* 18 Oct · 2.6.3 · 8.5.3 · 8.5.4 · the lists behind the text checks · one entry per line */
 const LISTS: { k: keyof TextRules; t: string; n: string }[] = [
-  { k: 'spell', t: 'تصحيحات إملائية إضافية', n: 'سطر لكل تصحيح بصيغة «الخطأ=الصواب» · تُضاف إلى القاموس المدمج وتظهر في نماذج التسجيل وطلب المشروع' },
-  { k: 'mandatory', t: 'بنود إلزامية في الاتفاقية', n: 'موضوع لكل سطر · ينبّه المساعد حين لا يجد بندًا عنه في نص الاتفاقية · اقتراح لا يمنع الإرسال' },
-  { k: 'forbidden', t: 'صياغات غير معتمدة', n: 'عبارة لكل سطر · ينبّه المساعد حين تظهر في أي بند' },
+  { k: 'spell', t: 'تصحيحات إملائية إضافية', n: 'سطر لكل تصحيح · الخطأ=الصواب' },
+  { k: 'mandatory', t: 'بنود إلزامية في الاتفاقية', n: 'موضوع لكل سطر' },
+  { k: 'forbidden', t: 'صياغات غير معتمدة', n: 'عبارة لكل سطر' },
 ]
 
 export default function AiSettingsPage() {
@@ -41,7 +41,6 @@ export default function AiSettingsPage() {
           <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">الذكاء الاصطناعي</h1>
-              <p className="sub mt-1">من أين تأتي القراءات الاسترشادية · قواعد محلية تعمل الآن، وخدمة الخادم حين تُربط · لا قرار يتوقف على أيٍّ منهما</p>
             </div>
             <Tag tone={live ? 'teal' : 'warn'}>{live ? 'مربوط بخدمة الخادم' : 'قواعد محلية'}</Tag>
           </header>
@@ -57,27 +56,24 @@ export default function AiSettingsPage() {
               }}>اختبر الاتصال</button>
               {ping && <span className="sub">{ping}</span>}
             </div>
-            <p className="sub cnote">العقد مع الخادم: طلب <bdi className="num">POST {'{العنوان}/{المهمة}'}</bdi> بالبيانات، ويعود بنص القراءة · إن لم تستجب الخدمة تُعرض قراءة القواعد مع تنبيه.</p>
           </Glass>
 
           <Glass>
-            <Head title="خدمة التعرف الضوئي (OCR)" meta={<span className="sub"><bdi>{/* 2.6.4 · 9.6.2 · 11.6.1 */}</bdi></span>} />
-            <p className="sub">يقرأ النظام في المتصفح محتوى النص والجداول وملفات PDF النصية لحظة رفعها · الصور الممسوحة وملفات PDF المصوّرة تُرسل لهذه الخدمة حين تُربط</p>
-            <div className="apv-row mt-2">
+            <Head title="خدمة التعرف الضوئي (OCR)" />
+            <div className="apv-row">
               <span className="fld"><input dir="ltr" value={d.ocrEndpoint ?? ''} disabled={!admin} onChange={(e) => setD({ ...d, ocrEndpoint: e.target.value })} aria-label="عنوان خدمة التعرف الضوئي" placeholder="https://api…/ocr" /></span>
               {d.ocrEndpoint ? <Tag tone="teal">مربوطة</Tag> : <Tag tone="warn">غير مربوطة</Tag>}
             </div>
-            <p className="sub cnote">العقد: طلب <bdi className="num">POST {'{العنوان}'}</bdi> بالملف (multipart · file)، ويعود <bdi className="num">{'{ text }'}</bdi> · يُقرأ النص بعدها كأي ملف نصي.</p>
           </Glass>
 
           <Glass>
-            <Head title="المهام" meta={<span className="sub">كل مهمة تُربط وحدها</span>} />
+            <Head title="المهام" />
             {TASKS.map((t) => (
               <Switch
                 key={t}
                 label={AI_TASK_SAY[t].title}
                 disabled={!admin}
-                note={<>{AI_TASK_SAY[t].where} · الآن: {live && d.tasks[t] ? 'من النموذج' : AI_TASK_SAY[t].local}</>}
+                note={<>الآن: {live && d.tasks[t] ? 'من النموذج' : AI_TASK_SAY[t].local}</>}
                 on={d.tasks[t]}
                 onChange={(v) => setD({ ...d, tasks: { ...d.tasks, [t]: v } })}
               />
@@ -85,16 +81,14 @@ export default function AiSettingsPage() {
           </Glass>
 
           <Glass>
-            <Head title="قواعد النصوص" meta={<span className="sub"><bdi>{/* 2.6.3 · 8.5.3 · 8.5.4 */}</bdi></span>} />
-            <p className="sub">تعمل الآن بالقواعد المحلية · يُعدّلها مدير النظام بلا تعديل برمجي</p>
-            {LISTS.map((x) => (
-              <label key={x.k} className="regf regf-w mt-3">
+            <Head title="قواعد النصوص" />
+            {LISTS.map((x, i) => (
+              <label key={x.k} className={`regf regf-w${i ? ' mt-3' : ''}`}>
                 <span className="lb">{x.t}</span>
                 <span className="fld fld-a">
-                  <textarea rows={4} value={t[x.k].join('\n')} disabled={!admin} aria-label={x.t}
+                  <textarea rows={4} value={t[x.k].join('\n')} disabled={!admin} aria-label={x.t} placeholder={x.n}
                     onChange={(e) => setT({ ...t, [x.k]: e.target.value.split('\n') })} />
                 </span>
-                <span className="sub regf-h">{x.n}</span>
               </label>
             ))}
           </Glass>
@@ -102,7 +96,7 @@ export default function AiSettingsPage() {
           {admin && dirty && (
             <SaveBar
               count={1}
-              sentence={<>إعدادات الذكاء الاصطناعي<span className="decsep" /><span className="sub">تسري على القراءات فور الحفظ</span></>}
+              sentence="إعدادات الذكاء الاصطناعي"
               onSave={() => {
                 saveAiCfg(d, user.name); setSaved(structuredClone(d))
                 if (tDirty) {

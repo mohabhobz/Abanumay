@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { EditButton, EditModal, Glass, Head, KV, Mono, Num, Person, Riyal, Stat, Timeline, type EditField } from '@/components/ui'
+import { StatRow, EditButton, EditModal, Glass, Head, KV, Mono, Num, Person, Riyal, Stat, Timeline, type EditField } from '@/components/ui'
 import { REGIONS } from '@/data/mock/taxonomy'
 import { citiesOf } from '@/data/mock/registration'
 import { TARGET_GROUPS } from '@/data/mock/settings'
 import { editProject } from '@/data/projects/edits'
-import { addDays, costPerBeneficiary, countOf, isolate, nf, NOUN, nounAfter, pct, readDate, units } from '@/lib/format'
+import { addDays, costPerBeneficiary, countOf, isolate, nf, NOUN, nounAfter, pct, readDate } from '@/lib/format'
 import type { Project, ProjectType } from '@/types/domain'
 
 export interface DataTabProps {
@@ -57,7 +57,7 @@ export function DataTab({
     <>
       {/* Meeting 20 Oct · the figures lead the data tab · client 24 Oct · the requested amount reads in
           the page header, so the tab doesn't repeat it */}
-      <div className={`stats4${completion ? '' : ' n3'}`}>
+      <StatRow title="أرقام المشروع" three={!completion}>
         {completion && (
           <Stat
             label="نسبة اكتمال المشروع"
@@ -70,20 +70,17 @@ export function DataTab({
           label="مدة التنفيذ"
           value={P.durationDays}
           unit="يومًا"
-          note={`≈ ${units.month(Math.round(P.durationDays / 30))} · تُحسب من بداية التنفيذ (الفعلية إن سُجّلت)`}
         />
         <Stat
           label="المستفيدون"
           value={nf.format(P.beneficiaries)}
-          note="تقدير الجهة، ولم يراجعه المشرف بعد"
         />
         <Stat
           label="تكلفة المستفيد"
           value={<Num>{perBeneficiary}</Num>}
           unit={<Riyal />}
-          note="محسوبة، لمقارنة المشاريع"
         />
-      </div>
+      </StatRow>
 
       <Glass>
         <Head title="التعريف" meta={edit('def')} />
@@ -124,7 +121,7 @@ export function DataTab({
 
 
       <Glass>
-        <Head title="فكرة المشروع" meta={<span className="rowf gp-2"><span className="sub">من نموذج التقديم</span>{edit('idea')}</span>} />
+        <Head title="فكرة المشروع" meta={edit('idea')} />
         <p className="prose">{isolate(P.idea)}</p>
 
         <div className="well" style={{ padding: 'var(--sp-5) 0 0', marginTop: 'var(--sp-5)' }}>
@@ -149,7 +146,7 @@ export function DataTab({
       </Glass>}
 
       <Glass>
-        <Head title="النطاق والأثر" meta={<span className="rowf gp-2"><span className="sub">مطابقة لنموذج التقديم</span>{edit('scope')}</span>} />
+        <Head title="النطاق والأثر" meta={edit('scope')} />
         <KV
           rows={[
             { k: 'المنطقة والمدينة', v: `${P.region} · ${P.city}` },
@@ -211,7 +208,6 @@ export function DataTab({
         <EditModal
           title={`${TITLE[editing]} · ${P.name}`}
           fields={fieldsOf(editing)}
-          note="يُطبَّق التعديل على بيانات المشروع فورًا · ويُسجَّل في سجل المشروع بالقيمة قبله وبعده."
           onClose={() => setEditing(null)}
           onSave={(changes, v, reason) => editProject(P.id, editing, changes.map((c) => (Array.isArray(v[c.key]) ? { ...c, to: (v[c.key] as string[]).join('\n') } : c)), reason, editBy)}
         />

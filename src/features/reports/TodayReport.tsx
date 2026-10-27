@@ -204,7 +204,7 @@ function TileBody({ k, v, note, trend }: Tile) {
 function QueueList({ queues }: { queues: InboxQueue[] }) {
   return (
     <Glass className="ibx-listcard">
-      <Head title="قوائمك" meta={<span className="sub">بترتيب العمل</span>} />
+      <Head title="قوائمك" />
       <ul className="ibx-list">
         {queues.map((q) => {
           const n = q.items.length

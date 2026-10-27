@@ -4,11 +4,12 @@ import { suggestNext } from '@/data/shared/agent'
 import { textIssues } from '@/lib/textCheck'
 import { ibanValid } from '@/lib/iban'
 import { useMemo, useState } from 'react'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { registrationAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import {
-  DateText, EditButton, EditModal, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, OrgName, Person, Steps, Tabs, Tag, type EditField,
-  blockerCount, type Blocker, type StepItem, CheckChip } from '@/components/ui'
+import { BankGrid, BankCard, FieldMultiSelect,
+  DateText, EditButton, EditModal, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, OrgName, Person, StepArc, Tabs, Tag, type EditField, type GateStep,
+  blockerCount, type Blocker, type StepItem } from '@/components/ui'
 import { DocFile, DocList, UploadButton } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -88,6 +89,7 @@ export default function RegReviewPage() {
   /* v3 · 2.4.6 · legible documents · the system can only measure size, so the reviewer confirms
      reading them · approval waits for it */
   const [legible, setLegible] = useState(false)
+  const mobile = useIsMobile()
   /* Client 23 Oct (the recording · 37:02) · «ما يمنع» opens in a popup from the action bar · every action on the screen sits in the bar, never inside a block */
   const [stopOpen, setStopOpen] = useState(false)
   const [editing, setEditing] = useState<'def' | 'contact' | string | null>(null)
@@ -129,7 +131,6 @@ export default function RegReviewPage() {
             <Glass>
               <Empty
                 title="الطلب غير موجود."
-                note="ربما أُرشف الطلب أو أن الرابط قديم · علمًا بأن الطلبات لا تُحذف."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.entityRequests)}>
                     العودة إلى صندوق الطلبات
@@ -202,7 +203,7 @@ export default function RegReviewPage() {
       { key: `bank:${b.id}:bankName`, label: 'اسم البنك', kind: 'select', options: BANKS, value: b.bankName, required: true },
       { key: `bank:${b.id}:bankHolder`, label: 'اسم الحساب', value: b.bankHolder, required: true },
       { key: `bank:${b.id}:shortName`, label: 'الاسم المختصر', value: b.shortName },
-      { key: `bank:${b.id}:iban`, label: 'رقم الآيبان', value: b.iban, required: true, hint: 'SA ثم 22 رقمًا · لا يتكرر في حساب مفعّل لجهة أخرى' },
+      { key: `bank:${b.id}:iban`, label: 'رقم الآيبان', value: b.iban, required: true },
     ]
   }
   const pick = (p: PickedReason) => {
@@ -249,11 +250,21 @@ export default function RegReviewPage() {
     },
     {
       label: /* doc rule 2 */ 'إنشاء حساب الجهة',
-      note: r.entityId ? `الجهة ${r.entityId}` : 'بعد الاعتماد وحده',
+      note: r.entityId ? `الجهة ${r.entityId}` : undefined,
       /* A rejected entity never gets an account created - this stage is skipped, not pending. */
       state: r.entityId ? 'done' : r.state === 'rejected' ? 'skip' : 'todo',
     },
   ]
+
+  const ARC_STATE: Record<StepItem['state'], GateStep['state']> = { done: 'done', now: 'now', todo: 'pending', no: 'now', skip: 'skip' }
+  const ARC_SEAT = ['الجهة المستفيدة', 'الجهة المستفيدة', 'مسؤول النظام', 'النظام']
+  const arc: GateStep[] = steps.map((x, i) => ({
+    label: ARC_SEAT[i]!,
+    title: String(x.label),
+    cap: String(x.label),
+    state: ARC_STATE[x.state],
+    lines: [x.note ?? null, x.at || null],
+  }))
 
   return (
     <AppLayout assistantContext={assistFor.page('مراجعة طلب تسجيل', r.name)}>
@@ -269,18 +280,31 @@ export default function RegReviewPage() {
             ]}
           />
 
-          <header>
-            <div>
+          {/* Client sheet (#98) · the request's states read on the half-circle every other procedure
+              carries · the title on the right, the arc opposite */}
+          <header className="phead">
+            <div className="pmain">
               <h1 className="ptitle">{r.name}</h1>
               <p className="sub mt-1">
-                <Mono>{r.id}</Mono> · {r.type} · {REG_STATE_WHO[r.state]}
+                <Mono>{r.id}</Mono> · {r.type}
               </p>
             </div>
-            {/* Client sheet 24 Oct (#95) · a decided request reads its outcome beside its state */}
-            {regOutcome(r.state)
-              ? <span className="rowf gp-2"><OutcomeTag outcome={regOutcome(r.state)} /><Tag tone="mute">{REG_STATE_SAY[r.state]}</Tag></span>
-              : <Tag tone="mute">{REG_STATE_SAY[r.state]}</Tag>}
+            <div className="pgates">
+              <StepArc
+                steps={arc}
+                compact={mobile}
+                aria={`مسار طلب التسجيل، ${REG_STATE_SAY[r.state]}`}
+                holderKey={decided || r.state === 'rejected' ? 'اكتمل مسار الطلب' : 'صاحب الإجراء الآن'}
+                holder={decided || r.state === 'rejected' ? REG_STATE_SAY[r.state] : REG_STATE_WHO[r.state]}
+              />
+            </div>
           </header>
+
+          <div className="prow">
+            <Tag tone="mute">{REG_STATE_SAY[r.state]}</Tag>
+            {/* Client sheet 24 Oct (#95) · a decided request reads its outcome beside its state */}
+            <OutcomeTag outcome={regOutcome(r.state)} />
+          </div>
 
           <Tabs items={REQ_TABS} active={tab} onChange={(x) => setQ({ tab: x === 'data' ? undefined : x })} />
 
@@ -296,7 +320,7 @@ export default function RegReviewPage() {
                   what passed folds under them, and the advisory notes (wording, the governance claim)
                   sit apart since they never block */}
               <Glass id="rg-def">
-                <Head title="التعريف" meta={<span className="rowf gp-2"><span className="sub">كما أقرّت به الجهة</span>{canEdit && <EditButton onClick={() => setEditing('def')} />}</span>} />
+                <Head title="التعريف" meta={canEdit ? <EditButton onClick={() => setEditing('def')} /> : undefined} />
                 <KV
                   rows={[
                     { k: 'اسم الجهة', v: <OrgName name={r.name} /> },
@@ -323,10 +347,7 @@ export default function RegReviewPage() {
                     {
                       k: 'نهاية تكليف المجلس',
                       v: (
-                        <span className="kvpair">
-                          <DateText>{r.boardEndsAt}</DateText>
-                          <Tag tone="mute">{/* doc rule 18 */} في إجراء التحديث</Tag>
-                        </span>
+                        <DateText>{r.boardEndsAt}</DateText>
                       ),
                     },
                   ]}
@@ -334,7 +355,7 @@ export default function RegReviewPage() {
               </Glass>
 
               <Glass>
-                <Head title="الاتصال والأشخاص" meta={<span className="rowf gp-2"><span className="sub">مدخل البيانات يصله اسم المستخدم</span>{canEdit && <EditButton onClick={() => setEditing('contact')} />}</span>} />
+                <Head title="الاتصال والأشخاص" meta={canEdit ? <EditButton onClick={() => setEditing('contact')} /> : undefined} />
                 <KV
                   rows={[
                     { k: 'جوال الجهة', v: <Mono>{r.mobile}</Mono> },
@@ -359,35 +380,35 @@ export default function RegReviewPage() {
               <Glass id="rg-banks">
                 <Head
                   title="الحسابات البنكية"
-                  meta={<>
-                    <span className="sub"><Num>{r.banks.length}</Num> حساب</span>
-                    {' '}<Tag tone="mute">اعتماد منفصل</Tag>
-                  </>}
+                  meta={<span className="sub"><Num>{r.banks.length}</Num> حساب</span>}
                 />
                 {/* Note: one account per beneficiary purpose (H-5), so the review is a list, not a
                     row. Each account's supporting document sits next to it rather than in the
                     general document pile: the reviewer compares the IBAN against the document, and
                     an unordered pile of documents would make them search. */}
-                <ul className="rgbanks">
-                  {r.banks.map((b, i) => (
-                    <li key={b.id}>
-                      <span className="rgbank-n num">{i + 1}</span>
-                      <div className="rgbank-b">
-                        <div className="rgbank-t">
-                          <b>{b.bankName}</b>
-                          <span className="sub">·</span> <OrgName name={b.bankHolder} quiet />
-                          <span className="pc-sp" />
-                          {canEdit && <EditButton onClick={() => setEditing(`bank:${b.id}`)} />}
-                        </div>
-                        <div className="sub"><Mono>{b.iban}</Mono></div>
-                        <span className="rowf gp-2">
-                          {b.doc
-                            ? <DocFile name={b.doc} meta={BANK_DOC_LABEL} />
-                            : <span className="bad">{BANK_DOC_LABEL} ناقصة</span>}
+                {/* Client 27 Oct · the accounts as bank cards · each with its certificate, its decision
+                    and its actions under it */}
+                <BankGrid>
+                  {r.banks.map((b, i) => {
+                    const dec = r.bankDecisions && b.id in r.bankDecisions ? r.bankDecisions[b.id] : undefined
+                    return (
+                      <BankCard
+                        key={b.id}
+                        bank={b.bankName}
+                        iban={b.iban}
+                        holder={b.bankHolder}
+                        off={Boolean(dec)}
+                        tag={dec !== undefined ? <Tag tone={dec ? 'no' : 'ok'}>{dec ? `مرفوض · ${dec}` : 'مقبول'}</Tag> : undefined}
+                        actions={<>
                           {canEdit && <UploadButton label={`${b.doc ? 'استبدال' : 'ارفع'} ${BANK_DOC_LABEL}`} text={b.doc ? 'استبدال' : 'ارفع'} onPick={(fl) => saveEdit([{ key: `bank:${b.id}:doc`, label: `${BANK_DOC_LABEL} · ${b.bankName}`, from: b.doc ?? '', to: fl.name }], '')} />}
-                        </span>
+                          {canEdit && <EditButton onClick={() => setEditing(`bank:${b.id}`)} />}
+                        </>}
+                      >
+                        {b.doc
+                          ? <DocFile name={b.doc} meta={BANK_DOC_LABEL} />
+                          : <span className="bad">{BANK_DOC_LABEL} ناقصة</span>}
                         {open && mayApprove && (
-                          <label className="regf mt-2">
+                          <label className="regf">
                             <span className="lb">قرار الحساب</span>
                             <FieldSelect
                               value={bankNo[b.id] ?? ''}
@@ -397,36 +418,23 @@ export default function RegReviewPage() {
                             />
                           </label>
                         )}
-                        {r.bankDecisions && b.id in r.bankDecisions && (
-                          <Tag tone={r.bankDecisions[b.id] ? 'no' : 'ok'}>{r.bankDecisions[b.id] ? `مرفوض · ${r.bankDecisions[b.id]}` : 'مقبول'}</Tag>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <p className="sub cnote">
-                  هذه الأسباب السبعة مُرمَّزة في النظام العامل · ويُتّخذ قرار الحساب
-                  مستقلًا حتى لو أُدخل في الطلب نفسه{/* doc rule 11 */}.
-                </p>
+                      </BankCard>
+                    )
+                  })}
+                </BankGrid>
               </Glass>
 
               {/* 2.2.14 · a return names the fields the entity may change · only those open on its portal */}
               {open && mayReturn && (
                 <Glass>
                   <Head title="عند الإعادة للاستكمال" meta={<span className="sub"><Num>{flag.length}</Num> حقول محدّدة</span>} />
-                  <p className="sub cnote">اختر الحقول التي على الجهة تعديلها · تُفتح لها وحدها في بوابتها مع ملاحظتك، والمستندات الناقصة تُرفع هناك دائمًا.</p>
-                  <ul className="cfgchips">
-                    {REG_STAGES.flatMap((st) => st.fields).map((f) => (
-                      <li key={f.key}>
-                        <CheckChip
-                          on={flag.includes(f.key)}
-                          onToggle={() => setFlag((x) => (x.includes(f.key) ? x.filter((y) => y !== f.key) : [...x, f.key]))}
-                        >
-                          {f.label}
-                        </CheckChip>
-                      </li>
-                    ))}
-                  </ul>
+                  <FieldMultiSelect
+                    values={flag}
+                    options={REG_STAGES.flatMap((st) => st.fields).map((f) => ({ value: f.key, label: f.label }))}
+                    label="الحقول التي تعدّلها الجهة"
+                    placeholder="الحقول التي تعدّلها الجهة"
+                    onChange={setFlag}
+                  />
                 </Glass>
               )}
 
@@ -443,14 +451,6 @@ export default function RegReviewPage() {
                 </Glass>
               )}
 
-              <Glass>
-                <Head title="ما لا يوجد في هذه الشاشة" />
-                <p className="sub cnote">
-                  لا يوجد زر حذف{/* doc rule 28 */} تمنع الحذف
-                  نهائيًا، والمرفوض يُؤرشف والقائم يُعطَّل. والمؤرشف يظهر لمسؤول
-                  النظام وحده في <Link className="lnk" to={ROUTES.entityArchive}>أرشيف الجهات</Link>{' '}{/* doc rule 29 */}.
-                </p>
-              </Glass>
                 </>
               )}
               {tab === 'docs' && (
@@ -503,10 +503,6 @@ export default function RegReviewPage() {
               {tab === 'log' && (
                 <>
               {/* The path and the log · in the main column, the end column is the assistant's alone */}
-              <Glass>
-                <Head title="مسار الطلب" meta={<span className="sub">{/* doc rule 30 */}سجل التدقيق</span>} />
-                <Steps items={steps} flow="ladder" />
-              </Glass>
 
               {/* 2.4.3 · 2.4.15 · every action kept · a second return never overwrites the first */}
               <Glass>
@@ -648,7 +644,7 @@ export default function RegReviewPage() {
             </>}>
                 {nStop > 0 ? (
                   <>
-                    <p className="sub cnote">{open ? 'الطلب متوقف للأسباب أدناه · عالجها، أو أعد الطلب للجهة لتصحيحها' : 'كان الطلب متوقفًا للأسباب أدناه'}</p>
+                    <p className="sub cnote">{open ? 'الطلب متوقف للأسباب أدناه' : 'كان الطلب متوقفًا للأسباب أدناه'}</p>
                     <ul className="blockers mt-2">
                       {stops.map((b, k) => (
                         <li key={k}>
@@ -712,8 +708,8 @@ export default function RegReviewPage() {
                           <span>
                             درجة الحوكمة{' '}
                             {r.governanceClaim > 0
-                              ? <><span className="num">{r.governanceClaim}</span> · <b>إقرار الجهة</b> لا تقييم المؤسسة</>
-                              : <>أُقرّت بصفر · النظام يطلب ذلك عند عدم إجراء التقييم</>}
+                              ? <><span className="num">{r.governanceClaim}</span> · <b>إقرار الجهة</b></>
+                              : <>أُقرّت بصفر</>}
                           </span>
                         </li>
                       </ul>
@@ -726,7 +722,6 @@ export default function RegReviewPage() {
           <EditModal
             title={editing === 'def' ? 'تعديل التعريف' : editing === 'contact' ? 'تعديل الاتصال والأشخاص' : 'تعديل الحساب البنكي'}
             fields={editFields(editing)}
-            note="تعديل المراجِع على بيانات الطلب · يُسجَّل في سجل الطلب بالقيمة قبله وبعده."
             onClose={() => setEditing(null)}
             onSave={(changes, _v, reason) => saveEdit(changes, reason)}
           />
@@ -736,8 +731,8 @@ export default function RegReviewPage() {
             kind={ask === 'return' ? 'regReturn' : 'regReject'}
             title={ask === 'return' ? 'إعادة الطلب للاستكمال' : 'رفض الطلب وإيقافه'}
             subject={ask === 'return'
-              ? `${r.name} · يُعاد إلى الجهة مع السبب${flag.length ? ` · ويُفتح لها ${flag.length} ${nounAfter(flag.length, { one: 'حقل', few: 'حقول', many: 'حقلًا' })}` : ''}`
-              : `${r.name} · يُؤرشف الطلب بسببه ولا يُحذف`}
+              ? `${r.name}${flag.length ? ` · يُفتح لها ${flag.length} ${nounAfter(flag.length, { one: 'حقل', few: 'حقول', many: 'حقلًا' })}` : ''}`
+              : r.name}
             confirm={ask === 'return' ? 'أعد للاستكمال' : 'ارفض وأوقف'}
             tone={ask === 'return' ? 'btn-p' : 'btn-d'}
             onConfirm={pick}

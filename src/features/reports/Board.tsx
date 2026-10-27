@@ -60,7 +60,6 @@ export function Board({
               options={PERIODS.map((p) => ({ value: p.id, label: p.label }))}
               onChange={(v) => onPeriod(v ?? PERIODS[0].id)}
             />
-            <span className="sub">كل رقم أدناه محسوب لهذه الفترة، ومصدره مكتوب بجانبه</span>
           </div>
         </div>
       </Glass>

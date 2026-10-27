@@ -89,6 +89,17 @@ export function useFillHeight(
         }
       }
 
+      /* Client 27 Oct · the assistant never runs under the decision bar or the floating assistant:
+         its room from where it sits to the bar is its ceiling (`--ai-max`), its content scrolls
+         inside it, and its floor is `min` unless the room itself is smaller · the page around it
+         no longer has to scroll to show what it holds. */
+      const roomNow = Math.max(160, Math.round(window.innerHeight - top - reserve))
+      if (el.classList.contains('aiside')) {
+        el.style.setProperty('--ai-max', `${roomNow}px`)
+        el.style.setProperty(varName, `${Math.min(roomNow, Math.max(min, Math.round(h)))}px`)
+        el.removeAttribute('data-tall')
+        return
+      }
       el.style.setProperty(varName, `${Math.max(min, Math.round(h))}px`)
 
       /* Content taller than the screen can give it (an open reading list) → the card takes its own
@@ -127,6 +138,7 @@ export function useFillHeight(
       window.removeEventListener('resize', schedule)
       ro.disconnect()
       el.style.removeProperty(varName)
+      el.style.removeProperty('--ai-max')
       el.removeAttribute('data-tall')
     }
   }, [ref, varName, reserveSelector, capSelector, min, gap])

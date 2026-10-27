@@ -4,7 +4,7 @@ import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import {
+import { Tabs,
   BackTo, DateText, DockWhy, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Person, Riyal, StepArc, Tag, icons,
   type GateStep,
 } from '@/components/ui'
@@ -38,11 +38,7 @@ import { History, NoteModal } from './doc/DocFlow'
    before and after (1.3.10 · 1.3.11 · 1.4.36). */
 
 const KINDS: ReqKind[] = ['transfer', 'increase', 'decrease']
-const KIND_NOTE: Record<ReqKind, string> = {
-  transfer: 'من بند إلى بند في الميزانية نفسها · لا يتغيّر إجماليها',
-  increase: 'مبلغ جديد يدخل البند · ويرتفع إجمالي الميزانية ومصدرها',
-  decrease: 'مبلغ يخرج من البند · وينخفض إجمالي الميزانية ومصدرها',
-}
+
 const STEP_SAY = {
   manager: { ok: 'وافق وأحِل إلى الإدارة المالية', back: 'أعد إلى المُعِدّ' },
   finance: { ok: 'وافق وأحِل إلى المدير التنفيذي', back: 'أعد إلى المُعِدّ' },
@@ -92,7 +88,8 @@ type Form = Omit<BudgetRequest, 'events' | 'state' | 'createdAt' | 'submittedAt'
 
 export default function BudgetOpPage() {
   const { id } = useParams()
-  const [q] = useSearchParams()
+  const [q, setQ] = useSearchParams()
+  const opTab = q.get('tab') === 'log' ? 'log' : 'data'
   const navigate = useNavigate()
   const mobile = useIsMobile()
   useBudget()
@@ -120,7 +117,7 @@ export default function BudgetOpPage() {
       <AppLayout assistantContext={assistFor.page('طلب عملية ميزانية')}>
         <div className="viewstack"><div className="screen col">
           <BackTo label="طلبات العمليات" onClick={() => navigate(ROUTES.budgetOps)} />
-          <Glass><Empty title="الطلب غير موجود." note="ربما يكون الرابط قديمًا." /></Glass>
+          <Glass><Empty title="الطلب غير موجود." /></Glass>
         </div></div>
       </AppLayout>
     )
@@ -132,7 +129,7 @@ export default function BudgetOpPage() {
       <AppLayout assistantContext={assistFor.page('طلب عملية ميزانية')}>
         <div className="viewstack"><div className="screen col">
           <BackTo label="طلبات العمليات" onClick={() => navigate(ROUTES.budgetOps)} />
-          <Glass><Empty title="طلبات العمليات لأصحاب الصلاحية" note={`يُعدّ طلب المناقلة أو التعزيز أو التخفيض ويرسله: ${whoActs('draft') || 'لا أحد بعد'} · يُضبط من إعدادات الميزانية.`} /></Glass>
+          <Glass><Empty title="طلبات العمليات لأصحاب الصلاحية" /></Glass>
         </div></div>
       </AppLayout>
     )
@@ -195,15 +192,12 @@ export default function BudgetOpPage() {
                 {/* Client sheet 24 Oct (#95) · the outcome once the request ends */}
                 {existing && <OutcomeTag outcome={budgetReqOutcome(existing.state)} />}
               </div>
-              <p className="sub mt-1">
-                {doc ? <>{docTitle(doc)} · </> : null}
-                مناقلة أو تعزيز أو تخفيض على ميزانية معتمدة · يُنفَّذ آليًا عند الاعتماد النهائي
-              </p>
+              {doc && <p className="sub mt-1">{docTitle(doc)}</p>}
               {r.amount > 0 && (
                 <div className="pamt">
                   <div className="lb">مبلغ العملية</div>
                   <div className="v"><Money sm>{r.amount}</Money></div>
-                  <div className="sub">{financeDecides(r.amount) ? <>ضمن صلاحية الإدارة المالية · حتى <Money sm>{BUDGET_RULES.opFinanceUpTo}</Money></> : 'يعتمده المدير التنفيذي بعد الإدارة المالية'}</div>
+
                 </div>
               )}
             </div>
@@ -226,8 +220,15 @@ export default function BudgetOpPage() {
             </Glass>
           )}
 
+          {/* Client 26 Oct · every record reads its data and its log in tabs */}
+          {existing && (
+            <Tabs items={[{ slug: 'data', label: 'بيانات الطلب' }, { slug: 'log', label: 'سجل الطلب', count: existing.events.length || undefined }]} active={opTab}
+              onChange={(x) => { const n = new URLSearchParams(q); if (x === 'data') n.delete('tab'); else n.set('tab', x); setQ(n, { replace: true }) }} />
+          )}
+
           <div className="g2">
             <div className="col">
+              {opTab === 'data' && <>
               <Glass>
                 <Head title="بيانات الطلب" meta={<span className="sub"><bdi>{/* doc 1.3.1–1.3.3 */}</bdi></span>} />
                 {editable ? (
@@ -246,7 +247,7 @@ export default function BudgetOpPage() {
                         options={budgets.map((d) => ({ value: d.id, label: docTitle(d) }))}
                         onChange={(v) => setF((x) => ({ ...x, docId: v, yearId: docOf(v)?.yearId ?? x.yearId, fromId: undefined, toId: undefined, source: undefined }))}
                       />
-                      <span className="sub regf-h">الميزانيات المعتمدة وحدها · والبندان من الميزانية المختارة</span>
+
                     </label>
                     <div className="regf regf-w">
                       <span className="lb">العملية<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -257,7 +258,7 @@ export default function BudgetOpPage() {
                           </button>
                         ))}
                       </div>
-                      <span className="sub regf-h">{KIND_NOTE[f.kind]}</span>
+
                     </div>
                     {f.kind !== 'increase' && (
                       <label className="regf regf-w">
@@ -310,8 +311,7 @@ export default function BudgetOpPage() {
                         <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => { const x = e.target.files?.[0]; if (x) put('files', [...f.files, x.name]); e.target.value = '' }} />
                         <Icon name={icons.upload} size="sm" />
                         <span>أرفق مستندًا داعمًا</span>
-                        <span className="pc-sp" />
-                        <span className="sub regdocs-m">إلزامي من <span className="num">{nf.format(BUDGET_RULES.attachAbove)}</span> فأكثر</span>
+
                       </label>
                     </div>
                   </div>
@@ -334,7 +334,7 @@ export default function BudgetOpPage() {
 
               {existing?.result?.length ? (
                 <Glass className="tblcard">
-                  <Head title="ما نُفِّذ" meta={<span className="sub">القيمة قبل التنفيذ وبعده</span>} />
+                  <Head title="ما نُفِّذ" />
                   <div className="tblwrap">
                     <table className="tbl">
                       <thead><tr><th>البند</th><th className="n">قبل</th><th className="n">بعد</th></tr></thead>
@@ -354,12 +354,13 @@ export default function BudgetOpPage() {
                 <Glass>
                   <Head title="الأثر عند التنفيذ" />
                   <KV rows={impact} />
-                  <p className="sub cnote">وتتحرك معها البنود التي فوقها حتى البند المشترك بينهما · فيبقى كل أب مساويًا لمجموع أبنائه.</p>
+
                 </Glass>
               )}
-              {existing && (
+              </>}
+              {opTab === 'log' && existing && (
                 <Glass>
-                  <Head title="سجل الطلب" meta={<span className="sub">كل إجراء بصاحبه ووقته وسببه</span>} />
+                  <Head title="سجل الطلب" />
                   <History events={existing.events} />
                 </Glass>
               )}
@@ -381,7 +382,7 @@ export default function BudgetOpPage() {
               <span className="decsent">
                 {editable ? (issues.length ? <>جاهز بعد المعالجة<DockWhy n={issues.length} noun={NOUN.note} items={issues.map((t) => ({ text: t, why: 'تحقّق النظام' }))} /></> : <>جاهز · <Money>{f.amount}</Money></>)
                   : myStep && existing ? <>بانتظار قرارك · <b>{okSay(myStep, existing.amount)}</b>{myStep === 'exec' && issues.length > 0 && <DockWhy n={issues.length} noun={NOUN.note} title="ما يمنع التنفيذ" items={issues.map((t) => ({ text: t, why: 'تحقّق النظام' }))} />}</>
-                    : existing?.state === 'executed' ? 'نُفِّذ · انعكس على أرصدة البنود وسجل الحركات'
+                    : existing?.state === 'executed' ? 'نُفِّذ'
                       : existing ? <>بانتظار <b>{whoActs(existing.state) || 'المُعِدّ'}</b></> : null}
               </span>
             </div>
@@ -414,7 +415,7 @@ export default function BudgetOpPage() {
           reasons={decide === 'reject' ? BUDGET_RULES.opRejectReasons : decide === 'back' ? BUDGET_RULES.opReturnReasons : undefined}
           tone={decide === 'ok' ? 'btn-p' : decide === 'reject' ? 'btn-d' : 'btn-2'}
           required={decide !== 'ok'}
-          hint={decide === 'ok' && (myStep === 'exec' || (myStep === 'finance' && financeDecides(existing.amount))) ? 'الاعتماد النهائي ينفّذ العملية آليًا ويحدّث أرصدة البنود المتأثرة.' : undefined}
+
           onClose={() => setDecide(null)}
           onDone={(note) => decideRequest(existing.id, decide === 'ok' ? 'approve' : decide === 'back' ? 'return' : 'reject', note, me)}
         />

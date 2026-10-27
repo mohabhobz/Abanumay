@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
+import { StatRow,
   DateText, Empty, Glass, Head, Icon, icons, MultiSelect, GroupPicker, Num, Person, SearchBox, Segments, Select, Stat,
   Tag, Toggle, ViewToggle,
 } from '@/components/ui'
@@ -190,36 +190,35 @@ export default function ClosingPage() {
             variant="bar"
             title="قراءة سريعة للإغلاق"
             readings={readings}
-            empty="لا يوجد طلب إغلاق متوقف في النطاق الحالي · وسّع الفلتر لعرض المزيد."
+            empty="لا يوجد طلب إغلاق متوقف في النطاق الحالي."
           />
 
           {/* The document's four indicators, per 10.8 - not four arbitrary numbers. */}
-          <div className="stats4">
+          <StatRow title="مؤشرات الإغلاق">
             <Stat
               label="متوسط مدة إغلاق المشروع"
               value={k.avg === null ? '—' : <Num>{k.avg}</Num>}
               unit={k.avg === null ? undefined : 'يومًا'}
-              note={/* doc KPI 1 */ "من فتح الطلب حتى الإغلاق النهائي"}
+              hint={/* doc KPI 1 */ "من فتح الطلب حتى الإغلاق النهائي"}
             />
             <Stat
               label="المغلقة ضمن المدة المستهدفة"
               value={k.inTimePct === null ? '—' : <Num>{pct(k.inTimePct)}</Num>}
-              note={/* doc KPI 2 */ `المدة المؤقتة ${countOf(CLOSE_TARGET_DAYS, NOUN.day)}`}
+              hint={/* doc KPI 2 */ `المدة المستهدفة ${countOf(CLOSE_TARGET_DAYS, NOUN.day)}`}
               bar={k.inTimePct === null ? undefined : { w: `${k.inTimePct}%`, c: 'var(--teal)' }}
             />
             <Stat
               label="متوسط مدة إعداد التقرير"
               value={k.prepDays === null ? '—' : <Num>{k.prepDays}</Num>}
               unit={k.prepDays === null ? undefined : 'يومًا'}
-              note={/* doc KPI 3 */ "من فتح الطلب حتى إرسال الجهة"}
+              hint={/* doc KPI 3 */ "من فتح الطلب حتى إرسال الجهة"}
             />
             <Stat
               label="المغلقة بعد استكمال المتطلبات"
               value={k.fullPct === null ? '—' : <Num>{pct(k.fullPct)}</Num>}
-              note={/* doc KPI 4 */ undefined}
               bar={k.fullPct === null ? undefined : { w: `${k.fullPct}%`, c: 'var(--ok)' }}
             />
-          </div>
+          </StatRow>
 
           <Segments
             active={readList(v.stage).length === 1 ? readList(v.stage)[0] : ''}
@@ -366,7 +365,6 @@ export default function ClosingPage() {
             <Glass>
               <Empty
                 title="لا توجد طلبات إغلاق بهذه الفلاتر."
-                note="جرّب توسيع النطاق، أو اختر محطة أخرى من الشرائح أعلاه."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
@@ -392,7 +390,6 @@ export default function ClosingPage() {
               </Glass>
               {grouped && (
                 <p className="sub tcen">
-                  التجميع يعرض كل النتائج ·{' '}
                   <span className="num">{countLeaves(groupTree(sorted, group))}</span> مجموعات ·{' '}
                   <button className="lnk" onClick={() => set({ group: undefined })}>
                     إلغاء التجميع
@@ -409,7 +406,7 @@ export default function ClosingPage() {
                     <h2>{meta?.label ?? g.key}</h2>
                     <span className="sub">
                       {meta?.who ? `عند ${meta.who}` : 'مكتمل'} ·{' '}
-                      <span className="num">{g.rows.length}</span> {nounAfter(g.rows.length, NOUN.request)} · {meta?.note}
+                      <span className="num">{g.rows.length}</span> {nounAfter(g.rows.length, NOUN.request)}
                     </span>
                   </div>
                   <div className="paygrid">
@@ -428,7 +425,7 @@ export default function ClosingPage() {
             <Glass className="tblcard">
               <Head
                 title="إغلاقات الشركاء"
-                meta={<span className="sub">المشاريع عبر جهات خارجية والمحافظ · تُغلق من صفحتها · <Num>{partners.filter((x) => x.state === 'closing').length}</Num> بانتظار الإغلاق</span>}
+                meta={<span className="sub"><Num>{partners.filter((x) => x.state === 'closing').length}</Num> بانتظار الإغلاق</span>}
               />
               <div className="tblwrap">
                 <table className="tbl">
@@ -459,12 +456,6 @@ export default function ClosingPage() {
             </Glass>
           )}
 
-          {/* Rule 16 is stated on screen, not only in a comment - it's the most confusing case: a
-              report "with the executive director" while its project still shows "in progress". */}
-          <p className="sub tcen">
-            المشروع «قيد الإغلاق» من بدء الإغلاق حتى يكتمل
-            اعتماد التقرير والتقييم والمتطلبات المالية والإدارية معًا · ولا تغيّر مراحل التقرير حالته{/* doc 10.4.20 · rule 16 · 18 */}.
-          </p>
         </div>
       </div>
     </AppLayout>

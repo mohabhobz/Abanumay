@@ -42,7 +42,7 @@ export function PayeeCard({ r }: { r: PayRequest }) {
       )}
       {said.ok && <p className="ok-ink cnote" role="status">سُجّل: <b>{said.ok}</b></p>}
       {said.bad?.map((b) => <p key={b} className="bad cnote" role="alert">{b}</p>)}
-      <p className="sub cnote">لا يُحوَّل لطرف ثالث إلا بمستند أو اتفاقية رسمية تبرّره، مع اسم المستفيد الفعلي والمرجع في الإذن{/* doc 11.4.10 */}.</p>
+
     </Glass>
   )
 }

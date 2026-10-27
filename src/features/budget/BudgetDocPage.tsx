@@ -3,10 +3,9 @@ import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { useMemo, useState } from 'react'
 import { readAllocation, readBudgetAdvice } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import {
-  DateField, BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, MultiSelect, Nil, Num,
-  Face, Person, Riyal, Tag, DockWhy,
-} from '@/components/ui'
+import { type TabItem, Tabs, FieldMultiSelect,
+  DateField, BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Nil, Num,
+  Face, Person, Riyal, Tag, DockWhy } from '@/components/ui'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -15,9 +14,8 @@ import { nf, NOUN, nounAfter } from '@/lib/format'
 import {
   BUDGET_STATE_SAY, KIND_SAY, budgetEditable, budgetTone, cascadeActive, childrenOf, docSources, docTitle,
   fiscalYears, flatten, fundSources, hasChildren, levelOf, moneyOf, outlineOf, publicName, rootOf,
-  sumChildren, treeIssues, yearById,
-  type BudgetDoc, type BudgetNode, type SourceShare,
-} from '@/data/mock/budgetTree'
+  treeIssues, yearById,
+  type BudgetDoc, type BudgetNode, type SourceShare } from '@/data/mock/budgetTree'
 import { APPROVAL_MATRIX } from '@/data/approval'
 import { meOf, readRole } from '@/data/roles'
 import {
@@ -89,7 +87,7 @@ export default function BudgetDocPage() {
 
   /* `?line=` comes from "view the budget document" in the project decision step · the row with
      that id is marked, and the hash scrolls to it. */
-  const [query] = useSearchParams()
+  const [query, setQuery] = useSearchParams()
   const focus = query.get('line') ?? ''
   const existing = id ? docOf(id) : undefined
   const missing = Boolean(id) && !existing
@@ -190,7 +188,6 @@ export default function BudgetDocPage() {
             <Glass>
               <Empty
                 title="الميزانية غير موجودة."
-                note="ربما يكون الرابط قديمًا · ولا تُحذف الميزانية ما دامت عليها مشاريع."
                 actions={<button className="btn btn-2" onClick={() => navigate(ROUTES.budget)}>ارجع إلى الميزانية</button>}
               />
             </Glass>
@@ -207,7 +204,7 @@ export default function BudgetDocPage() {
       <AppLayout assistantContext={assistFor.page('الميزانية')}>
         <div className="viewstack"><div className="screen col">
           <BackTo label="الميزانية" onClick={() => navigate(ROUTES.budget)} />
-          <Glass><Empty title="إعداد الميزانية لأصحاب الصلاحية" note={`يُعدّ الميزانية ويرسلها: ${whoActs('draft') || 'لا أحد بعد'} · خارج مسؤوليات إدارة المنح · يُضبط من إعدادات الميزانية.`} /></Glass>
+          <Glass><Empty title="إعداد الميزانية لأصحاب الصلاحية" /></Glass>
         </div></div>
       </AppLayout>
     )
@@ -216,6 +213,19 @@ export default function BudgetDocPage() {
   const title = existing ? docTitle(existing) : doc.name?.trim() || 'ميزانية جديدة'
   const ro = !editable
   const dirOpts = DIRECTIONS.filter((d) => d.active || doc.directionIds?.includes(d.id)).map((d) => ({ value: d.id, label: d.name }))
+
+  const docTabs: TabItem[] = [
+    { slug: 'data', label: 'بيانات الميزانية' },
+    { slug: 'lines', label: 'بنود الميزانية', count: doc.nodes.length || undefined },
+    ...(existing && existing.state === 'approved' ? [{ slug: 'ledger', label: 'الحركات والطلبات' }] : []),
+    ...(existing ? [{ slug: 'log', label: 'السجل', count: eventsOf(existing.id).length || undefined }] : []),
+  ]
+  const docTab = docTabs.find((t) => t.slug === (query.get('tab') ?? (focus ? 'ledger' : 'data')))?.slug ?? 'data'
+  const goDocTab = (slug: string) => {
+    const next = new URLSearchParams(query)
+    if (slug === 'data') next.delete('tab'); else next.set('tab', slug)
+    setQuery(next, { replace: true })
+  }
 
   return (
     <AppLayout assistantContext={assistFor.page(title)}>
@@ -226,9 +236,7 @@ export default function BudgetDocPage() {
           <header>
             <div>
               <h1 className="ptitle">{title}</h1>
-              <p className="sub mt-1">
-                {doc.description?.trim() || <>للميزانية سنة مالية ومصدر تمويل أو أكثر · والبنود شجرة، والصرف يكون على آخر مستوياتها</>}
-              </p>
+              {doc.description?.trim() && <p className="sub mt-1">{doc.description}</p>}
             </div>
             {/* Client sheet 24 Oct (#95) · the outcome beside the state once the budget is approved */}
             <span className="rowf gp-2"><Tag tone={budgetTone(doc.state)}>{BUDGET_STATE_SAY[doc.state]}</Tag><OutcomeTag outcome={budgetDocOutcome(doc.state)} /></span>
@@ -241,18 +249,21 @@ export default function BudgetDocPage() {
             </Glass>
           )}
 
-          <div className="g2">
+          {/* Client 26 Oct · the budget reads in pinned tabs · its data · its lines · its ledger · its log */}
+          <Tabs items={docTabs} active={docTab} onChange={goDocTab} />
+
+          {docTab === 'data' && <div className="g2">
             <div className="col">
               {/* Section 1 - header */}
               <Glass>
-                <Head title="بيانات الميزانية" meta={<span className="sub">القسم الأول · ويحكم البنود التي تحته</span>} />
+                <Head title="بيانات الميزانية" />
                 <div className="regfields">
                   <label className="regf regf-w">
                     <span className="lb">اسم الميزانية<b className="regf-r" aria-label="إلزامي">*</b></span>
                     <span className="fld">
                       <input disabled={ro} value={doc.name ?? ''} onChange={(e) => setDoc((d) => ({ ...d, name: e.target.value }))} placeholder="مثال: ميزانية المنح 2027" aria-label="اسم الميزانية" />
                     </span>
-                    <span className="sub regf-h">لكل ميزانية اسمها · ويمكن أكثر من ميزانية مستقلة في السنة نفسها</span>
+
                   </label>
 
                   <label className="regf regf-w">
@@ -271,7 +282,7 @@ export default function BudgetDocPage() {
                       options={fiscalYears.map((y) => ({ value: y.id, label: y.name }))}
                       onChange={setYear}
                     />
-                    <span className="sub regf-h">تُعرَّف في الإعدادات، ويُملأ مداها تلقائيًا</span>
+
                   </label>
 
                   <label className="regf">
@@ -280,7 +291,7 @@ export default function BudgetDocPage() {
                       <input type="text" inputMode="numeric" disabled={ro} value={doc.total ? nf.format(doc.total) : ''} onChange={(e) => setTotal(digits(e.target.value))} aria-label="المبلغ الإجمالي" />
                       <Riyal />
                     </span>
-                    <span className="sub regf-h">يأخذه الجذر كاملًا</span>
+
                   </label>
 
                   <label className="regf">
@@ -295,15 +306,14 @@ export default function BudgetDocPage() {
 
                   <label className="regf regf-w">
                     <span className="lb">التوجهات الاستراتيجية<b className="regf-r" aria-label="إلزامي">*</b></span>
-                    <MultiSelect
-                      all="اختر التوجهات"
-                      wide
+                    <FieldMultiSelect
+                      placeholder="اختر التوجهات"
                       disabled={ro}
                       values={doc.directionIds ?? []}
                       options={dirOpts}
                       onChange={(v) => setDoc((d) => ({ ...d, directionIds: v }))}
                     />
-                    <span className="sub regf-h">الأهداف والتوجهات التي تُبنى عليها الميزانية · تُعرَّف في الإعدادات</span>
+
                   </label>
                 </div>
 
@@ -346,19 +356,12 @@ export default function BudgetDocPage() {
                     {sources.length ? 'أضف مصدرًا آخر' : 'اختر مصدر التمويل'}
                   </button>
                 )}
-                <p className="sub cnote">لكل مصدر تمويل ميزانية منفصلة · لمصدر آخر أنشئ ميزانيته (قرار المؤسسة)</p>
-                {many && (
-                  <p className="sub cnote">
-                    مجموع المصادر <Money sm>{sources.reduce((a, x) => a + x.amount, 0)}</Money> من <Money sm>{doc.total}</Money> · ويوزَّع كل بند على هذه المصادر.
-                  </p>
-                )}
+
               </Glass>
 
               {/* Rules, approvals and limits · in the main column, the end column is the assistant's alone */}
               {/* Rules - shown, not enforced · only while the budget can still change */}
               {/* Client 23 Oct · «ما يمنع الإرسال» opens from the action bar · not a card in the page */}
-
-              {existing && <FlowCard state={existing.state} events={eventsOf(existing.id)} />}
 
               <Glass>
                 <Head title="حدود الاعتماد والصرف" meta={<Link className="lnk sub" to={`${ROUTES.budgetSettings}?tab=limits`}>الإعدادات</Link>} />
@@ -372,17 +375,7 @@ export default function BudgetDocPage() {
                 })} />
               </Glass>
 
-              {!existing && (
-                <Glass>
-                  <Head title="كيف تُبنى الشجرة" />
-                  <p className="sub cnote">يأخذ الجذر مبلغ الميزانية كاملًا · وتحته <b>رئيسي</b> (مسار ثم مجال) · وآخر الشجرة <b>فرعي</b> وهو الهدف.</p>
-                  <p className="sub cnote">ومجموع الأبناء يساوي مخصص الأب في كل مستوى · فتغيير رقم في المستوى الأخير ينعكس صعودًا حتى الجذر.</p>
-                  {/* Note: this sentence is the most important part of the screen - it explains why an
-                      item can have a valid number and still not be actionable. */}
-                  <p className="sub cnote"><b>الحجز والصرف على البنود الفرعية وحدها</b> · وما فوقها للتقارير، فالبند الذي تتبعه بنود لا يُصرف منه مباشرةً.</p>
-                  <p className="sub cnote">والمستويات مفتوحة · ثلاثة أو خمسة، ما دام كل بند تابع لبند أعلى منه.</p>
-                </Glass>
-              )}
+
             </div>
 
             <AssistantAside
@@ -395,21 +388,22 @@ export default function BudgetDocPage() {
                 ...(doc.total > 0 ? [readAllocation(doc.total), ...readBudgetAdvice(doc)] : []),
               ] : []}
             />
-          </div>
+          </div>}
 
           {/* Note: the tree sits outside the grid, deliberately. A table with depth indentation
               needs the full page width, not a column next to a card. */}
-          <Glass className="tblcard">
+          {docTab === 'lines' && <Glass className="tblcard">
             <Head
               title="بنود الميزانية"
-              meta={<span className="sub"><Num>{nodes.length}</Num> {nounAfter(nodes.length, NOUN.line)} · الحجز والصرف على البنود الفرعية</span>}
+              meta={<span className="sub"><Num>{nodes.length}</Num> {nounAfter(nodes.length, NOUN.line)}</span>}
+              hint="الحجز والصرف على البنود الفرعية وحدها."
             />
 
             {nodes.length === 0 ? (
               <Empty
                 art={{ done: 0, total: 3 }}
                 title="لا توجد بنود في الشجرة بعد."
-                note={headReady ? 'أضف أول بند واختر نوعه · يأخذ أول بند المبلغ الإجمالي كاملًا.' : 'أكمل بيانات الميزانية أعلاه أولًا · يأخذ أول بند مبلغها.'}
+
                 actions={editable ? (
                   /* "Add item", not "add the root item" - the choice is open, and the rule governs it. */
                   <button className="btn btn-p" disabled={!headReady} title={headReady ? 'أضف بندًا إلى الشجرة' : 'أكمل بيانات الميزانية أولًا'} onClick={() => setModal({ edit: null, under: null })}>
@@ -553,24 +547,20 @@ export default function BudgetDocPage() {
                   })()}
                 </div>
 
-                {root && (
-                  <p className="sub cnote">
-                    مجموع أبناء الجذر <Mono>{nf.format(sumChildren(nodes, root.id))}</Mono> ومخصصه <Mono>{nf.format(root.allocated)}</Mono> ·{' '}
-                    {sumChildren(nodes, root.id) === root.allocated ? 'متوازن' : 'يلزم تسوية الفرق قبل الإرسال'}
-                    {many && <> · مصادره {shareSay(sources)}</>}
-                  </p>
-                )}
+
               </>
             )}
-          </Glass>
+          </Glass>}
 
-          {existing && existing.state === 'approved' && (
+          {docTab === 'ledger' && existing && existing.state === 'approved' && (
             <>
               <LedgerCard doc={existing} line={focus || undefined} />
               <SourceLedgerCard doc={existing} />
               <DocRequests doc={existing} />
             </>
           )}
+
+          {docTab === 'log' && existing && <FlowCard state={existing.state} events={eventsOf(existing.id)} />}
         </div>
 
         {/* Footer - by state and by role */}
@@ -586,7 +576,7 @@ export default function BudgetDocPage() {
                           ? <><span className="decsep" /><span className="sub">أضف أول بند قبل الإرسال</span></>
                           : <DockWhy n={issues.length + head.length} noun={NOUN.note} items={[...head.map((t) => ({ text: t, why: 'بيانات الميزانية' })), ...issues.map((i) => ({ text: i.text, why: i.why }))]} />}
                       </>
-                    : live ? <>معتمدة ومفعّلة · متاحة لربط المشاريع والحجز<span className="decsep" /><span className="sub">تتغيّر مبالغها بطلب عملية</span></>
+                    : live ? <>معتمدة ومفعّلة</>
                       : myStep ? <>بانتظار قرارك · <b>{STEP_SAY[myStep].ok}</b> أو إعادتها بملاحظة</>
                         : existing ? <>بانتظار <b>{whoActs(existing.state) || 'المُعِدّ'}</b></> : null}
               </span>
@@ -640,7 +630,7 @@ export default function BudgetDocPage() {
           cta={STEP_SAY[myStep][decide]}
           tone={decide === 'ok' ? 'btn-p' : 'btn-2'}
           required={decide === 'back'}
-          hint={decide === 'back' ? 'الإعادة بملاحظة توضّح المطلوب · تظهر للمُعِدّ في رأس الميزانية.' : undefined}
+
           onClose={() => setDecide(null)}
           onDone={(note) => { decideBudget(existing.id, decide === 'ok' ? 'approve' : 'return', note, me); setFlash(decide === 'ok' ? 'سُجّلت الموافقة' : 'أُعيدت') }}
         />

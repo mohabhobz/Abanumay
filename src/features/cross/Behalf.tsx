@@ -18,7 +18,6 @@ export function BehalfCard() {
   return (
     <Glass>
       <Head title="تولّي إجراء متعثر" meta={<Tag tone="mute">مدير النظام</Tag>} />
-      <p className="sub cnote">يملك مدير النظام صلاحيات جميع الأدوار · يتولى أي إجراء متعثر نيابةً عن الدور المسؤول ويكمله بنفسه، ويُسجَّل كل إجراء باسمه والدور الأصلي والسبب{/* doc 0.def.16 */}.</p>
       <div className="regfields">
         <Select label="الدور الأصلي" all="اختر الدور" value={role || undefined} options={seats.map((r) => ({ value: r.key, label: r.title }))} onChange={(v) => setRole((v ?? '') as RoleKey | '')} />
         <label className="regf"><span className="lb">السبب (إلزامي)</span><span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التولّي" placeholder="مثل: غياب المستخدم المسؤول" /></span></label>

@@ -4,8 +4,8 @@ import { useAi } from '@/lib/ai/provider'
 import { useState } from 'react'
 import { expectedImpact, sessionReport } from '@/data/shared/ai'
 import { AnalysisCard } from '@/components/assistant'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Tabs, BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { HOLD_STAGE_SAY, useBudget } from '@/data/budget/store'
@@ -43,6 +43,7 @@ import { MoneyField } from '@/components/ui'
 export default function SessionPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [qp, setQp] = useSearchParams()
   useApprovals()
   useBudget()
   const s = id ? sessionById(id) : undefined
@@ -61,6 +62,7 @@ export default function SessionPage() {
   const may = mayRecord(s.body, role) && s.state === 'planned'
   const add = awaitingSession(s.body).filter((p) => !s.items.some((i) => i.projectId === p.id))
   const decided = s.items.filter((i) => i.outcome).length
+  const sTab = ['follow', 'members'].includes(qp.get('tab') ?? '') ? qp.get('tab')! : 'agenda'
   /* 17 Oct · the assistant suggests putting what awaits this body on the agenda · the employee presses it */
   type SesAct = { label: string; kind: string }
   const nextPlan = suggestNext<SesAct>(may ? [{ label: `إدراج ${add.length} مشاريع منتظرة في جدول الأعمال`, kind: 'btn-p' }] : [], {
@@ -78,25 +80,35 @@ export default function SessionPage() {
           <header>
             <div>
               <h1 className="ptitle">{s.title}</h1>
-              <p className="sub mt-1"><DateText>{s.date}</DateText> · <Num>{s.members.length}</Num> عضو · يسجّل المدير التنفيذي القرار النهائي مع المحضر</p>
+              <p className="sub mt-1"><DateText>{s.date}</DateText> · <Num>{s.members.length}</Num> عضو</p>
             </div>
             <Tag tone={s.state === 'closed' ? 'mute' : 'warn'}>{s.state === 'closed' ? `مقفلة · ${s.closedAt ?? ''}` : 'مجدولة'}</Tag>
           </header>
 
+          {/* Client 26 Oct · the session reads in tabs · its agenda · the follow-up of its decisions · its members */}
+          <Tabs items={[
+            { slug: 'agenda', label: 'جدول الأعمال', count: s.items.length || undefined },
+            { slug: 'follow', label: 'متابعة القرارات', count: decided || undefined },
+            { slug: 'members', label: 'الأعضاء', count: s.members.length || undefined },
+          ]} active={sTab} onChange={(x) => { const n = new URLSearchParams(qp); if (x === 'agenda') n.delete('tab'); else n.set('tab', x); setQp(n, { replace: true }) }} />
 
-          <Glass>
-            <Head title="الأعضاء" />
-            <ul className="apv-members">{s.members.map((m) => <li key={m}><Person name={m} /></li>)}</ul>
-          </Glass>
+          {sTab === 'members' && (
+            <Glass>
+              <Head title="الأعضاء" />
+              <ul className="apv-members">{s.members.map((m) => <li key={m}><Person name={m} /></li>)}</ul>
+            </Glass>
+          )}
+
+          {sTab === 'agenda' && <>
 
           {/* Cross · the meeting's aggregate report and the projects' relative priority (7.4 · 6.4) */}
           {(s.items.length > 0 || may) && <AnalysisCard title="تقرير الجلسة" cta="اقرأ الجلسة" readings={sessionReport(s)} ask={false} onAsk={() => undefined} suggest={may ? <NextStep s={nextPlan} exec={nextExec} /> : undefined} />}
-          {s.items.length === 0 && <Glass><Empty title="جدول الأعمال فارغ." note="أضف المشاريع المحالة من القائمة أدناه." /></Glass>}
+          {s.items.length === 0 && <Glass><Empty title="جدول الأعمال فارغ." /></Glass>}
           {s.items.map((it) => <Item key={it.projectId} s={s} it={it} may={may} me={me} />)}
           {/* v3 · 13.2.6 · a portfolio on the same session · its votes, minutes and decision on its own page */}
           {PORTFOLIOS.some((pf) => pf.session?.id === s.id) && (
             <Glass>
-              <Head title="محافظ على جدول الجلسة" meta={<span className="sub">مسار الاعتماد نفسه · يُسجَّل قرارها من صفحتها</span>} />
+              <Head title="محافظ على جدول الجلسة" />
               <ul className="apv-list">
                 {PORTFOLIOS.filter((pf) => pf.session?.id === s.id).map((pf) => (
                   <li key={pf.id}><span className="apv-t"><Link className="tlink" to={ROUTES.portfolio(pf.id)}>{pf.name}</Link><span className="sub">{nf.format(pf.total)} ريال{pf.stage === 'committee' || pf.stage === 'board' ? ' · بانتظار القرار' : ' · القرار مسجّل'}</span></span></li>
@@ -105,10 +117,13 @@ export default function SessionPage() {
             </Glass>
           )}
 
+          </>}
+
           {/* 10 Oct · each decision followed through to its execution (7.1.output-4) */}
-          {decided > 0 && (
+          {sTab === 'follow' && decided === 0 && <Glass><Empty title="لا قرارات مسجّلة بعد." /></Glass>}
+          {sTab === 'follow' && decided > 0 && (
             <Glass>
-              <Head title="متابعة تنفيذ القرارات" meta={<span className="sub">تُقرأ من مسار المشروع بعد القرار</span>} />
+              <Head title="متابعة تنفيذ القرارات" />
               <ul className="apv-list">
                 {s.items.filter((i) => i.outcome).map((i) => {
                   const f = followUp(s, i)
@@ -130,7 +145,7 @@ export default function SessionPage() {
             </Glass>
           )}
 
-          {may && add.length > 0 && (
+          {sTab === 'agenda' && may && add.length > 0 && (
             <Glass>
               <Head title="أضف إلى جدول الأعمال" />
               <ul className="apv-list">
@@ -259,7 +274,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
         ]} />
         {fin && <><h4 className="ptn-sub">الموقف المالي</h4><FinKV fin={fin} /></>}
         {f.briefs.some((b) => b.level === s.body) && (
-          <p className="sub cnote"><Link className="lnk" to={ROUTES.projectBrief(p.id, f.briefs.find((b) => b.level === s.body)!.id)}>ملف العرض PDF للأعضاء</Link> · لقطة الموقف المالي وقت إنشائه</p>
+          <p className="sub cnote"><Link className="lnk" to={ROUTES.projectBrief(p.id, f.briefs.find((b) => b.level === s.body)!.id)}>ملف العرض PDF للأعضاء</Link></p>
         )}
         <h4 className="ptn-sub">آخر الإجراءات</h4>
         <ul className="apv-list">
@@ -272,9 +287,8 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
           with the minutes · the members read the file and the conflicts still stand */}
       <h3 className="stdy-h mt-3">قرار {HOLDER_LABEL[s.body]}</h3>
       {s.members.some((m) => conflictOf(p, m)) && (
-        <p className="sub cnote">تعارض مصالح معلن: {s.members.filter((m) => conflictOf(p, m)).map((m) => <Tag key={m} tone="warn">{m}</Tag>)} · لا يشارك في القرار على مشروع الجهة</p>
+        <p className="sub cnote">تعارض مصالح معلن: {s.members.filter((m) => conflictOf(p, m)).map((m) => <Tag key={m} tone="warn">{m}</Tag>)}</p>
       )}
-      <p className="sub cnote">يسجّل المدير التنفيذي قرار {HOLDER_LABEL[s.body]} النهائي كما ورد في محضر الاجتماع · لا تصويت للأعضاء في النظام</p>
 
       <div className="apv-row">
         {it.minutes ? <Tag tone="ok"><Icon name={icons.clip} size="sm" /> {it.minutes}</Tag> : <span className="sub">لا محضر بعد</span>}
@@ -298,7 +312,7 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
             ))}
           </div>
           {outcome === 'return' && (
-            <p className="sub cnote">تُعاد إلى المستوى السابق: <b>{HOLDER_LABEL[target]}</b> · يبقى الحجز</p>
+            <p className="sub cnote">تُعاد إلى المستوى السابق: <b>{HOLDER_LABEL[target]}</b></p>
           )}
           {(outcome === 'approve' || outcome === 'refer') && (
             <div className="regfields">
@@ -324,16 +338,16 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
               )}
             </div>
           )}
-          {outcome === 'approve' && amtMoved && fin && decided - amount > fin.maxRaise && <p className="bad cnote">{/* doc 6.4.3 */}المبلغ المقرر يتجاوز الرصيد المتاح · يُحفظ القرار كما صدر ولا يصبح نافذًا ماليًا حتى معالجة التغطية.</p>}
+          {outcome === 'approve' && amtMoved && fin && decided - amount > fin.maxRaise && <p className="bad cnote">{/* doc 6.4.3 */}المبلغ المقرر يتجاوز الرصيد المتاح.</p>}
           {needsPay && (
-            <label className="regf regf-w"><span className="lb">توجيهات الصرف <span className="sub">اختيارية · الجدول التفصيلي يُعدّ في الاتفاقية</span></span><span className="fld"><input value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="مثال: ربط الدفعة الثانية بالتقرير المرحلي" aria-label="توجيهات الصرف" /></span></label>
+            <label className="regf regf-w"><span className="lb">توجيهات الصرف <span className="sub">اختيارية</span></span><span className="fld"><input value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="مثال: ربط الدفعة الثانية بالتقرير المرحلي" aria-label="توجيهات الصرف" /></span></label>
           )}
           <label className="regf regf-w">
             <span className="lb">نص القرار<b className="regf-r" aria-label="إلزامي">*</b></span>
             <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="نص القرار" /></span>
           </label>
           <label className="regf regf-w">
-            <span className="lb">ملاحظات {HOLDER_LABEL[s.body]} <span className="sub">اختيارية · تُحفظ مع القرار في سجل المشروع</span></span>
+            <span className="lb">ملاحظات {HOLDER_LABEL[s.body]} <span className="sub">اختيارية</span></span>
             <span className="fld"><input value={extra} onChange={(e) => setExtra(e.target.value)} aria-label="ملاحظات على القرار" /></span>
           </label>
           {[...why, ...said].length > 0 && <ul className="apv-sig">{[...new Set([...why, ...said])].map((w) => <li key={w} className="no"><Icon name={icons.alert} size="sm" /><span>{w}</span></li>)}</ul>}

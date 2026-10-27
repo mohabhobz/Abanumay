@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { DateField, FieldSelect, Icon, icons, Mono, MultiSelect, Num, Select, Tag } from '@/components/ui'
+import { FieldMultiSelect, DateField, FieldSelect, Icon, icons, Mono, Num, Select, Tag } from '@/components/ui'
 import { useMenu } from '@/hooks/useMenu'
 import { ROUTES } from '@/app/routes'
 import { OWNERS } from '@/data/mock/taxonomy'
@@ -108,11 +108,10 @@ export function AskModal({ rows, me, onClose, onDone }: {
         <button className="btn btn-p" disabled={!ready} onClick={send}>أرسل الطلب</button>
         <button className="btn btn-2" onClick={onClose}>تراجع</button>
       </>}>
-      <p className="sub cnote">يصل الطلب إلى الجهة في بوابتها مع السبب وتاريخ الاستحقاق · ولا يغيّر حالتها.</p>
       {bulk && <Scope split={split} cap={ENTITY_RULES.bulkMax} />}
       <div className="regf">
         <span className="lb">البنود المطلوبة<b className="regf-r" aria-label="إلزامي">*</b></span>
-        <MultiSelect wide all="اختر البنود" values={items} options={ASK_ITEMS} onChange={setItems} />
+        <FieldMultiSelect placeholder="اختر البنود" values={items} options={ASK_ITEMS} onChange={setItems} />
       </div>
       <div className="regf">
         <span className="lb">تاريخ الاستحقاق<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -245,7 +244,7 @@ export function BatchResult({ batch, byId, onClose }: { batch: Batch; byId: (id:
       </>}>
       <p className="sub"><Mono>{batch.id}</Mono> · {batch.at.slice(0, 16).replace('T', ' ')}</p>
       <ul className="selres">
-        <li><Tag tone="ok">تم بنجاح</Tag><b className="num">{batch.ok.length}</b><span className="sub">تبقى محدَّدة في القائمة بعلامة نجاح</span></li>
+        <li><Tag tone="ok">تم بنجاح</Tag><b className="num">{batch.ok.length}</b></li>
         <li>
           <Tag tone={skipped ? 'warn' : 'mute'}>مستثناة</Tag><b className="num">{skipped}</b>
           {batch.skipped.map((s) => (

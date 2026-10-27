@@ -50,7 +50,7 @@ export default function BudgetReportPage() {
           <header>
             <div>
               <h1 className="ptitle">التقرير المجمّع للميزانيات</h1>
-              <p className="sub mt-1">أرصدة كل الميزانيات معًا · وكل صف ينفتح على الميزانيات التي تحمله</p>
+
             </div>
           </header>
 
@@ -77,7 +77,7 @@ export default function BudgetReportPage() {
           <Glass className="tblcard">
             <Head title={`حسب ${GROUP_SAY[by]}`} meta={<span className="sub"><Num>{rows.length}</Num> صف · <Num>{docs.length}</Num> ميزانية</span>} />
             {rows.length === 0 ? (
-              <Empty title="لا بيانات للاختيار الحالي." note="جرّب سنة أخرى أو أضف الميزانيات قيد الاعتماد." />
+              <Empty title="لا بيانات للاختيار الحالي." />
             ) : (
               <div className="tblwrap">
                 <table className="tbl">
@@ -152,11 +152,7 @@ export default function BudgetReportPage() {
               </div>
             )}
           </Glass>
-          <p className="sub cnote">
-            {by === 'project'
-              ? 'المشروع متعدد السنوات يظهر بحصصه على كل ميزانية تموّله · حصة السنة القادمة التزام لا حجز.'
-              : 'تقرير كل ميزانية منفردة في شاشتها · وهنا تُجمع أرصدتها دون أن تختلط.'}
-          </p>
+
         </div>
       </div>
     </AppLayout>

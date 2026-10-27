@@ -9,7 +9,7 @@ import {
 } from '@/app/routes'
 import { isolate, nf, countOf, NOUN, nounAfter } from '@/lib/format'
 import { kpiProcesses, kpiCoverage, headlineOf, measuredIn } from '@/data/kpi'
-import { LIVE_REPORTS, PACKS, packByKey } from '@/data/reports'
+import { PACKS } from '@/data/reports'
 import { KpiValue } from './KpiValue'
 import { basisText } from './basis'
 import { Board } from './Board'
@@ -54,10 +54,6 @@ export default function ReportsPage() {
           <header>
             <div>
               <h1 className="ptitle">التقارير</h1>
-              <p className="sub mt-1">
-                <span className="num">{LIVE_REPORTS.length}</span> شاشة تقرير في النظام العامل ·{' '}
-                مجمّعة هنا في لوحة واحدة وأداة لتشكيل التقارير
-              </p>
             </div>
             <div className="rowf gp-2">
               {/* 11.4.26 · 13.2.27 · the Ehsan projects and the sub-projects, marked by their kind */}
@@ -85,7 +81,6 @@ export default function ReportsPage() {
           <Glass className="rpcov">
             <Head
               title="ما الذي يمكن قياسه اليوم"
-              meta="من مؤشرات وثيقة الإجراءات"
             />
 
             <div className="rpcov-b" aria-hidden="true">
@@ -103,22 +98,13 @@ export default function ReportsPage() {
               <div>
                 <div className="v num">{coverage.missing}</div>
                 <div className="k">مؤشرًا بلا بيانات</div>
-                <div className="sub">يُذكر بجانب كل مؤشر ما ينقصه</div>
               </div>
               <div>
                 <div className="v num">{coverage.noTarget}</div>
                 <div className="k">مؤشرًا بلا مستهدف</div>
-                <div className="sub">يقيس التزامًا بمدة لم تُحدَّد</div>
               </div>
             </div>
 
-            <p className="mut rpcov-n">
-              الوثيقة لم تحدّد مدة مستهدفة واحدة لأي مستوى في الإجراءات الـ
-              <span className="num">{PROCESSES.length}</span>، رغم أن{' '}
-              <span className="num">{coverage.noTarget}</span> مؤشرات تقيس الالتزام
-              بمدة مستهدفة أو باتفاقية مستوى خدمة. المدد المعروضة هنا فعلية، والحدود
-              المقارَنة بها مؤقتة لحين اعتمادها.
-            </p>
           </Glass>
 
           {/* The 11 actions */}
@@ -194,12 +180,6 @@ export default function ReportsPage() {
               title="حزم التقارير المخطَّطة"
               meta={`${PACKS.filter((p) => p.state === 'ready').length} مبنيّة · ${PACKS.filter((p) => p.state === 'next').length} في الخطة`}
             />
-            <p className="mut rpsec-n">
-              هذه ليست شاشات قائمة، بل <b>خطة وحدة التقارير</b>. بدل بناء شاشة لكل تقرير
-              كما في النظام العامل، تُجمَع التقارير في حزم، تجيب كل حزمة عن سؤال
-              واحد ولها قارئ محدد. تعرض كل بطاقة السؤال، ومحتوى الحزمة، ومن
-              يقرؤها.
-            </p>
 
             <div className="rpkg">
               {PACKS.map((k) => (
@@ -227,37 +207,7 @@ export default function ReportsPage() {
             </div>
           </section>
 
-          {/* Versus the current system.
-
-              The client asks "so where did my reports go?" — this table is the answer. */}
-          <Glass>
-            <Head
-              title="تقارير النظام العامل ومكانها هنا"
-              meta={`${LIVE_REPORTS.length} شاشة`}
-            />
-            <p className="mut rpsec-n">
-              كل شاشة تقرير في <span className="mono">sys.abanumay.sa</span> وموقعها
-              في الخطة. هذا الجدول يجيب عن سؤال «أين ذهبت تقاريري؟»: لم يُحذف
-              أي تقرير، بل جُمعت الشاشات الثلاث عشرة في ست حزم، لأن ما كان يفرّق بينها
-              هو <b>اسم التقرير</b> لا السؤال الذي تجيب عنه.
-            </p>
-            <div className="rpmap">
-              {LIVE_REPORTS.map((r) => {
-                const pack = packByKey(r.pack)
-                return (
-                  <div key={r.path} className="rpm">
-                    <span className="rpm-t">{r.title}</span>
-                    <span className="rpm-p">
-                      <code className="mono">{r.path}</code>
-                      {r.flaw && <Tag tone="no">{r.flaw}</Tag>}
-                    </span>
-                    <span className="rpm-a" aria-hidden="true">←</span>
-                    <span className="rpm-d">{pack?.title ?? ''}</span>
-                  </div>
-                )
-              })}
-            </div>
-          </Glass>
+          {/* Client 26 Oct · the old-system comparison card removed */}
             </>
           )}
         </div>

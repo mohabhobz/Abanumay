@@ -107,13 +107,6 @@ export function TransferModal({ row, me, onClose, mode = 'transfer' }: { row: Pr
             <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
             <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التحويل" placeholder={kind === 'owner' ? 'مثال: توزيع الأحمال بين مشرفي المجال' : 'مثال: المشروع صحي لا تعليمي'} /></span>
           </label>
-          <p className="sub cnote">
-            {kind === 'owner'
-              ? `يبقى المجال «${row.field}» ومساره وهدفه كما هي · وتبقى الدراسة الحالية.`
-              : mode === 'rehouse'
-                ? 'يبقى المشروع عند مدير المنح · وأعد توزيع الارتباط المالي على بند الهدف الجديد من «الارتباط المالي».'
-                : `تنتقل الدراسة الحالية إلى «دراسات سابقة» · ويبقى اختيار الجهة الأصلي (${row.track} · ${row.field} · ${row.goal}) محفوظًا في بيانات المشروع وسجله.`}
-          </p>
           {said.map((x) => <p key={x} className="bad cnote">{x}</p>)}
         </div>
         <div className="mf">

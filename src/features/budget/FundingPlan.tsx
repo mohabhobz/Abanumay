@@ -136,7 +136,7 @@ export function FundingPlanCard({ row, amount, editable, me }: {
                 )}
               </div>
               {opts.length === 0 ? (
-                <p className="sub cnote">لا ميزانية معتمدة لسنة <span className="num">{yn}</span> بعد · تبقى الحصة التزامًا بلا بند حتى تُعتمد، ويتعذّر حجزها عند بداية السنة.</p>
+                <p className="sub cnote">لا ميزانية معتمدة لسنة <span className="num">{yn}</span> بعد.</p>
               ) : (
                 <ul className="bgplan-s">
                   {y.shares.map((s, k) => (
@@ -171,9 +171,9 @@ export function FundingPlanCard({ row, amount, editable, me }: {
                 </ul>
               )}
               {saved?.years.find((x) => x.yearId === y.yearId)?.refused && (
-                <p className="bad cnote">{saved.years.find((x) => x.yearId === y.yearId)!.refused} · أُشعر مشرف المنح ومدير المنح والإدارة المالية.</p>
+                <p className="bad cnote">{saved.years.find((x) => x.yearId === y.yearId)!.refused}</p>
               )}
-              {paid > 0 && <p className="sub cnote">صُرف من حصة <span className="num">{yn}</span> <Money sm>{paid}</Money> · لا تقل الحصة عنه.</p>}
+              {paid > 0 && <p className="sub cnote">صُرف من حصة <span className="num">{yn}</span> <Money sm>{paid}</Money></p>}
             </li>
           )
         })}
@@ -215,13 +215,13 @@ export function FundingPlanCard({ row, amount, editable, me }: {
       )}
       {editable && (
         <div className="regfoot">
-          <span className="decsent">{msg || (issues.length ? `${issues.length} ملاحظة قبل الحفظ` : dirty ? 'الخطة جاهزة · حصص السنوات القادمة تُسجَّل التزامات' : 'محفوظة')}</span>
+          <span className="decsent">{msg || (issues.length ? `${issues.length} ملاحظة قبل الحفظ` : dirty ? 'الخطة جاهزة' : 'محفوظة')}</span>
           <span className="pc-sp" />
           <button
             type="button"
             className="btn btn-p"
             disabled={issues.length > 0 || !dirty}
-            onClick={() => { savePlan({ ...norm, by: me }); setMsg('حُفظت الخطة المالية · سُجّلت الالتزامات والحجوزات') }}
+            onClick={() => { savePlan({ ...norm, by: me }); setMsg('حُفظت الخطة المالية') }}
           >
             احفظ الخطة المالية
           </button>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DateField, FieldSelect, Glass, Head, Icon, MultiSelect, Tag, icons } from '@/components/ui'
+import { FieldMultiSelect, DateField, FieldSelect, Glass, Head, Icon, Tag, icons } from '@/components/ui'
 import { PLAN_AUTH, delegationOf, savePlanAuth, type PlanAuth } from '@/data/plans/auth'
 import { STAFF_ROLES, meOf, readRole, roleByKey, type RoleKey } from '@/data/roles'
 import { liveDay } from '@/data/clock'
@@ -21,12 +21,12 @@ export function PlanAuthTab() {
   const put = (next: PlanAuth) => { setD(next); savePlanAuth(next); setSaid('حُفظ') }
   return (
     <Glass>
-      <Head title="صلاحية اعتماد الخطط" meta={<Tag tone="mute">{/* doc 12.2.11 */}الإعداد يحدد المعتمد</Tag>} />
+      <Head title="صلاحية اعتماد الخطط" />
       <ul className="cfglist">
         <li className="itk-sup">
-          <span className="cfgl"><b>يعتمد الخطة وطلبات تعديلها</b><span className="sub">بصلاحيته الأصلية · مدير المنح افتراضيًا</span></span>
+          <span className="cfgl"><b>يعتمد الخطة وطلبات تعديلها</b></span>
           <span className="pc-sp" />
-          <MultiSelect all="لا أحد" values={d.approveBy} options={ROLE_OPTS} onChange={(x) => can && put({ ...d, approveBy: (x.length ? x : ['grants-manager']) as RoleKey[] })} />
+          <FieldMultiSelect placeholder="لا أحد" values={d.approveBy} options={ROLE_OPTS} onChange={(x) => can && put({ ...d, approveBy: (x.length ? x : ['grants-manager']) as RoleKey[] })} />
         </li>
       </ul>
       <h4 className="fnd-h">التفويض</h4>
@@ -48,7 +48,7 @@ export function PlanAuthTab() {
           <button type="button" className="btn btn-2 cfgadd" disabled={!to || !until || until < liveDay() || Boolean(to && delegationOf(to))} onClick={() => { if (!to) return; put({ ...d, delegations: [...d.delegations, { to, until, by: me, at: liveDay() }] }); setTo(''); setUntil('') }}>فوّض</button>
         </div>
       )}
-      {!can && <p className="sub cnote">للاطلاع · يعدّله صاحب صلاحية الاعتماد الأصلية.</p>}
+      {!can && <p className="sub cnote">للاطلاع فقط.</p>}
       {said && <p className="sub cnote" aria-live="polite">{said}</p>}
     </Glass>
   )

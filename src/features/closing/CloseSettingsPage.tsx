@@ -66,10 +66,6 @@ export default function CloseSettingsPage() {
           <header>
             <div>
               <h1 className="ptitle">إعدادات الإغلاق</h1>
-              <p className="sub mt-1">
-                المستندات التي يطلبها التقرير الختامي · وحدود المحطات التي
-                تحدّد متى يُعدّ الطلب متأخرًا
-              </p>
             </div>
             <Tag tone="mute">قيم افتراضية</Tag>
           </header>
@@ -86,12 +82,6 @@ export default function CloseSettingsPage() {
                 title="المستندات الداعمة"
                 meta={<span className="sub"><Num>{CLOSE_DOCS.length}</Num> {nounAfter(CLOSE_DOCS.length, NOUN.doc)}</span>}
               />
-              <p className="sub cnote">
-                تُلزم القواعد {/* doc rule 3 */} بإرفاق المستندات الداعمة
-                قبل إرسال التقرير، وتسمح القواعد {/* doc rule 5 */} بإرسال
-                المواد الإعلامية والفيديوهات <b>روابط تخزين سحابي معتمدة</b>{' '}
-                بدل رفعها · فهي عادةً أكبر من أي حدّ رفع.
-              </p>
               <table className="tbl">
                 <colgroup><col /><col /><col /></colgroup>
                 <thead>
@@ -127,15 +117,7 @@ export default function CloseSettingsPage() {
             <Glass className="tblcard">
               <Head
                 title="حدود المحطات"
-                meta={<Tag tone="warn">لم تحدّد الوثيقة مدة</Tag>}
               />
-              {/* Note: this sentence is what separates "a number we agreed on" from "a number we
-                  put in so the screen would work." */}
-              <p className="sub cnote">
-                تقيس متوسط مدة الإغلاق {/* doc BPD-011 KPI 1 */}
-                ولا تضع حدًّا لأي محطة · هذه الأرقام مؤقتة ليكون لوصف «متأخّر»
-                معنى في النموذج، وتحتاج إلى تأكيد المؤسسة (السؤال س-18).
-              </p>
               <StageLimits
                 title="مدد مراحل الإغلاق"
                 stages={CLOSE_STAGES.map((x) => ({
@@ -147,11 +129,6 @@ export default function CloseSettingsPage() {
                 cfgKey={CFG.closeLimits}
                 countAt={(k) => atStage(k as CloseStage)}
               />
-              <p className="sub cnote">
-                تُتخطّى محطة الاتصال المؤسسي إذا خلت الاتفاقية من التزام نشر
-                إعلامي{/* doc rule 9 */} · فيُحسب حدّها على
-                الطلبات التي تمرّ بها فقط.
-              </p>
             </Glass>
           )}
 
@@ -187,10 +164,6 @@ function ReleasePolicy() {
         <button type="button" className="btn btn-2 btn-sm" disabled={!may || mode === CLOSE_RULES.releaseMode} onClick={() => { saveCloseRules({ releaseMode: mode }, user.name); setSaved(true) }}>احفظ السياسة</button>
       </div>
       {saved && <p className="ok-ink cnote">حُفظت السياسة</p>}
-      <p className="sub cnote">
-        يعود المحجوز غير المصروف عند الإيقاف أو الإغلاق إلى بنده مباشرة · أما المبالغ المستردة من
-        الجهة فتعود دفعة واحدة عند اكتمال استردادها، أو تدريجيًّا مع كل مبلغ يُستلم (<bdi>{/* doc 10.9.8 */}</bdi>).
-      </p>
     </Glass>
   )
 }
@@ -208,10 +181,6 @@ function MatrixTab() {
   return (
     <Glass className="tblcard">
       <Head title="مصفوفة صلاحيات الإغلاق" meta={<Tag tone="mute">{may ? 'يعدّلها المدير التنفيذي' : 'للعرض'}</Tag>} />
-      <p className="sub cnote">
-        لكل قرار معتمده النهائي · المدير التنفيذي افتراضيًّا، ويُفوَّض مدير المنح كليًّا أو تحت قيمة تحدّدها المؤسسة{/* doc 10.4.11 */} ·
-        ولا يثبت النظام حدًّا ماليًّا دائمًا.
-      </p>
       <table className="tbl">
         <colgroup><col /><col /><col /></colgroup>
         <thead><tr><th><span className="th-t">القرار</span></th><th><span className="th-t">المعتمد النهائي</span></th><th className="n"><span className="th-t">مدير المنح تحت قيمة</span></th></tr></thead>
@@ -252,8 +221,7 @@ function CriteriaTab() {
   const total = list.reduce((n, x) => n + x.weight, 0)
   return (
     <Glass className="tblcard">
-      <Head title="أسئلة تقييم المشروع وأوزانها" meta={<span className="sub">مجموع الأوزان <Num>{total}</Num></span>} />
-      <p className="sub cnote">تُقيَّم كل مسألة من 5 وتُحسب الدرجة من 100 بأوزانها{/* doc 10.4.31 */} · والتغيير يسري على التقييمات التي تبدأ بعده، ولا يمسّ القديمة · وانخفاض الدرجة لا يمنع الإغلاق.</p>
+      <Head title="أسئلة تقييم المشروع وأوزانها" hint="تُقيَّم كل مسألة من 5 وتُحسب الدرجة من 100 بأوزانها" meta={<span className="sub">مجموع الأوزان <Num>{total}</Num></span>} />
       <table className="tbl">
         <colgroup><col /><col /><col /></colgroup>
         <thead><tr><th><span className="th-t">السؤال</span></th><th className="n"><span className="th-t">الوزن</span></th><th><span className="th-t" /></th></tr></thead>

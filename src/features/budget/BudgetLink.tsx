@@ -160,19 +160,14 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
             <div className="mb col bglink">
               {plan?.kind === 'multi' && (
                 <p className="sub cnote">
-                  المشروع متعدد السنوات · يُحجز من خطته المالية سنةً بسنة، وحصص السنوات القادمة التزامات مستقبلية لا حجوزات.
+                  المشروع متعدد السنوات · يُحجز من خطته المالية.
                   {' '}<Link className="lnk" to={ROUTES.projectTab(project.id, 'study')}>افتح الخطة المالية</Link>
                 </p>
               )}
               {lines.length === 0 && (
-                <p className="bad cnote">لا ميزانية معتمدة فيها بند نشط · الربط والحجز على الميزانيات المعتمدة المفعّلة وحدها.</p>
+                <p className="bad cnote">لا ميزانية معتمدة فيها بند نشط.</p>
               )}
-              {after && (
-                <p className="sub cnote">
-                  يُلغى الحجز الحالي ويُطبَّق الارتباط الجديد على كامل قيمة المشروع
-                  {held && held.shares.some((x) => x.paid) ? ` · وينتقل المصروف (${nf.format(held.shares.reduce((a, x) => a + x.paid, 0))}) والمتبقي والدفعات القادمة معه` : ''}.
-                </p>
-              )}
+
 
               <div className="regf">
                 <span className="lb">{rows.length > 1 ? 'توزيع التمويل على الميزانيات' : 'بند الميزانية'}<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -210,9 +205,7 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                 <button type="button" className="btn btn-2 btn-sm bglink-go" onClick={addRow} disabled={rows.length >= lines.length}>
                   <Icon name={icons.plus} size="sm" />أضف ميزانية أخرى
                 </button>
-                <span className="sub regf-h">
-                  الحجز على البنود الفرعية وحدها · ويُحجز كل جزء على بنده مستقلًّا ويُصرف ويُبلَّغ عنه وحده
-                </span>
+
               </div>
 
               {/* 4.6.3 · the best split · one click fills the rows */}
@@ -223,7 +216,7 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                     {isolate(sg.rows.map((x) => { const o = optOf(x.key); return o ? `${docTitle(o.doc)} · ${sourceName(docSources(o.doc)[0]?.code ?? '')} · ${o.node.label} ${nf.format(x.amount)}` : '' }).filter(Boolean).join(' · '))}
                     {sg.short > 0 ? isolate(` · لا يغطيه أي بند: ${nf.format(sg.short)}`) : ''}
                   </span>
-                  <span className="sub regf-h">{sg.why} · استرشادي</span>
+
                   <button type="button" className="btn btn-2 btn-sm bglink-go" onClick={() => setRows(sg.rows.length ? sg.rows.map((x) => ({ ...x })) : rows)}>
                     طبّق الاقتراح
                   </button>
@@ -255,8 +248,7 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                       ...(() => {
                         const sg = suggestSourceSplit(one.doc, one.node.id, project.amount)
                         if (!sg.length) return []
-                        const moved = sg.some((x) => x.suggest !== x.share)
-                        return [{ k: 'التوزيع المقترح على المصادر', v: isolate(`${sg.map((x) => `${x.name} ${nf.format(x.suggest)}`).join(' · ')}${moved ? ' · نُقل ما لا يغطيه مصدر إلى مصدر برصيد' : ' · بحصص البند'} · استرشادي`) }]
+                        return [{ k: 'التوزيع المقترح على المصادر', v: isolate(sg.map((x) => `${x.name} ${nf.format(x.suggest)}`).join(' · ')) }]
                       })(),
                       { k: 'مبلغ المشروع', v: <Money sm>{project.amount}</Money> },
                       { k: 'يعتمده', v: tier.role },

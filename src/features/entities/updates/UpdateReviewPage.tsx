@@ -3,7 +3,7 @@ import { suggestNext } from '@/data/shared/agent'
 import { accountLine, accountSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { StopsPopup, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tabs, Tag, blockerCount, type Blocker } from '@/components/ui'
+import { BankGrid, BankCard, StopsPopup, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tabs, Tag, blockerCount, type Blocker } from '@/components/ui'
 import { DocList } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -65,7 +65,7 @@ export default function UpdateReviewPage() {
           <div className="screen col">
             <Crumbs items={[{ label: 'الجهات', to: ROUTES.entities }, { label: 'طلبات التحديث', to: ROUTES.entityUpdates }]} />
             <Glass>
-              <Empty title="الطلب غير موجود." note="ربما الرابط قديم · علمًا بأن الطلبات لا تُحذف."
+              <Empty title="الطلب غير موجود."
                 actions={<button className="btn btn-2" onClick={() => navigate(ROUTES.entityUpdates)}>العودة إلى طلبات التحديث</button>} />
             </Glass>
           </div>
@@ -142,7 +142,7 @@ export default function UpdateReviewPage() {
                   meta={<span className="sub"><Num>{waiting.length}</Num> بانتظار الاعتماد · <Num>{direct.length}</Num> طُبّق مباشرة</span>}
                 />
                 {u.changes.length === 0
-                  ? <p className="sub cnote">لا تعديل على الحقول · الطلب يضيف حسابات أو وثائق فقط.</p>
+                  ? <p className="sub cnote">لا تعديل على الحقول.</p>
                   : (
                     <table className="tbl updiff">
                       <thead>
@@ -168,16 +168,17 @@ export default function UpdateReviewPage() {
               {u.banks.length > 0 && (
                 <Glass>
                   <Head title="حسابات بنكية جديدة أو معدَّلة" meta={<span className="sub"><Num>{u.banks.length}</Num> حساب</span>} />
-                  <ul className="rgbanks">
-                    {u.banks.map((b, i) => (
-                      <li key={b.id}>
-                        <span className="rgbank-n num">{i + 1}</span>
-                        <div className="rgbank-b">
-                          <div className="rgbank-t"><b>{b.bankName}</b><span className="sub">· {b.bankHolder} · {b.shortName}</span>{b.replaces && <Tag tone="warn">تعديل لحساب قائم · يُعطَّل الحالي عند القبول</Tag>}</div>
-                          <div className="sub"><Mono>{b.iban}</Mono> {!ibanValid(b.iban) && <span className="bad">· الآيبان غير صحيح</span>}</div>
+                  <BankGrid>
+                    {u.banks.map((b, i) => {
+                      const dec = u.bankDecisions && b.id in u.bankDecisions ? u.bankDecisions[b.id] : undefined
+                      return (
+                        <BankCard key={b.id} bank={b.bankName} iban={b.iban} holder={b.bankHolder} purpose={b.shortName} off={Boolean(dec)}
+                          status={b.replaces ? 'تعديل لحساب قائم' : 'حساب جديد'}
+                          tag={dec !== undefined ? <Tag tone={dec ? 'no' : 'ok'}>{dec ? `مرفوض · ${dec}` : 'مقبول'}</Tag> : undefined}>
+                          {!ibanValid(b.iban) && <span className="bad">الآيبان غير صحيح</span>}
                           <DocList label={`وثيقة ${b.bankName}`} rows={[{ name: b.doc || 'وثيقة الحساب البنكي.pdf', uploaded: Boolean(b.doc), required: true }]} />
                           {open && (
-                            <label className="regf mt-2">
+                            <label className="regf">
                               <span className="lb">قرار الحساب</span>
                               <FieldSelect
                                 value={bankNo[b.id] ?? ''}
@@ -187,13 +188,10 @@ export default function UpdateReviewPage() {
                               />
                             </label>
                           )}
-                          {u.bankDecisions && b.id in u.bankDecisions && (
-                            <Tag tone={u.bankDecisions[b.id] ? 'no' : 'ok'}>{u.bankDecisions[b.id] ? `مرفوض · ${u.bankDecisions[b.id]}` : 'مقبول'}</Tag>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                        </BankCard>
+                      )
+                    })}
+                  </BankGrid>
                 </Glass>
               )}
 
@@ -201,7 +199,7 @@ export default function UpdateReviewPage() {
               )}
               {tab === 'docs' && (
                 <>
-              {u.docs.length === 0 && u.banks.length === 0 && <Glass><Empty title="لا مرفقات في هذا الطلب." note="الطلب يعدّل حقولًا فقط." /></Glass>}
+              {u.docs.length === 0 && u.banks.length === 0 && <Glass><Empty title="لا مرفقات في هذا الطلب." /></Glass>}
               {u.banks.length > 0 && (
                 <Glass>
                   <Head title="وثائق الحسابات البنكية" meta={<span className="sub"><Num>{u.banks.length}</Num> حساب</span>} />
@@ -231,9 +229,6 @@ export default function UpdateReviewPage() {
                     { k: 'صلاحية التقديم', v: e.canApply ? 'مفعّلة' : 'موقوفة حتى القرار' },
                     { k: 'نهاية الترخيص', v: <DateText>{e.licenseEndsAt}</DateText> },
                   ]} />
-                  <p className="sub cnote">
-                    {open ? /* doc rule 16 */ 'نشاط الجهة معلّق بهذا الطلب · يعود إلى حالته السابقة عند القرار ( في إجراء التحديث).' : 'أُغلق الطلب وانتهى تعليق النشاط.'}
-                  </p>
                   <Link className="btn btn-2 btn-sm" to={ROUTES.entity(e.id, 'requests')}>
                     <Icon name={icons.entity} size="sm" /> ملف الجهة وطلباتها
                   </Link>
@@ -333,7 +328,7 @@ export default function UpdateReviewPage() {
           <ReasonDialog
             kind={ask === 'return' ? 'updReturn' : 'updReject'}
             title={ask === 'return' ? 'إعادة طلب التحديث للاستكمال' : 'رفض طلب التحديث'}
-            subject={ask === 'return' ? `${u.entityName} · يُعاد إلى الجهة مع السبب` : `${u.entityName} · يبقى ملف الجهة كما كان وينتهي تعليق نشاطها`}
+            subject={u.entityName}
             confirm={ask === 'return' ? 'أعد للاستكمال' : 'ارفض التحديث'}
             tone={ask === 'return' ? 'btn-p' : 'btn-d'}
             onConfirm={pick}

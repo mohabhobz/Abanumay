@@ -2,7 +2,7 @@ import { rowGo } from '@/lib/rowGo'
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/app/routes'
-import { Glass, Head, Mono, Num, Tag } from '@/components/ui'
+import { Glass, Head, Mono, Tag } from '@/components/ui'
 import { countOf, nf, NOUN, projectCode } from '@/lib/format'
 import { projectById } from '@/data/mock/projects'
 import type { Entity } from '@/types/domain'
@@ -28,7 +28,7 @@ export function HistoryTab({
   return (
     <>
       <Glass>
-        <Head title="مؤشرات الجهة" meta="تراكمي" />
+        <Head title="مؤشرات الجهة" />
         <div className="imp" style={{ '--n': E.stats.length } as CSSProperties}>
           {E.stats.map((s) => (
             <div key={s.k}>
@@ -61,10 +61,6 @@ export function HistoryTab({
               ))}
             </tbody>
           </table>
-        </div>
-        <div className="sub mt-3">
-          مشروع واحد اعتُذر عنه بوزن <Num>96</Num>، وهو أعلى وزن سُجّل للجهة. سبب الاعتذار غير
-          مسجّل في النظام الحالي.
         </div>
       </Glass>
     </>

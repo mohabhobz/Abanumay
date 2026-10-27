@@ -35,3 +35,12 @@
 
 /* #35 · the activity timing settings */
 .actcfg{display:flex;flex-wrap:wrap;gap:var(--sp-4);align-items:flex-end}
+/* Client 27 Oct · the activity's actions sit on the row's end, together · the dates read start, then
+   «حتى» the end · the attachments count and what is missing sit on two lines */
+.acttbl td:last-child{text-align:end}
+.acttbl-a{display:flex;justify-content:flex-end;flex-wrap:nowrap}
+.acttbl th:last-child{text-align:end}
+.acttbl td.acttbl-2>*+*{margin-top:var(--sp-1)}
+.acttbl-d>.sub{font-size:var(--fs-1)}
+.bad-ink{color:var(--warn-ink)}
+.acttbl tbody tr td.acttbl-2>*{display:block}

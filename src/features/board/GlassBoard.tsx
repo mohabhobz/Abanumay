@@ -24,7 +24,6 @@ export default function GlassBoard() {
           <header>
             <div>
               <h1 className="ptitle">لوحة المؤشرات <Tag tone="mute">تجريبية</Tag></h1>
-              <p className="sub mt-1">أرقام المؤسسة كلها في صفحة واحدة · محسوبة من نفس سجلات الوحدات</p>
             </div>
           </header>
           <div className="g2">

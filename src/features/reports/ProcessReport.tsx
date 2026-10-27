@@ -1,5 +1,5 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { BackTo, Glass, Head, Icon, icons, StepLink } from '@/components/ui'
+import { BackTo, Glass, Head, Hint, Icon, icons, StepLink } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
@@ -95,13 +95,13 @@ export default function ProcessReport() {
                   <div className="ind-b">
                     <div className="ind-t">
                       {isolate(k.name)}
+                      <Hint text={k.how} />
                       {/* "Derived" is a reading cue, not a status: a muted `Tag` would fall
                           below the contrast threshold and visually compete with the status
                           badges used elsewhere in the system. */}
-                      {k.derived && <span className="ind-d">مشتقّ</span>}
+                      {k.derived && <span className="ind-d" title="محسوب من بيانات الصف لا من عمود مستقل">مشتقّ</span>}
                       {k.ours && <span className="ind-d">ليس في الوثيقة</span>}
                     </div>
-                    <div className="ind-h sub">{isolate(k.how)}</div>
 
                     {k.gap && !sharedGap && <div className="ind-g">{isolate(k.gap)}</div>}
 
@@ -116,7 +116,7 @@ export default function ProcessReport() {
                         <span className="sub">لكل مصدر: {k.split.map((x) => `${x.label} ${pct(x.value)}`).join(' · ')}</span>
                       )}
                       <span className="sub">
-                        المستهدف: {k.target === null ? 'لم يُحدَّد في الوثيقة' : <span className="num">{k.target}</span>}
+                        المستهدف: {k.target === null ? 'لم يُحدَّد' : <span className="num">{k.target}</span>}
                       </span>
                       {k.to && (
                         <Link to={k.to} className="ind-to">
@@ -134,13 +134,6 @@ export default function ProcessReport() {
               ))}
             </ol>
           </Glass>
-
-          <p className="sub rpfoot">
-            «مشتقّ» يعني أن الرقم محسوب من بيانات الصف لا من عمود مستقل. يسجّل النظام
-            العامل مدد المستويات فعلًا (<span className="num">13</span> عمودًا للمدة في جدول
-            المشاريع)، وحين تتيحها الـ<span className="num">API</span>{' '}
-            ستحلّ هذه الأعمدة محل الاشتقاق.
-          </p>
         </div>
       </div>
     </AppLayout>

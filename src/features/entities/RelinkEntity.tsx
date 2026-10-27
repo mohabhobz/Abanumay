@@ -44,13 +44,12 @@ function RelinkModal({ projectId, entityId, projectName, onClose }: { projectId:
         <button className="btn btn-p" disabled={!to || !reason.trim()} onClick={() => { relinkEntity(projectId, to, reason.trim(), me, file || undefined); onClose() }}>انقل المشروع</button>
         <button className="btn btn-2" onClick={onClose}>تراجع</button>
       </>}>
-      <p className="sub cnote">لحالة استثنائية كتكرار سجل الجهة · يُحدَّث ارتباط الجهة في المشروع واتفاقياته وطلبات صرفه وخطته وإغلاقه، ويُحفظ النقل في سجل المشروع والجهتين.</p>
       <p>الجهة الحالية: <b>{from?.name ?? entityId}</b> <Mono>{from?.licenseNo}</Mono></p>
       <div className="regf">
         <span className="lb">الجهة الصحيحة<b className="regf-r" aria-label="إلزامي">*</b></span>
         <FieldSelect value={to} options={opts} onChange={setTo} label="الجهة الصحيحة" placeholder="اختر الجهة" />
       </div>
-      {target && target.activation !== 'نشط' && <p className="bad cnote">حساب الجهة المختارة «{target.activation}» · ينتقل المشروع، ويسري عليه مانعها (لا صرف لحساب غير نشط).</p>}
+      {target && target.activation !== 'نشط' && <p className="bad cnote">حساب الجهة المختارة «{target.activation}» · لا صرف لحساب غير نشط.</p>}
       <label className="regf">
         <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
         <span className="fld"><input value={reason} onChange={(x) => setReason(x.target.value)} aria-label="سبب تعديل الجهة" /></span>

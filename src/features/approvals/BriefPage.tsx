@@ -31,7 +31,7 @@ function BriefBody({ b, name, entity, field, docs, prior }: { b: Brief; name: st
   return (
     <div className="brief">
       <h2>ملف عرض المشروع · {HOLDER_LABEL[b.level]}</h2>
-      <p className="sub">الموقف المالي حتى {b.at} {b.time} · يمثل وقت إنشاء الملف فقط</p>
+      <p className="sub">الموقف المالي حتى {b.at} {b.time}</p>
       <h3>بطاقة المشروع</h3>
       <table><tbody>
         {row('المشروع', name)}
@@ -95,7 +95,7 @@ export default function BriefPage() {
         <div className="screen col">
           <BackTo label="ملف الاعتماد" onClick={() => navigate(ROUTES.projectTab(id, 'approval'))} />
           {!p || !b ? (
-            <Glass><Empty title="ملف العرض غير موجود." note="يُنشأ عند وصول المشروع للمدير التنفيذي أو اللجنة أو المجلس." /></Glass>
+            <Glass><Empty title="ملف العرض غير موجود." /></Glass>
           ) : (
             <>
               <header>
@@ -109,7 +109,7 @@ export default function BriefPage() {
                 </span>
               </header>
               <Glass>
-                <Head title="محتوى الملف" meta={<span className="sub">جاهز للطباعة إلى PDF والإرسال بالبريد</span>} />
+                <Head title="محتوى الملف" />
                 <BriefBody b={b} name={p.name} entity={p.entityName} field={p.field} docs={docs} prior={priorReport(p.entityId, p.id)} />
               </Glass>
               {createPortal(<div className="printsheet"><BriefBody b={b} name={p.name} entity={p.entityName} field={p.field} docs={docs} prior={priorReport(p.entityId, p.id)} /></div>, document.body)}

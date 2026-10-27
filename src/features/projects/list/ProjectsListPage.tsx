@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { reportable } from '@/data/shared/testData'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, Pager, PAGE_SIZES, Person, SearchBox,
   Segments, Select, Toggle, ViewToggle,
@@ -526,8 +526,7 @@ export default function ProjectsListPage() {
               <h1 className="ptitle">المشاريع</h1>
               <p className="sub mt-1">
                 <span className="num">{result.total}</span> نتيجة من{' '}
-                <span className="num">{total}</span> {nounAfter(total, NOUN.project)} في هذا النموذج ·{' '}
-                <span className="num">4,929</span> في النظام الحالي
+                <span className="num">{total}</span> {nounAfter(total, NOUN.project)}
               </p>
             </div>
 
@@ -554,7 +553,7 @@ export default function ProjectsListPage() {
             variant="bar"
             title="قراءة سريعة للقائمة"
             readings={readings}
-            empty="لا توجد في النطاق الحالي مشاريع متجاوزة للحدّ أو بلا مالك · وسّع الفلتر لعرض المزيد."
+            empty="لا توجد في النطاق الحالي مشاريع متجاوزة للحدّ أو بلا مالك."
           />
 
           {/* Saved views — a single row, and the primary axis: "what's on me today?" */}
@@ -743,7 +742,6 @@ export default function ProjectsListPage() {
             <Glass>
               <Empty
                 title="لا توجد مشاريع بهذه الفلاتر."
-                note="وسّع النطاق أو امسح الفلاتر الحالية."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
@@ -776,7 +774,6 @@ export default function ProjectsListPage() {
 
           {grouped ? (
             <p className="sub" style={{ textAlign: 'center' }}>
-              التجميع يعرض كل النتائج بلا ترقيم ·{' '}
               <span className="num">{countLeaves(groupTree(result.rows, group))}</span> مجموعات ·{' '}
               <button className="lnk" onClick={() => set({ group: undefined })}>إلغاء التجميع</button>
             </p>
@@ -792,11 +789,6 @@ export default function ProjectsListPage() {
 
           {/* The print version now lives inside `ExportMenu` — the three export formats
               and the sheet move together. */}
-
-          <p className="sub" style={{ textAlign: 'center', marginTop: 'var(--sp-3)' }}>
-            البيانات هنا تجريبية بتوزيع يحاكي النظام الفعلي ·{' '}
-            <Link to="/entities" className="lnk">انتقل إلى الجهات</Link>
-          </p>
         </div>
 
         {/* Bulk action bar — exists because 1,253 projects in the system are

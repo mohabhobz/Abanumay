@@ -23,11 +23,10 @@ import { childSum, nodeAt, PLAN_LEVELS, type Imbalance, type PlanNode } from '@/
  * the screen.
  */
 export function GapPeek({
-  gap, root, onGoTree, onClose,
+  gap, root, onClose,
 }: {
   gap: Imbalance
   root: PlanNode
-  onGoTree: () => void
   onClose: () => void
 }) {
   useEffect(() => {
@@ -78,11 +77,6 @@ export function GapPeek({
           </span>
         </div>
 
-        <p className="mut gpeek-w">
-          {over
-            ? 'خُصِّص للأبناء أكثر من مخصص أبيهم، فهذه الزيادة مصروفة من بند آخر بلا قيد.'
-            : 'مخصص البند أكبر من مجموع أبنائه، فهذا الفرق غير موزَّع وغير مربوط بهدف.'}
-        </p>
 
         <div className="gpeek-b">
           <div className="gpeek-lb">
@@ -114,10 +108,6 @@ export function GapPeek({
         {/* The primary action here is jumping to the tree - "done" is just a dismiss, so it sits
             after it, not before. */}
         <div className="gpeek-f">
-          <button className="btn btn-p" onClick={onGoTree}>
-            <Icon name={icons.chart} size="sm" />
-            افتحه في شجرة التخصيص
-          </button>
           <button className="btn btn-2" onClick={onClose}>أغلق</button>
         </div>
       </div>

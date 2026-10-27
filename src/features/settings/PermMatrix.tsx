@@ -41,7 +41,6 @@ export function PermMatrix({ mode, role, overrides, onToggle, onScope, locked = 
                       <b>{m.label}</b>
                       {m.admin && <Tag tone="mute">للجميع</Tag>}
                     </span>
-                    <span className="sub pm-mod-n">{m.note}</span>
                   </td>
                   {ACTIONS.map((a) => {
                     if (!m.actions.includes(a.key)) {
@@ -106,8 +105,6 @@ export function PermMatrix({ mode, role, overrides, onToggle, onScope, locked = 
         {mode === 'user' && !readOnly && <span><i className="pm-dot" aria-hidden="true" /> مختلف عن الدور</span>}
         {readOnly && <span><span className="pm-yes"><Icon name={icons.check} size="sm" /></span> مسموح</span>}
         <span><span className="pm-na">—</span> لا ينطبق على الوحدة</span>
-        {!readOnly && <span>أي صلاحية تفتح «عرض» معها، وإغلاق «عرض» يغلق الصف</span>}
-        {mode === 'user' && <span>النطاق من الدور</span>}
       </p>
     </>
   )
@@ -126,7 +123,6 @@ export function SodNote({ pairs }: { pairs: ReturnType<typeof conflicts> }) {
             </li>
           ))}
         </ul>
-        <span className="sub">تنبيه لا منع: الفريق الصغير قد يحتاجه، فليكن قرارًا مقصودًا.</span>
       </div>
     </div>
   )

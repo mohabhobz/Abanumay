@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import {
-  DateField, BackTo, DateText, Empty, Glass, Head, Icon, Money, MultiSelect, Num, Tag, icons,
-} from '@/components/ui'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { FieldMultiSelect,
+  DateField, BackTo, DateText, Empty, Glass, Head, Icon, Money, Num, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -72,7 +71,7 @@ export default function PlanEditPage() {
           <div className="screen col">
             <BackTo label="الخطط" onClick={() => navigate(ROUTES.plans)} />
             <Glass>
-              <Empty title="لا توجد خطة بهذا الرقم." note="تحقّق من رقم الخطة، أو عُد إلى صندوق الخطط." />
+              <Empty title="لا توجد خطة بهذا الرقم." />
             </Glass>
           </div>
         </div>
@@ -94,7 +93,6 @@ export default function PlanEditPage() {
               </button>
             ))}
           </div>
-          <span className="sub regf-h">{kind === 'contractual' ? 'التعديل التعاقدي يمسّ الاتفاقية · أثره على الاتفاقية في المرحلة القادمة، ويُحال لملحق قبل اعتماده' : 'يُنفَّذ في الخطة ويُسجَّل في سجلها'}</span>
         </div>
       )}
       <label className="regf regf-w">
@@ -124,7 +122,6 @@ export default function PlanEditPage() {
             </header>
             <Glass>
               <Head title="بيانات الطلب" />
-              <p className="sub cnote">عند اعتماد الإلغاء تصبح الخطة «ملغاة» وتبقى في سجل المشروع، وتتوقف إجراءاتها · وتُفتح للمشروع خطة جديدة عند الحاجة، فلا تكون للمشروع إلا خطة نشطة واحدة.</p>
               <div className="regfields">
                 <label className="regf regf-w">
                   <span className="lb">سبب الإلغاء<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -174,21 +171,6 @@ export default function PlanEditPage() {
                 title="الهيكل مغلق بعد الاعتماد"
                 /* doc rule 21 */
               />
-              {/* Note: the reason is stated, not assumed - a lock with no reason reads as a bug,
-                  sending the user looking for a way around it. */}
-              <p className="sub cnote">
-                ثُبّتت المراحل والأنشطة والتواريخ والتكلفة في النسخة المرجعية
-                عند اعتماد مدير المنح للخطة، ويُقاس عليها كل انحراف. ولو عُدّلت
-                هنا لفقدت عبارة «متأخر عن الخطة» معناها، لأن الخطة نفسها
-                ستتغيّر مع التأخير.
-              </p>
-              <p className="sub cnote">
-                {/* Note: asterisks don't render bold in JSX - this isn't Markdown, the text renders
-                    with its literal asterisks. `<b>` is the correct approach. */}
-                المتاح الآن هو <b>تحديث التنفيذ</b>: حالة النشاط ورفع
-                الشواهد، ومكانه{' '}
-                <Link to={ROUTES.plan(p.id)} className="lnk">صفحة الخطة</Link>.
-              </p>
 
               <div className="regfields">
                 <label className="regf regf-w">
@@ -203,10 +185,6 @@ export default function PlanEditPage() {
                       placeholder="تمديد مدة التنفيذ شهرين لتأخّر تسليم المقر من البلدية"
                       aria-label="التعديل المطلوب"
                     />
-                  </span>
-                  <span className="sub regf-h">
-                    يُرسل الطلب إلى مدير المنح، واعتماده يرفع رقم النسخة
-                    المرجعية إلى <Num>{ver(p.baseline + 1)}</Num>
                   </span>
                 </label>
               </div>
@@ -251,8 +229,8 @@ export default function PlanEditPage() {
               <h1 className="ptitle">{proposing ? 'طلب تعديل' : 'تحرير'} خطة {p.projectName}</h1>
               <p className="sub mt-1">
                 {proposing
-                  ? <>الخطة كاملة للتعديل · تُطبَّق عند اعتماد مدير المنح فتصبح النسخة <Num>{ver(p.baseline + 1)}</Num> هي النشطة وتُلغى النسخة <Num>{ver(p.baseline)}</Num> وتبقى للمقارنة</>
-                  : <>{planStageLabel(p.stage)} · الهيكل مفتوح حتى اعتماد مدير المنح</>}
+                  ? <>النسخة المقترحة <Num>{ver(p.baseline + 1)}</Num></>
+                  : planStageLabel(p.stage)}
                 {' · '}قيمة المنحة <Money sm>{grant}</Money>
                 {win.days > 0 && <> · مدة المشروع <Num>{win.days}</Num> يومًا{win.from && <> من <DateText>{win.from}</DateText> إلى <DateText>{win.to ?? ''}</DateText></>}</>}
               </p>
@@ -268,23 +246,11 @@ export default function PlanEditPage() {
             </Glass>
           )}
 
-          {/* 12.4.7 · filling guidance, separate from the fields */}
-          <Glass>
-            <Head title="إرشادات التعبئة" meta={<Tag tone="mute">نموذج الخطة</Tag>} />
-            <ul className="apv-sig">
-              <li className="ok"><Icon name={icons.check} size="sm" /><span>قسّم التنفيذ إلى مراحل متتابعة، لكل مرحلة تاريخ بداية ونهاية داخل مدة المشروع وتكلفة، ومجموع التكاليف يساوي قيمة المنحة.</span></li>
-              <li className="ok"><Icon name={icons.check} size="sm" /><span>تحت كل مرحلة أنشطة بتواريخها ووزنها في المرحلة، ومجموع الأوزان في كل مرحلة 100.</span></li>
-              <li className="ok"><Icon name={icons.check} size="sm" /><span>حدّد لكل نشاط الشواهد المطلوبة · تُرفع قبل إعلان اكتماله، ولا يُحتسب إنجازًا قبل قبول المشرف.</span></li>
-              <li className="ok"><Icon name={icons.check} size="sm" /><span>بعد الاعتماد تُثبَّت النسخة المرجعية · وأي تغيير في المراحل أو التواريخ أو التكلفة طلب تعديل جوهري.</span></li>
-            </ul>
-          </Glass>
-
           {phases.length === 0 ? (
             <Glass>
               <Empty
                 art={{ done: 0, total: 3 }}
                 title="الخطة بلا مراحل."
-                note="المرحلة هي وحدة القياس، ومن دونها لا يُحتسب إنجاز ولا تُقارن نسبة."
                 actions={
                   <button
                     className="btn btn-p"
@@ -364,7 +330,6 @@ export default function PlanEditPage() {
                           aria-label={`تكلفة المرحلة ${i + 1}`}
                         />
                       </span>
-                      <span className="sub regf-h">يجب أن يساوي مجموع تكلفة المراحل قيمة المنحة</span>
                     </label>
                   </div>
 
@@ -424,19 +389,15 @@ export default function PlanEditPage() {
                             <span className="lb">
                               الشواهد المطلوبة<b className="regf-r" aria-label="إلزامي">*</b>
                             </span>
-                            <MultiSelect
-                              wide
+                            <FieldMultiSelect
                               values={a.needs}
-                              all={`اختر من ${countOf(EVIDENCE_KINDS.length, NOUN.kind)}`}
+                              placeholder={`اختر من ${countOf(EVIDENCE_KINDS.length, NOUN.kind)}`}
                               options={EVIDENCE_KINDS as unknown as string[]}
                               onChange={(next) => patch(ph.id, {
                                 activities: ph.activities.map((x) =>
                                   (x.id === a.id ? { ...x, needs: next } : x)),
                               })}
                             />
-                            <span className="sub regf-h">
-                              ما يلزم الجهة رفعه قبل إعلان اكتمال النشاط
-                            </span>
                           </label>
                         </div>
 

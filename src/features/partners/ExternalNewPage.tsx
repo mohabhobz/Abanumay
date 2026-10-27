@@ -57,7 +57,6 @@ export default function ExternalNewPage() {
           <header>
             <div>
               <h1 className="ptitle">مشروع لجهة خارجية</h1>
-              <p className="sub mt-1">نموذج مبسط · يُدرس ويُعتمد بالمسار المعتاد · بلا بوابة ولا اتفاقية داخلية ولا خطة</p>
             </div>
           </header>
 
@@ -69,14 +68,13 @@ export default function ExternalNewPage() {
                   <label className="regf">
                     <span className="lb">الجهة الخارجية</span>
                     <FieldSelect value={v.party} onChange={(x) => put('party', x)} label="الجهة الخارجية" options={parties.map((e) => ({ value: e.id, label: e.name }))} />
-                    <span className="sub regf-h">من السجلات المرجعية المعتمدة · لا حساب بوابة لها</span>
                   </label>
                 </div>
               </Glass>
 
               <Glass>
                 <Head title="الجهة المشاركة" meta={<span className="sub">اختياري</span>} />
-                <p className="sub">هل يوجد جهة مشاركة في المشروع؟ مثل منصة إحسان تشارك في دعم مشروع لجهة أخرى</p>
+                <p className="sub">هل يوجد جهة مشاركة في المشروع؟</p>
                 <div className="cfgchips" role="radiogroup" aria-label="هل يوجد جهة مشاركة؟">
                   {[false, true].map((x) => (
                     <button key={String(x)} type="button" role="radio" aria-checked={Boolean(v.shared) === x} className={`cfgchip${Boolean(v.shared) === x ? ' on' : ''}`}
@@ -91,7 +89,6 @@ export default function ExternalNewPage() {
                       <span className="lb">الجهة المشاركة</span>
                       <FieldSelect value={v.sharedWith ?? ''} onChange={(x) => put('sharedWith', x)} label="الجهة المشاركة" placeholder="اختر من قائمة الجهات"
                         options={sharers.map((e) => ({ value: e.id, label: e.name }))} />
-                      <span className="sub regf-h">من الجهات المسجّلة في النظام · تُسجَّل أولًا إن لم تكن موجودة</span>
                     </label>
                   </div>
                 )}
@@ -120,7 +117,6 @@ export default function ExternalNewPage() {
               {/* Client 20 Oct (#43) · the funding step · how the money reaches the work */}
               <Glass>
                 <Head title="التمويل · طريقة التحويل" />
-                <p className="sub">إن كان المستفيد غير المنفّذ · مثل وزارة الصناعة مستفيدة وشركة تنفّذ · فالتحويل لطرف ثالث</p>
                 <div className="cfgchips" role="radiogroup" aria-label="طريقة التحويل">
                   {(['self', 'third'] as ExtTransfer[]).map((t) => (
                     <button key={t} type="button" role="radio" aria-checked={v.transfer === t} className={`cfgchip${v.transfer === t ? ' on' : ''}`} onClick={() => put('transfer', t)}>
@@ -134,7 +130,6 @@ export default function ExternalNewPage() {
                       <span className="lb">حساب الجهة البنكي</span>
                       <FieldSelect value={v.account ?? ''} onChange={(x) => put('account', x)} label="حساب الجهة البنكي" placeholder={accounts.length ? 'اختر الحساب' : 'لا حسابات مسجّلة للجهة'}
                         options={accounts.filter((b) => b.status === 'مفعل').map((b) => ({ value: b.id, label: `${b.bank} · ${b.accountName || b.shortName} · ${b.iban}` }))} />
-                      <span className="sub regf-h">من الحسابات المسجّلة في ملف الجهة · المفعّلة وحدها</span>
                     </label>
                   </div>
                 )}

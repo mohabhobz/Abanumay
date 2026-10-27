@@ -32,11 +32,12 @@ export function ClausesCard({ clauses, onChange }: { clauses: Clause[]; onChange
         {clauses.map((c, i) => (
           <li key={c.id}>
             <span className="agx-cl-h">
-              <Tag tone={c.kind === 'condition' ? 'warn' : c.kind === 'obligation' ? 'teal' : 'mute'}>{CLAUSE_SAY[c.kind]}</Tag>
               {onChange
                 ? <span className="fld agx-cl-t"><input value={c.title} onChange={(e) => put(i, { title: e.target.value })} aria-label={`عنوان البند ${i + 1}`} /></span>
                 : <b>{c.title}</b>}
               <span className="pc-sp" />
+              {/* Client 27 Oct · the clause's kind on the end side, after its title */}
+              <Tag tone={c.kind === 'condition' ? 'warn' : c.kind === 'obligation' ? 'teal' : 'mute'}>{CLAUSE_SAY[c.kind]}</Tag>
               <span className="sub">{SOURCE_SAY[c.source]}</span>
               {onChange && (
                 <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف البند ${i + 1}`} onClick={() => onChange(clauses.filter((_, j) => j !== i))}>
@@ -114,10 +115,10 @@ export function AnnexesCard({ docs, onChange, title = 'الاتفاقية ومل
 }
 
 /** The agreement's text · the template with the project's data in it (8.2.6) */
-export function AgreementTextCard({ parts, note }: { parts: TextPart[]; note?: string }) {
+export function AgreementTextCard({ parts }: { parts: TextPart[] }) {
   return (
     <Glass>
-      <Head title="نص الاتفاقية" meta={<span className="rowf gp-2"><Tag tone="mute">مولَّد من النموذج وبيانات المشروع</Tag><button type="button" className="btn btn-2 btn-sm" onClick={() => window.print()}><Icon name={icons.doc} size="sm" />اطبع</button></span>} />
+      <Head title="نص الاتفاقية" meta={<span className="rowf gp-2"><button type="button" className="btn btn-2 btn-sm" onClick={() => window.print()}><Icon name={icons.doc} size="sm" />اطبع</button></span>} />
       <div className="agr-body">
         {parts.map((s) => (
           <section key={s.h}>
@@ -126,7 +127,6 @@ export function AgreementTextCard({ parts, note }: { parts: TextPart[]; note?: s
           </section>
         ))}
       </div>
-      {note && <p className="sub cnote">{note}</p>}
     </Glass>
   )
 }
@@ -148,7 +148,7 @@ export function ReviewCard({ hints, onAdd, onTemplate }: { hints: AgrHint[]; onA
           </li>
         ))}
       </ul>
-      <p className="sub cnote">يكشف المساعد النقص والتعارض ويقترح البنود وفق طبيعة المشروع ومجاله · ولا تُعتمد الاتفاقية بناءً عليه وحده.</p>
+
     </Glass>
   )
 }
@@ -184,7 +184,7 @@ export function VersionsCard({ a, versions, children }: { a: AgreementRow; versi
               <Tag tone={x.superseded ? 'mute' : 'ok'}>ملحق {nf.format(x.no)} · {x.kind === 'value' ? 'قيمة' : 'بنود'}{x.superseded ? ' · حلّ محله إصدار بديل' : ''}</Tag>
               <span className="apv-t">
                 <b>{x.summary}</b>
-                <span className="sub">{x.reason}{x.ref ? ` · ${x.ref}` : ''}{x.file ? ` · ${x.file}` : ''}{x.kind === 'value' ? ' · معتمد بقرار إجراء الإغلاق' : ' · مرّ بدورة اعتماد الاتفاقية'}</span>
+                <span className="sub">{x.reason}{x.ref ? ` · ${x.ref}` : ''}{x.file ? ` · ${x.file}` : ''}</span>
               </span>
               <span className="pc-sp" />
               <Person name={x.by} />
@@ -194,7 +194,7 @@ export function VersionsCard({ a, versions, children }: { a: AgreementRow; versi
         </ul>
       )}
       {versions.length === 0 ? (
-        <p className="sub cnote">لا إصدارات مؤرشفة بعد · تُحفظ نسخة عند كل إعادة للتعديل، وتُؤرشف النسخة النهائية عند اعتمادها وتفعيلها.</p>
+        <p className="sub cnote">لا إصدارات مؤرشفة بعد.</p>
       ) : (
         <ul className="apv-list">
           {[...versions].map((v, i) => ({ v, i })).reverse().map(({ v, i }) => (
@@ -239,7 +239,7 @@ export function SignaturesCard({ a }: { a: AgreementRow }) {
         </li>
         <li className={f.foundationSign ? 'ok' : 'no'}>
           <Icon name={f.foundationSign ? icons.check : icons.alert} size="sm" />
-          <span>{f.foundationSign ? <>اعتمدها ممثل المؤسسة · {f.foundationSign.by} · <DateText>{f.foundationSign.at}</DateText></> : 'اعتماد ممثل المؤسسة للنسخة النهائية بعد توقيع الجهة'}</span>
+          <span>{f.foundationSign ? <>اعتمدها ممثل المؤسسة · {f.foundationSign.by} · <DateText>{f.foundationSign.at}</DateText></> : 'اعتماد ممثل المؤسسة'}</span>
         </li>
       </ul>
     </Glass>
@@ -250,7 +250,7 @@ export function SignaturesCard({ a }: { a: AgreementRow }) {
 export function ProjectAgreements({ list, onAdditional, additionalBlock }: { list: AgreementRow[]; onAdditional?: () => void; additionalBlock?: string }) {
   return (
     <Glass>
-      <Head title="اتفاقيات المشروع" meta={<span className="sub"><Num>{list.length}</Num> اتفاقية · سارية واحدة على الأكثر</span>} />
+      <Head title="اتفاقيات المشروع" meta={<span className="sub"><Num>{list.length}</Num> اتفاقية</span>} />
       <ul className="apv-list">
         {list.map((a) => {
           const h = agrHolder(a)
@@ -273,10 +273,10 @@ export function ProjectAgreements({ list, onAdditional, additionalBlock }: { lis
           <button type="button" className="btn btn-2 btn-sm" disabled={Boolean(additionalBlock)} title={additionalBlock || 'اتفاقية إضافية تحلّ محل السارية عند سريانها'} onClick={onAdditional}>
             <Icon name={icons.plus} size="sm" />اتفاقية إضافية
           </button>
-          <span className="sub">تحلّ محل السارية عند اعتمادها · فتبقى اتفاقية سارية واحدة{/* doc 8.4.25 */}</span>
+
         </div>
       )}
-      <p className="sub cnote">مراحل الاتفاقية لا تغيّر حالة المشروع · يبقى «استكمال متطلبات ما قبل التنفيذ» حتى سريانها، ولا ينتقل للتنفيذ عند إلغائها.{/* doc 8.4.26 · 8.4.27 */}</p>
+
     </Glass>
   )
 }

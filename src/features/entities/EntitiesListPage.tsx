@@ -360,8 +360,7 @@ export default function EntitiesListPage() {
               <h1 className="ptitle">الجهات</h1>
               <p className="sub mt-1">
                 <span className="num">{result.total}</span> نتيجة من{' '}
-                <span className="num">{all.length}</span> {nounAfter(all.length, NOUN.entity)} في هذا النموذج ·{' '}
-                <span className="num">3,272</span> في النظام العامل
+                <span className="num">{all.length}</span> {nounAfter(all.length, NOUN.entity)}
               </p>
             </div>
 
@@ -534,7 +533,6 @@ export default function EntitiesListPage() {
             <Glass>
               <Empty
                 title="لا توجد جهات بهذه الفلاتر."
-                note="جرّب توسيع النطاق أو امسح الفلاتر الحالية."
                 actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
               />
             </Glass>
@@ -580,7 +578,6 @@ export default function EntitiesListPage() {
 
           {grouped ? (
             <p className="sub" style={{ textAlign: 'center' }}>
-              التجميع يعرض كل النتائج بلا ترقيم ·{' '}
               <span className="num">{countLeaves(groupTree(result.rows, group))}</span> مجموعات ·{' '}
               <button className="lnk" onClick={() => set({ group: undefined })}>إلغاء التجميع</button>
             </p>

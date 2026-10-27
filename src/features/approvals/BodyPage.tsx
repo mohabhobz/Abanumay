@@ -1,7 +1,7 @@
 import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { DateField, DateText, Empty, Glass, Head, Icon, KV, Money, MultiSelect, Num, Person, Tabs, Tag, icons } from '@/components/ui'
+import { FieldMultiSelect, DateField, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tabs, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ExportMenu } from '@/components/export'
 import { type Sheet } from '@/lib/export'
@@ -64,11 +64,7 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
           <header>
             <div>
               <h1 className="ptitle">{name}</h1>
-              <p className="sub mt-1">
-                {body === 'committee'
-                  ? <>تعتمد حتى <Num>{capOf('committee')}</Num> · وما فوقه يُحال لمجلس الأمناء · القرار جماعي في جلسة بتصويت ومحضر</>
-                  : 'أعلى جهة اعتماد · القرار في جلسة بتصويت ومحضر معتمد'}
-              </p>
+              {body === 'committee' && <p className="sub mt-1">تعتمد حتى <Num>{capOf('committee')}</Num></p>}
             </div>
             {!may && <Tag tone="mute">يسجّل الجلسات {(body === 'committee' ? APPROVAL_RULES.committeeBy : APPROVAL_RULES.boardBy).map((k) => roleByKey(k).title).join(' أو ')}</Tag>}
           </header>
@@ -79,7 +75,7 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
             <>
               <Glass className="tblcard">
                 <Head title="المشاريع المحالة" meta={<span className="sub"><Num>{waiting.length}</Num> مشروع</span>} />
-                {waiting.length === 0 ? <Empty title="لا مشاريع محالة الآن." note={`تصل المشاريع هنا بإحالة ${body === 'committee' ? 'المدير التنفيذي' : 'اللجنة التنفيذية'}.`} /> : (
+                {waiting.length === 0 ? <Empty title="لا مشاريع محالة الآن." /> : (
                   <div className="tblwrap">
                     <table className="tbl">
                       <thead><tr><th>المشروع</th><th>الجهة</th><th className="n">المبلغ</th><th>الحد</th><th>الجلسة</th></tr></thead>
@@ -103,7 +99,7 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
               </Glass>
               {may && (
                 <Glass>
-                  <Head title="جلسة جديدة" meta={<span className="sub"><bdi>{body === 'committee' ? /* doc 6.3.1 */ '' : /* doc 7.3.1 */ ''}</bdi> · الاجتماع الدوري</span>} />
+                  <Head title="جلسة جديدة" />
                   <div className="regfields">
                     <label className="regf regf-w">
                       <span className="lb">عنوان الجلسة<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -115,7 +111,7 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
                     </label>
                     <label className="regf">
                       <span className="lb">الأعضاء</span>
-                      <MultiSelect label="الأعضاء" all="اختر الأعضاء" people values={members} options={(body === 'committee' ? APPROVAL_RULES.committeeMembers : APPROVAL_RULES.boardMembers).map((m) => ({ value: m, label: m }))} onChange={setMembers} />
+                      <FieldMultiSelect label="الأعضاء" placeholder="اختر الأعضاء" people values={members} options={(body === 'committee' ? APPROVAL_RULES.committeeMembers : APPROVAL_RULES.boardMembers).map((m) => ({ value: m, label: m }))} onChange={setMembers} />
                     </label>
                   </div>
                   <h3 className="stdy-h mt-3">جدول الأعمال</h3>
@@ -128,7 +124,7 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
                         </label>
                       </li>
                     ))}
-                    {waiting.every((p) => onAgenda(p.id)) && <li className="sub">كل المحال مدرج على جلسة قائمة · تُنشأ الجلسة وتُضاف إليها المشاريع لاحقًا.</li>}
+                    {waiting.every((p) => onAgenda(p.id)) && <li className="sub">كل المحال مدرج على جلسة قائمة.</li>}
                   </ul>
                   <div className="regfoot">
                     <span className="decsent">{members.length < APPROVAL_RULES.quorum ? `النصاب ${nf.format(APPROVAL_RULES.quorum)} أعضاء` : `${nf.format(members.length)} عضو · ${nf.format(pick.length)} مشروع`}</span>
@@ -242,8 +238,8 @@ function BoardPack() {
         </div>
       </Glass>
       <Glass className="tblcard">
-        <Head title="متابعة قرارات المجلس" meta={<span className="sub">ما آلت إليه المشاريع بعد قراره</span>} />
-        {follow.length === 0 ? <p className="sub cnote">لا قرارات للمجلس على مشاريع بعد · تظهر هنا بعد أول جلسة تقرّر.</p> : (
+        <Head title="متابعة قرارات المجلس" />
+        {follow.length === 0 ? <p className="sub cnote">لا قرارات للمجلس على مشاريع بعد.</p> : (
           <div className="tblwrap">
             <table className="tbl">
               <thead><tr><th>المشروع</th><th>القرار</th><th>المرحلة الآن</th><th className="n">المصروف</th><th>الإغلاق</th></tr></thead>

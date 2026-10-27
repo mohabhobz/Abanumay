@@ -36,7 +36,6 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
       <Glass>
         <Head title="إغلاق المشروع" meta={<Tag tone="ok">مغلق مباشرة</Tag>} />
         <Empty title={`أُغلق المشروع بإجراء الإغلاق المباشر ${direct.id}.`}
-          note="اعتمدته الإدارة المالية في آخر مساره · دون دورة التقرير الختامي والتقييم."
           actions={<Link className="btn btn-2" to={ROUTES.distress(direct.id)}>افتح الإغلاق المباشر</Link>} />
       </Glass>
     )
@@ -57,9 +56,6 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
           title={gate.ok
             ? 'المشروع مؤهَّل ولم يُفتح له طلب تقرير ختامي بعد.'
             : `لا يمكن بدء الإغلاق الآن · ${gate.why}`}
-          note={gate.ok
-            ? /* doc rule 17 */ 'يفتح مشرف المنح الطلب، فيصل إلى الجهة المستفيدة لتعبئة التقرير الختامي · ثم يمرّ بدورتي اعتماد مستقلتين: التقرير الختامي ثم تقييم المشروع.'
-            : /* doc rule 1 */ ' تشترط انتهاء مدة التنفيذ أو اكتمال الأنشطة، و تشترط استكمال جميع الدفعات المستحقة أو تسوية الالتزامات · والشرطان معًا لا أحدهما.'}
           actions={gate.ok && onOpen && (
             <button
               className="btn btn-p"
@@ -138,7 +134,6 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
             v: <>
               <Num>{c.versions.length}</Num> للتقرير ·{' '}
               <Num>{c.evalVersions.length}</Num> للتقييم
-              <span className="sub"> · سجلّان منفصلان</span>
             </>,
           },
           ...(closed ? [{
@@ -154,17 +149,10 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
           of numbers with no consequence. */}
       {closed ? (
         <p className="ok cnote">
-          اعتُمد التقرير والتقييم واكتملت المتطلبات · المشروع «مكتمل»، وأي
-          تعديل بعد ذلك يحتاج إجراءً جديدًا{/* doc rule 21 */}.
+          اعتُمد التقرير والتقييم واكتملت المتطلبات · المشروع «مكتمل».
         </p>
-      ) : (
-        <p className="sub cnote">
-          {/* v3 · 10.2.2 · 10.4.20 · 0.status.6 */}
-          بدء الإغلاق يحوّل المشروع إلى «قيد الإغلاق»، ولا يغيّر تنقّل التقرير بين مراحله حالته حتى تكتمل
-          الثلاثة: اعتماد التقرير الختامي، واعتماد التقييم، واستكمال
-          المتطلبات المالية والإدارية · ثم «مكتمل» أو «مغلق بوفر» أو «أعيد توجيه الدعم»{/* doc rule 8 · 18 */}.
-          {!req.ok && <> والوضع الآن: {req.say}.</>}
-        </p>
+      ) : !req.ok && (
+        <p className="sub cnote">{req.say}.</p>
       )}
 
       <div className="rowf gp-2">

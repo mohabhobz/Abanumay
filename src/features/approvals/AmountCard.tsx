@@ -86,7 +86,7 @@ export function AmountCard({ row }: { row: ProjectRow }) {
             <span className="pc-sp" />
             <Tag tone={cov.done ? 'ok' : 'warn'}>{cov.done ? 'اعتماد مالي نافذ' : 'غير نافذ ماليًا'}</Tag>
           </div>
-          <p className="sub cnote">{/* doc 6.4.3 · 7.4.5 */}حُفظ القرار كما صدر بمبلغ <Money sm>{cov.amount}</Money> · {cov.short} · لا يتحول الحجز إلى نهائي حتى معالجة التغطية (مناقلة أو تعزيز للبند أو تعديل الارتباط).</p>
+          <p className="sub cnote">{/* doc 6.4.3 · 7.4.5 */}حُفظ القرار كما صدر بمبلغ <Money sm>{cov.amount}</Money> · {cov.short}</p>
           {mayCover && (
             <div className="apv-row">
               <button className="btn btn-p btn-sm" onClick={() => setSaid(completeCoverage(row, me))}>تحقّق من التغطية ونفّذ القرار</button>

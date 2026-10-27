@@ -86,8 +86,8 @@ export function FlowCard({ state, events }: { state: BudgetState; events: Budget
 /** A decision's note · client 24 Oct (#87) · a return or a rejection may carry a reason list (from
     budget settings) · the reason is picked first, «أخرى» needs its text, and the note reads
     «السبب · الملاحظة» in the log, the same way every other approval in the system records it */
-export function NoteModal({ title, cta, tone, required, hint, reasons, onClose, onDone }: {
-  title: string; cta: string; tone: string; required: boolean; hint?: string
+export function NoteModal({ title, cta, tone, required, reasons, onClose, onDone }: {
+  title: string; cta: string; tone: string; required: boolean
   reasons?: string[]
   onClose: () => void; onDone: (note: string) => void
 }) {
@@ -106,7 +106,7 @@ export function NoteModal({ title, cta, tone, required, hint, reasons, onClose, 
       <div className="chrome modal" role="dialog" aria-modal="true" aria-label={title} onClick={(x) => x.stopPropagation()}>
         <div className="mh"><Icon name={required ? icons.redo : icons.check} size="md" /><b>{title}</b></div>
         <div className="mb col">
-          {hint && <p className="sub cnote">{hint}</p>}
+
           {picks.length > 0 && (
             <div className="regf regf-w">
               <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
@@ -123,7 +123,7 @@ export function NoteModal({ title, cta, tone, required, hint, reasons, onClose, 
               <textarea rows={3} autoFocus={!picks.length} value={note} onChange={(x) => setNote(x.target.value)} aria-label="الملاحظة" />
             </span>
           </label>
-          {picks.length > 0 && <p className="sub cnote">يُسجَّل السبب في سجل الطلب باسمك ووقته · والقائمة تُعدَّل من إعدادات الميزانية.</p>}
+
         </div>
         <div className="mf">
           <button className={`btn ${tone}`} disabled={!ok} onClick={() => { onDone(said); onClose() }}>{cta}</button>

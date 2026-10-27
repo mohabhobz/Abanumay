@@ -141,7 +141,7 @@ export default function RequestForm() {
             <Glass>
               <Empty
                 title="لا تُعدَّل متطلبات هذه الدفعة."
-                note="تُستكمل المتطلبات ما دامت مُعادة للاستكمال فقط · وبعد اعتمادها لا تُعدَّل (9.4.20)."
+
                 actions={<button className="btn btn-2" onClick={() => navigate(`${ROUTES.payment(resend.id)}${asEntity ? '?as=entity' : ''}`)}>العودة إلى الدفعة</button>}
               />
             </Glass>
@@ -160,7 +160,6 @@ export default function RequestForm() {
             <Glass>
               <Empty
                 title="السجل غير موجود."
-                note="ربما أُغلق، أو أن الرابط قديم."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
                     العودة إلى صندوق الصرف
@@ -186,12 +185,12 @@ export default function RequestForm() {
           <header>
             <div>
               <h1 className="ptitle">{title}</h1>
-              <p className="sub mt-1">
-                {project
-                  ? <>{project.name} · {project.entity}</>
-                  : 'اختر المشروع، ويعرض جدول الدفعات المعتمد متطلبات كل دفعة'}
-                {proxy && <> · مشروع عبر جهة خارجية · ترفع المتطلبات نيابةً عنها وتثبتها{/* doc 9.4.5 */}</>}
-              </p>
+              {project && (
+                <p className="sub mt-1">
+                  {project.name} · {project.entity}
+                  {proxy && <> · مشروع عبر جهة خارجية{/* doc 9.4.5 */}</>}
+                </p>
+              )}
             </div>
           </header>
 
@@ -232,7 +231,6 @@ export default function RequestForm() {
             <Glass>
               <Empty
                 title="اختر المشروع أولًا."
-                note="يعرض جدول الدفعات المعتمد متطلبات كل دفعة وحالتها."
               />
             </Glass>
           ) : !project.can ? (
@@ -287,8 +285,8 @@ export default function RequestForm() {
                       />
                       {noCycle ? (
                         <p className="sub cnote">
-                          {picked.left !== undefined ? 'باقي دفعة صُرف جزء منها · اعتُمدت متطلباتها،' : <>{picked.of === 1 ? 'الدفعة الوحيدة' : 'الدفعة الأولى'} بلا شروط خاصة في الاتفاقية · مؤهلة للصرف منذ التفعيل،</>}
-                          وينشئ مشرف المنح إذن الصرف مباشرة{/* doc 9.2.2 · 9.2.10 */}.
+                          {/* doc 9.2.2 · 9.2.10 */}
+                          {picked.left !== undefined ? 'باقي دفعة صُرف جزء منها.' : <>{picked.of === 1 ? 'الدفعة الوحيدة' : 'الدفعة الأولى'} بلا شروط خاصة في الاتفاقية.</>}
                         </p>
                       ) : (
                         <>
@@ -323,10 +321,7 @@ export default function RequestForm() {
                               {Object.values(files).map((d) => <DocFile key={d.kind} name={d.name} meta={d.size} />)}
                             </div>
                           )}
-                          <p className="sub cnote">
-                            ما تشترطه الاتفاقية لهذه الدفعة · يتحقق النظام من اكتمالها ويرفض الإرسال عند النقص{/* doc 9.2.3 */}،
-                            وتُرفع متى جهزت ولو قبل تاريخ الدفعة{/* doc 9.4.7 */}.
-                          </p>
+
                         </>
                       )}
                     </Glass>
@@ -357,7 +352,7 @@ export default function RequestForm() {
                             </button>
                           </div>
                         )}
-                        {held && <p className="bad cnote">لا تُرفع متطلبات الدفعة قبل استيفاء ما ارتبطت به من تقرير أو نشاط أو تاريخ{/* doc 9.4.8 */}.</p>}
+                        {held && <p className="bad cnote">لا تُرفع متطلبات الدفعة قبل استيفاء شرطها{/* doc 9.4.8 */}.</p>}
                       </Glass>
                     )}
 
@@ -386,14 +381,14 @@ export default function RequestForm() {
                           <span className="lb">قيمة الإذن</span>
                           <MoneyField value={amount === '' ? cap : amount} onChange={setAmount} label="قيمة الإذن" />
                         </label>
-                        <p className={over || overGrant ? 'bad cnote' : 'sub cnote'}>
-                          {over
-                            ? <>القيمة أعلى من {picked.left !== undefined ? 'باقي الدفعة' : 'الدفعة المعتمدة'} <Mono>{nf.format(cap)}</Mono>{/* doc 9.4.4 */}</>
-                            : overGrant
-                              ? <>القيمة تتجاوز المتبقي من المنحة <Mono>{nf.format(Math.max(0, left))}</Mono>{/* doc 9.4.16 */}</>
-                              : <>{picked.left !== undefined ? <>باقي الدفعة بعد إذنها السابق <Mono>{nf.format(picked.left)}</Mono> من <Mono>{nf.format(picked.amount)}</Mono></> : <>الدفعة المعتمدة <Mono>{nf.format(picked.amount)}</Mono></>} · المخطط صرفها في <DateText>{picked.dueAt}</DateText> · المتبقي من المنحة <Mono>{nf.format(left)}</Mono></>}
-                        </p>
-                        {picked.notBefore && <p className="bad cnote">لا صرف قبل <DateText>{picked.notBefore}</DateText> · شرط الاتفاقية{/* doc 9.4.7 */}</p>}
+                        {(over || overGrant) && (
+                          <p className="bad cnote">
+                            {over
+                              ? <>القيمة أعلى من {picked.left !== undefined ? 'باقي الدفعة' : 'الدفعة المعتمدة'} <Mono>{nf.format(cap)}</Mono>{/* doc 9.4.4 */}</>
+                              : <>القيمة تتجاوز المتبقي من المنحة <Mono>{nf.format(Math.max(0, left))}</Mono>{/* doc 9.4.16 */}</>}
+                          </p>
+                        )}
+                        {picked.notBefore && <p className="bad cnote">لا صرف قبل <DateText>{picked.notBefore}</DateText>{/* doc 9.4.7 */}</p>}
                       </Glass>
                     )}
 

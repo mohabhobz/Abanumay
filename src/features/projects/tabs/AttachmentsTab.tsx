@@ -22,10 +22,10 @@ export interface AttachmentsTabProps {
   fallback?: { name: string; uploaded: boolean; required?: boolean }[]
 }
 
-function Section({ title, note, rows, empty }: { title: string; note: string; rows: DocRow[]; empty: string }) {
+function Section({ title, rows, empty }: { title: string; rows: DocRow[]; empty: string }) {
   return (
     <Glass>
-      <Head title={title} meta={<span className="sub"><Num>{rows.length}</Num> {rows.length === 1 ? 'مستند' : 'مستندات'} · {note}</span>} />
+      <Head title={title} meta={<span className="sub"><Num>{rows.length}</Num> {rows.length === 1 ? 'مستند' : 'مستندات'}</span>} />
       {rows.length ? <DocList label={title} rows={rows} /> : <p className="sub cnote">{empty}</p>}
     </Glass>
   )
@@ -54,9 +54,9 @@ export function AttachmentsTab({ row, projectId, me, asEntity, canUpload, fallba
             <DocList label="مرفقات المشروع وحالتها" rows={fallback} />
           </Glass>
         )}
-      <Section title="مستندات الاتفاقية" note="من إجراء الاتفاقيات" rows={agr} empty="لا اتفاقية موقّعة بعد · تظهر هنا الاتفاقية وملاحقها بعد توقيعها." />
-      <Section title="مستندات الدفعات" note="متطلبات كل دفعة كما رُفعت" rows={pays} empty="لا دفعات طُلبت بعد." />
-      <Section title="ملفات التقرير الختامي" note="من إجراء الإغلاق" rows={rep} empty="لم يُرفع التقرير الختامي بعد." />
+      <Section title="مستندات الاتفاقية" rows={agr} empty="لا اتفاقية موقّعة بعد." />
+      <Section title="مستندات الدفعات" rows={pays} empty="لا دفعات طُلبت بعد." />
+      <Section title="ملفات التقرير الختامي" rows={rep} empty="لم يُرفع التقرير الختامي بعد." />
     </>
   )
 }

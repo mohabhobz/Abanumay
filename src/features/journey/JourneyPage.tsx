@@ -99,10 +99,7 @@ export default function JourneyPage() {
           <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">{J_PROJECT}</h1>
-              <p className="sub mt-1">
-                المسار السعيد · {J_ENTITY} · مشروع واحد واتفاقية وخطة ودفعة واحدة وإغلاق، وكل خطوة
-                تُعتمد من أول مرة
-              </p>
+              <p className="sub mt-1">المسار السعيد · {J_ENTITY}</p>
               <div className="gt-tag">
                 <Tag tone={finished ? 'ok' : 'mute'}>
                   {finished ? 'اكتمل المسار' : <>الخطوة <Num>{done + 1}</Num> من <Num>{TOTAL_STEPS}</Num></>}
@@ -111,7 +108,6 @@ export default function JourneyPage() {
               <div className="pamt">
                 <div className="lb">قيمة المنحة</div>
                 <div className="v"><Money sm>{J_AMOUNT}</Money></div>
-                <div className="sub">ضمن حدّ مدير المنح · فيعتمدها دون رفع</div>
               </div>
             </div>
             <div className="pgates">
@@ -144,7 +140,7 @@ export default function JourneyPage() {
                 {Object.keys(record).length > 0 ? (
                   <KV rows={Object.entries(record).map(([k, v]) => ({ k, v }))} />
                 ) : (
-                  <p className="sub cnote">لم يُنشأ السجل بعد · يبدأ بالخطوة الأولى.</p>
+                  <p className="sub cnote">لم يُنشأ السجل بعد.</p>
                 )}
               </Glass>
 

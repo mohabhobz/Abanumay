@@ -26,7 +26,7 @@ export function LedgerCard({ doc, line }: { doc: BudgetDoc; line?: string }) {
         meta={<span className="sub"><Num>{rows.length}</Num> حركة{line ? ` · ${pathOf(doc.nodes, line)}` : ''}</span>}
       />
       {rows.length === 0 ? (
-        <Empty title="لا حركات بعد." note="تبدأ الحركات عند اعتماد الميزانية · التخصيص الافتتاحي ثم كل حجز ومناقلة." />
+        <Empty title="لا حركات بعد." />
       ) : (
         <div className="tblwrap">
           <table className="tbl">
@@ -130,7 +130,7 @@ export function SourceLedgerCard({ doc }: { doc: BudgetDoc }) {
   }
   return (
     <Glass className="tblcard">
-      <Head title="الحركات حسب مصدر التمويل" meta={<Tag tone="mute">موزّعة بحصص البنود</Tag>} />
+      <Head title="الحركات حسب مصدر التمويل" hint="كل حركة تُنسب للمصادر بنسبة حصصها في بندها." />
       <div className="tblwrap">
         <table className="tbl">
           <thead><tr><th>المصدر</th><th className="n">حصته في الميزانية</th><th className="n">التخصيص الافتتاحي</th><th className="n">مناقلات وتعديلات</th><th className="n">المحجوز الآن</th><th className="n">المصروف</th><th className="n">المتاح</th></tr></thead>
@@ -152,7 +152,7 @@ export function SourceLedgerCard({ doc }: { doc: BudgetDoc }) {
           </tbody>
         </table>
       </div>
-      <p className="sub cnote">كل حركة تُنسب للمصادر بنسبة حصصها في بندها · عند ربط الخادم يُسجَّل مصدر كل حجز وصرف بعينه ويحل محل هذا التوزيع بالأعمدة نفسها.</p>
+
     </Glass>
   )
 }

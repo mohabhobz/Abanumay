@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BackTo, DateText, Glass, Head, Money, Num, Tag } from '@/components/ui'
+import { DockActions, BackTo, DateText, Glass, Head, Money, Num, Tag } from '@/components/ui'
 import { UploadButton } from '@/components/docs/UploadButton'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -25,7 +25,6 @@ export default function LegacyPage() {
   const [rows, setRows] = useState<LegacyCheck[]>([])
   const [errs, setErrs] = useState<string[]>([])
   const [said, setSaid] = useState('')
-  const [why, setWhy] = useState<Record<string, string>>({})
   const [wErr, setWErr] = useState<Record<string, string>>({})
   const batches = legacyBatches()
   const good = rows.filter((r) => !r.errors.length)
@@ -46,13 +45,11 @@ export default function LegacyPage() {
           <header>
             <div>
               <h1 className="ptitle">دفعات النظام السابق</h1>
-              <p className="sub mt-1">سندات الصرف المنفّذة قبل النظام · تُستورد من ملف فتحل محل الاستنتاج من حالة المشروع، ويظهر سند كل دفعة في جدولها</p>
             </div>
           </header>
 
           <Glass>
             <Head title="استيراد ملف" meta={<span className="sub">CSV أو Excel</span>} />
-            <p className="sub">الأعمدة: «رقم المشروع» و«رقم السند» و«المبلغ» و«تاريخ الصرف» · واختياري «رقم الدفعة». يُفحص كل صف قبل الحفظ ولا يُستورد إلا السليم.</p>
             <div className="rowf gp-2 mt-2">
               {can ? <UploadButton label="ملف سندات النظام السابق" accept=".csv,.xlsx" onPick={(f) => { void take(f) }} /> : <Tag tone="mute">الاستيراد للإدارة المالية</Tag>}
               <button type="button" className="btn btn-2 btn-sm" onClick={() => downloadCsv('قالب-سندات-النظام-السابق.csv', [['رقم المشروع', 'رقم السند', 'المبلغ', 'تاريخ الصرف', 'رقم الدفعة']])}>نزّل القالب</button>
@@ -100,7 +97,7 @@ export default function LegacyPage() {
 
           <Glass>
             <Head title="دفعات الاستيراد" meta={<span className="sub"><Num>{batches.length}</Num></span>} />
-            {batches.length === 0 ? <p className="sub">لم يُستورد شيء بعد · المشاريع المكتملة قبل النظام تُقرأ مصروفة بالكامل من حالتها حتى تُستورد سنداتها.</p> : (
+            {batches.length === 0 ? <p className="sub">لم يُستورد شيء بعد.</p> : (
               <ul className="cfglist">
                 {batches.slice().reverse().map((b) => {
                   const total = b.vouchers.reduce((s, v) => s + v.amount, 0)
@@ -115,8 +112,13 @@ export default function LegacyPage() {
                       <span className="pc-sp" />
                       {b.withdrawn ? <Tag tone="mute">مسحوبة</Tag> : can ? (
                         <span className="rowf gp-2">
-                          <span className="fld"><input value={why[b.id] ?? ''} onChange={(e) => setWhy({ ...why, [b.id]: e.target.value })} aria-label={`سبب سحب ${b.id}`} placeholder="سبب السحب" /></span>
-                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { const out = withdrawBatch(b.id, why[b.id] ?? '', user.name); setWErr({ ...wErr, [b.id]: out[0] ?? '' }) }}>اسحب الدفعة</button>
+                          {/* Client 26 Oct · the reason in the decision's popup */}
+                          <DockActions
+                            actions={[{ label: 'اسحب الدفعة', kind: 'btn-ghost btn-sm', needsNote: true }]}
+                            subject={<>{b.id} · {b.vouchers.length} سند</>}
+                            placeholder="سبب السحب"
+                            onRun={(_x, n) => { const out = withdrawBatch(b.id, n, user.name); setWErr({ ...wErr, [b.id]: out[0] ?? '' }); return out }}
+                          />
                           {wErr[b.id] && <span className="bad" role="alert">{wErr[b.id]}</span>}
                         </span>
                       ) : <Tag tone="ok">سارية</Tag>}

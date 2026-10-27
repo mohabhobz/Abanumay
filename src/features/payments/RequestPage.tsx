@@ -7,9 +7,9 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { readFiles, readNeeds } from '@/data/shared/ai'
 import { useDocReads } from '@/lib/docCache'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import {
+import { BankGrid, BankCard,
   BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
-  StepArc, Tag, type GateStep,
+  StepArc, Tabs, Tag, type GateStep, type TabItem,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -19,7 +19,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { PAY_LIMIT, PAY_STATES, payRequestById, payStateWho } from '@/data/mock/disbursements'
 import { isolate, NOUN, nounAfter, pct, readDate } from '@/lib/format'
 import {
-  BANK_CHANGE_DENIED, BANK_CHANGE_ROLES, ENTITY_STATES, PAY_PROOFS,
+  PAY_PROOFS,
   bankIssues, banksOf, entityStateOf,
 } from '@/data/mock/payEntity'
 import type { PayRequest } from '@/types/domain'
@@ -30,6 +30,10 @@ import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readPayRequest } from '@/data/recordReadings'
 import { PROXY_ROLES, actOnPay, basisOfRequest, grantLeft, mayResubmit, payActions, payStops, usePayments, type PayAction } from '@/data/payments/store'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { PlanTab } from '@/features/projects/tabs/PlanTab'
+import { FundingTab } from '@/features/projects/tabs/FundingTab'
+import { planOfProject } from '@/data/mock/plans'
+import { projectById } from '@/data/mock/projects'
 import { payOutcome } from '@/data/shared/outcome'
 
 /* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
@@ -120,7 +124,7 @@ export default function RequestPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { role, user } = useRole()
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const asEntity = params.get('as') === 'entity'
   const ver = usePayments()
   useDocReads() /* re-read the attachments once their content is in */
@@ -154,7 +158,6 @@ export default function RequestPage() {
             <Glass>
               <Empty
                 title="السجل غير موجود."
-                note="ربما أُغلق، أو أن الرابط قديم."
                 actions={
                   <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
                     العودة إلى صندوق الصرف
@@ -175,7 +178,7 @@ export default function RequestPage() {
       ? { k: 'اكتمل مسار الصرف', t: 'تم الصرف', rest: [] }
       : r.state === 'closed'
         ? { k: 'توقّف مسار الصرف', t: 'مغلق · رفض نهائي', rest: [] }
-        : { k: 'صاحب الإجراء الآن', t: payStateWho(r.state), rest: [PAY_STATES.find((x) => x.key === r.state)?.label ?? null] }
+        : { k: 'صاحب الإجراء الآن', t: payStateWho(r.state), rest: [] }
   const limitDays = Math.round(PAY_LIMIT[r.state] / 24)
   const meta = PAY_STATES.find((s) => s.key === r.state)
   const blocked = r.checks.filter((c) => !c.ok)
@@ -194,11 +197,12 @@ export default function RequestPage() {
     return out
   }
   const readings = [...readPayRequest(r), ...(asEntity ? [] : [readFiles('ai-pay-docs', 'قراءة متطلبات الدفعة', r.docs.map((d) => d.name), { amount: r.asked, findings: true }), readNeeds(r)])]
-  const onAct = (a: PayAction, file?: string, amount?: number) => {
-    const out = actOnPay(r.id, a.act, note, user.name, role.key, file, amount)
-    if (out.length) { setSaid({ bad: out }); return }
+  const onAct = (a: PayAction, file?: string, amount?: number, n?: string): string[] => {
+    const out = actOnPay(r.id, a.act, n ?? note, user.name, role.key, file, amount)
+    if (out.length) return out
     setSaid({ ok: a.label })
     setNote('')
+    return []
   }
 
   /* Rule 14 - the hard cap - spent plus this payment, against the grant. */
@@ -210,6 +214,24 @@ export default function RequestPage() {
 
   /* v3 · 9.2.10 · the permit exists once the supervisor created it */
   const permitOn = Boolean(r.permitAt)
+  const orderNo = `PO-${r.id.replace('SR-', '')}`
+  const orderReady = r.state === 'finance' || r.state === 'paid'
+  const prow = projectById(r.projectId)
+  const tabs: TabItem[] = [
+    { slug: 'data', label: 'بيانات الدفعة' },
+    { slug: 'needs', label: 'المتطلبات والمرفقات', count: r.docs.length || undefined },
+    ...(asEntity ? [] : [{ slug: 'order', label: 'أمر الصرف والتحويل' }]),
+    { slug: 'agreement', label: isExternalParty(r.entityId) ? 'الوثيقة الخارجية' : 'الاتفاقية' },
+    { slug: 'plan', label: 'الخطة' },
+    ...(asEntity ? [] : [{ slug: 'funding', label: 'الربط المالي' }]),
+    { slug: 'log', label: 'سجل تدقيق الدفعة', count: r.log.length || undefined },
+  ]
+  const tab = tabs.find((t) => t.slug === params.get('tab'))?.slug ?? 'data'
+  const goTab = (slug: string) => {
+    const next = new URLSearchParams(params)
+    if (slug === 'data') next.delete('tab'); else next.set('tab', slug)
+    setParams(next, { replace: true })
+  }
 
   return (
     <AppLayout assistantContext={assistFor.page(`الدفعة ${r.no} · ${r.id}`, r.projectName)}>
@@ -244,11 +266,11 @@ export default function RequestPage() {
                 <div className="sub">
                   {/* 9.4.4 · the permit can't exceed the approved payment */}
                   {r.asked === r.due
-                    ? <>مطابقة للدفعة المعتمدة · المخطط صرفها في <DateText>{r.dueAt}</DateText></>
+                    ? <>تستحق في <DateText>{r.dueAt}</DateText></>
                     : r.asked < r.due
-                    ? <>جزء من الدفعة المعتمدة <Money sm>{r.due}</Money></>
+                    ? <>من الدفعة المعتمدة <Money sm>{r.due}</Money></>
                     : <span className="bad">
-                        أعلى من الدفعة المعتمدة <Money sm>{r.due}</Money> · مخالفة للقاعدة 9.4.4{/* doc 9.4.4 */}
+                        أعلى من الدفعة المعتمدة <Money sm>{r.due}</Money>{/* doc 9.4.4 */}
                       </span>}
                 </div>
               </div>
@@ -270,18 +292,12 @@ export default function RequestPage() {
           {r.state === 'closed' && (
             <Glass>
               <Head title="مغلق" meta={<Tag tone="no">رفض نهائي</Tag>} />
-              <p className="sub cnote">
-                تنص القواعد {/* doc 9.4.17 */} على أن يُغلق النظام السجل عند الرفض النهائي
-                <b> مع الاحتفاظ بسجل إجراءاته</b> · السجل كامل أدناه، والتعديل مغلق.
-              </p>
               {r.note && <div className="payq-note"><Icon name={icons.chat} size="sm" /><span>{isolate(r.note)}</span></div>}
             </Glass>
           )}
 
           {/* Status bar - who it's with, how long, against their threshold. */}
           <div className="prow">
-            {/* Status bar outside the card - the badge is neutral and delay is stated in the text
-                beside it. */}
             <Tag tone={asEntity ? ent.tone : 'mute'}>
               {asEntity ? ent.label : meta?.label ?? 'مغلق'}
             </Tag>
@@ -299,14 +315,6 @@ export default function RequestPage() {
             {asEntity && ent.act && <span className="sub">{ent.act}</span>}
             <span className="pc-sp" />
             <Person name={r.owner} />
-            {/* The first output - the document finance transfers against. */}
-            {!asEntity && (
-              <Link className="btn btn-2 btn-sm" to={ROUTES.paymentOrder(r.id)}>
-                <Icon name={icons.doc} size="sm" />
-                أمر الصرف
-              </Link>
-            )}
-            {/* Step 11 - the entity completes and resubmits · rule 18: only while returned to it. */}
             {/* 9.2.9 · whoever raised them completes them · the entity, or the authority for an external party (9.4.5) */}
             {mayResubmit(r) && (r.origin === 'proxy' ? !asEntity && PROXY_ROLES.includes(role.key) : asEntity) && (
               <Link className="btn btn-p btn-sm" to={`${ROUTES.paymentEdit(r.id)}${asEntity ? '?as=entity' : ''}`}>
@@ -316,393 +324,320 @@ export default function RequestPage() {
             {!asEntity && r.state === 'returned' && r.origin !== 'proxy' && <span className="sub">عند الجهة لاستكمالها</span>}
           </div>
 
+          {/* Client sheet 26 Oct (#107) · the payment's record reads in pinned tabs, the project's
+              component: its data · requirements and attachments · the order and the transfer · the
+              agreement · the plan · the financial link · its audit log */}
+          <Tabs items={tabs} active={tab} onChange={goTab} />
+
           <div className="g2">
-            {/* === Main column - what the decision is made on === */}
             <div className="col">
-              {/* v3 · 9.2.10 · 9.4.24 · the permit, and any cancelled before the transfer */}
-              {!asEntity && (permitOn || (r.cancels?.length ?? 0) > 0) && (
-                <Glass>
-                  <Head title="إذن الصرف" meta={permitOn ? <Tag tone="ok">صادر</Tag> : <Tag tone="mute">لا إذن قائم</Tag>} />
-                  {r.permitAt && (
-                    <KV rows={[
-                      { k: 'أنشأه', v: <Person name={r.permitAt.by} /> },
-                      { k: 'في', v: <DateText>{r.permitAt.at}</DateText> },
-                      { k: 'القيمة', v: <Money sm>{r.asked}</Money> },
-                      ...(r.origin === 'supervisor' ? [{ k: 'المتطلبات', v: <span>{r.of === 1 ? 'دفعة وحيدة' : 'دفعة أولى'} بلا دورة متطلبات{/* doc 9.2.2 */}</span> }] : []),
-                    ]} />
-                  )}
-                  {(r.cancels ?? []).map((c, i) => (
-                    <div key={i} className="payq-note">
-                      <Icon name={icons.alert} size="sm" />
-                      <span>أُلغي إذن سابق · <Person name={c.by} /> ({c.role}) · <DateText>{c.at}</DateText> · {isolate(c.note)}</span>
+              {tab === 'data' && <>
+                {/* v3 · 9.2.10 · 9.4.24 · the permit, and any cancelled before the transfer */}
+                {!asEntity && (permitOn || (r.cancels?.length ?? 0) > 0) && (
+                  <Glass>
+                    <Head title="إذن الصرف" meta={permitOn ? <Tag tone="ok">صادر</Tag> : <Tag tone="mute">لا إذن قائم</Tag>} />
+                    {r.permitAt && (
+                      <KV rows={[
+                        { k: 'أنشأه', v: <Person name={r.permitAt.by} /> },
+                        { k: 'في', v: <DateText>{r.permitAt.at}</DateText> },
+                        { k: 'القيمة', v: <Money sm>{r.asked}</Money> },
+                        ...(r.origin === 'supervisor' ? [{ k: 'المتطلبات', v: <span>{r.of === 1 ? 'دفعة وحيدة' : 'دفعة أولى'} بلا دورة متطلبات{/* doc 9.2.2 */}</span> }] : []),
+                      ]} />
+                    )}
+                    {(r.cancels ?? []).map((c, i) => (
+                      <div key={i} className="payq-note">
+                        <Icon name={icons.alert} size="sm" />
+                        <span>أُلغي إذن سابق · <Person name={c.by} /> ({c.role}) · <DateText>{c.at}</DateText> · {isolate(c.note)}</span>
+                      </div>
+                    ))}
+                  </Glass>
+                )}
+
+                {!asEntity && <PayeeCard r={r} />}
+
+                {/* Last return note - rules 7 and 8 require it to be explicit. */}
+                {r.note && r.state !== 'closed' && (
+                  <Glass>
+                    <Head
+                      title={r.cancels?.length && r.state === 'eligible' && !r.returnedBy ? 'سبب إلغاء الإذن' : 'ملاحظات الإعادة'}
+                      meta={<Tag tone="warn">{r.returnedBy === 'manager' ? 'من مدير المنح' : r.returnedBy === 'finance' ? 'من الإدارة المالية' : 'للاستكمال'}</Tag>}
+                    />
+                    <div className="payq-note">
+                      <Icon name={icons.chat} size="sm" />
+                      <span>{isolate(r.note)}</span>
                     </div>
-                  ))}
-                  <p className="sub cnote">
-                    ينشئ مشرف المنح الإذن يدويًّا بعد تأهل الدفعة، ولا ينشئه النظام تلقائيًّا{/* doc 9.2.10 */} · ويُلغى قبل التحويل بسبب مسجّل{/* doc 9.4.24 */}.
-                  </p>
+                  </Glass>
+                )}
+
+                {/* Rules 11, 13 and 14 - the reserved amount, its impact, and the cap. */}
+                <Glass>
+                  <Head title="أثر الصرف" />
+                  <KV
+                    rows={[
+                      { k: 'المحجوز على الدفعة', v: <><Num>{r.reserved}</Num> <Riyal /></> },
+                      { k: 'يتحوّل إلى', v: <span className="ok-ink">مصروف</span> },
+                      { k: 'قيمة المنحة', v: <><Num>{r.granted}</Num> <Riyal /></> },
+                      { k: 'المصروف قبل الدفعة', v: <><Num>{r.spent}</Num> <Riyal /></> },
+                      {
+                        k: 'المتبقي بعد الصرف',
+                        v: left < 0
+                          ? <b className="bad"><Num>{left}</Num> <Riyal /></b>
+                          : <><Num>{left}</Num> <Riyal /></>,
+                      },
+                    ]}
+                  />
+                  <div className="paybar">
+                    <span style={{ width: `${Math.min(100, Math.round((after / r.granted) * 100))}%` }} />
+                  </div>
+                  {left < 0 && <p className="bad cnote">{/* doc rule 14 */}تتجاوز الدفعة قيمة المنحة</p>}
                 </Glass>
-              )}
 
-              {!asEntity && <PayeeCard r={r} />}
-
-              {/* The conditions blocking progress - each with its rule cited. */}
-              <Glass>
-                <Head
-                  title="متطلبات الدفعة وشروطها"
-                  meta={
-                    blocked.length || !bankOk
-                      ? <Tag tone="warn">
-                          <Num>{blocked.length + (bankOk ? 0 : 1)}</Num> غير مستوفى
-                        </Tag>
-                      : <Tag tone="ok">مستوفاة</Tag>
-                  }
-                />
-                {r.condition && (
-                  <div className="payq-cond">
-                    <span className="lb">شروط الدفعة</span>
-                    <span>{isolate(r.condition)}</span>
-                  </div>
-                )}
-                {/* Client meeting 20 Oct · what the payment rests on */}
-                {basisOfRequest(r) && (
-                  <div className="payq-cond">
-                    <span className="lb">أساس الدفعة</span>
-                    <span>{basisOfRequest(r)}</span>
-                  </div>
-                )}
-                <ul className="payq-ck">
-                  {r.checks.map((c) => (
-                    <li key={c.rule} className={c.ok ? 'ok' : 'no'}>
-                      <Icon name={c.ok ? icons.check : icons.alert} size="sm" />
-                      <span>{c.label}</span>
-                      {/* doc rule c.rule */}
-                    </li>
+                {/* === H-5, H-6, H-7 - bank account ===
+                    Client 27 Oct · the payment reads the account it goes to, drawn as the bank card it
+                    is · display only · every account of the entity stays on the entity's own page */}
+                {!asEntity && <Glass>
+                  <Head
+                    title="حساب الدفع"
+                    meta={
+                      <span className="rowf gp-2">
+                        {bankBad.length
+                          ? <Tag tone="warn"><Num>{bankBad.length}</Num> ملاحظة</Tag>
+                          : <Tag tone="ok">جاهز</Tag>}
+                        <Link className="lnk sub" to={ROUTES.entity(r.entityId, 'banks')}>حسابات الجهة ({entBanks.length})</Link>
+                      </span>
+                    }
+                  />
+                  {payBank && (
+                    <BankGrid>
+                      <BankCard bank={payBank.bank} iban={payBank.iban} holder={r.entityName} purpose={payBank.purpose}
+                        status={payBank.active ? 'نشط' : 'غير نشط'} off={!payBank.active} tag={<Tag tone="mute">حساب الدفعة</Tag>} />
+                    </BankGrid>
+                  )}
+                  {bankBad.map((b, i) => (
+                    <p key={i} className="bad cnote">
+                      {b.say}{/* doc · b.rule */}
+                    </p>
                   ))}
-                  <li className={bankOk ? 'ok' : 'no'}>
-                    <Icon name={bankOk ? icons.check : icons.alert} size="sm" />
-                    <span>{r.bank.name}{bankOk ? '' : ' · الحساب غير نشط'}</span>
-                    <span className="payq-r">الحساب المعتمد</span>
-                  </li>
-                </ul>
-                {/* Rule 9 - execution is forbidden before every approval is complete. */}
-                {(blocked.length > 0 || !bankOk) && (
-                  <p className="sub cnote">
-                    لا يُنشأ إذن الصرف قبل استيفاء متطلبات الدفعة وشروطها{/* doc 9.4.2 */} · ولا يُنفَّذ الصرف
-                    قبل اكتمال كل الاعتمادات{/* doc 9.4.11 */}.
-                  </p>
-                )}
-              </Glass>
+                </Glass>}
 
-              {/* 9.1.input-6 - special approvals and exceptions recorded before disbursing. */}
-              {!asEntity && <PayExceptions request={r} />}
+                {/* 9.1.input-6 - special approvals and exceptions recorded before disbursing. */}
+                {!asEntity && <PayExceptions request={r} />}
+              </>}
 
-              {/* AI-assist output - step 6 · read by the assistant in the end column (rule 20 · advisory) */}
-
-              {/* Last return note - rules 7 and 8 require it to be explicit. */}
-              {r.note && r.state !== 'closed' && (
+              {tab === 'needs' && <>
+                {/* The conditions blocking progress - each with its rule cited. */}
                 <Glass>
                   <Head
-                    title={r.cancels?.length && r.state === 'eligible' && !r.returnedBy ? 'سبب إلغاء الإذن' : 'ملاحظات الإعادة'}
-                    meta={<Tag tone="warn">{r.returnedBy === 'manager' ? 'من مدير المنح' : r.returnedBy === 'finance' ? 'من الإدارة المالية' : 'للاستكمال'}</Tag>}
+                    title="متطلبات الدفعة وشروطها"
+                    meta={
+                      blocked.length || !bankOk
+                        ? <Tag tone="warn">
+                            <Num>{blocked.length + (bankOk ? 0 : 1)}</Num> غير مستوفى
+                          </Tag>
+                        : <Tag tone="ok">مستوفاة</Tag>
+                    }
                   />
-                  <div className="payq-note">
-                    <Icon name={icons.chat} size="sm" />
-                    <span>{isolate(r.note)}</span>
-                  </div>
-                </Glass>
-              )}
-
-              {/* Attachments - rule 21: tied to the request, not stored elsewhere.
-
-                  Note: `DocFile` is the single shape for any file in the system - this used to be a
-                  hand-written list (a single paper icon plus name and size), meaning a fourth shape
-                  for something already unified on the project, entity, and tracking pages. The
-                  thumbnail isn't decorative: it states the content type before opening, so the
-                  reviewer knows a "beneficiary list" is a spreadsheet straight from the row. */}
-              <Glass>
-                <Head
-                  title="المرفقات"
-                  meta={<span className="sub"><Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}</span>}
-                />
-                <div className="docgrid">
-                  {r.docs.map((d, i) => (
-                    <DocFile key={`${i}-${d.name}`} name={d.name} meta={readDate(d.at)} />
-                  ))}
-                </div>
-              </Glass>
-
-              {/* What supports the decision · in the main column, the end column is the assistant's alone */}
-
-              {/* 9.2.17 · 9.1.output-2 - the executed transfer, with its proof. */}
-              {r.transfer && (
-                <Glass>
-                  <Head title="التحويل المنفَّذ" meta={<Tag tone="ok">تم الصرف</Tag>} />
-                  <KV
-                    rows={[
-                      { k: 'تاريخ التحويل', v: <DateText>{r.transfer.at}</DateText> },
-                      { k: 'البنك', v: r.transfer.bank },
-                      { k: 'الحساب', v: <span className="num">{r.transfer.iban}</span> },
-                      { k: 'نفّذه', v: <Person name={r.transfer.by} /> },
-                      { k: 'إثبات التحويل', v: <span className="trim1">{r.transfer.proof}</span> },
-                    ]}
-                  />
-                </Glass>
-              )}
-              {/* Rule 10 - the agreement and its validity shown on the request. */}
-              {/* Re-audit 17 Oct · v3 · 11.2.6 · 11.4.1 · an external party's project has no internal
-                  agreement and no representative · it reads its external document instead */}
-              {isExternalParty(r.entityId) ? (
-                <Glass>
-                  <Head title="الوثيقة الخارجية" meta={<Tag tone="mute">جهة خارجية</Tag>} />
-                  <KV
-                    rows={[
-                      { k: 'الوثيقة', v: extDocsOf(r.projectId).length ? extDocsOf(r.projectId).map((d) => d.file).join(' · ') : <span className="sub">لم تُسجَّل وثيقة بعد</span> },
-                      { k: 'المشروع', v: <Link className="tlink" to={ROUTES.project(r.projectId)}><Mono>{r.projectId}</Mono></Link> },
-                      { k: 'الجهة', v: <Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link> },
-                    ]}
-                  />
-                  <p className="sub cnote">لا اتفاقية داخلية ولا ممثل مسجّل · سجل مرجعي داخلي بلا حساب بوابة</p>
-                </Glass>
-              ) : (
-              <Glass>
-                <Head
-                  title="الاتفاقية"
-                  meta={
-                    r.agreement.active
-                      ? <Tag tone="ok">سارية</Tag>
-                      : <Tag tone="no">غير سارية</Tag>
-                  }
-                />
-                <KV
-                  rows={[
-                    { k: 'رقم الاتفاقية', v: <Mono>{r.agreement.id}</Mono> },
-                    { k: 'تنتهي في', v: <DateText>{r.agreement.endsAt}</DateText> },
-                    /* K-2 - a related record that has its own page becomes a link, not text the
-                       user copies and searches with. */
-                    {
-                      k: 'المشروع',
-                      v: <Link className="tlink" to={ROUTES.project(r.projectId)}><Mono>{r.projectId}</Mono></Link>,
-                    },
-                    {
-                      k: 'الجهة',
-                      v: asEntity ? r.entityName : <Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link>,
-                    },
-                    /* 9.1.input-3 - the representative authorized to sign, from the agreement in force */
-                    ...(r.rep ? [{ k: 'ممثل الجهة المخوّل', v: <>{r.rep.name} <span className="sub">· {r.rep.title}</span></> }] : []),
-                  ]}
-                />
-              </Glass>
-              )}
-
-              {/* Rules 11, 13 and 14 - the reserved amount, its impact, and the cap. */}
-              <Glass>
-                {/* doc rule 11 · 13 · 14 */}
-                <Head title="أثر الصرف" />
-                <KV
-                  rows={[
-                    { k: 'المحجوز على الدفعة', v: <><Num>{r.reserved}</Num> <Riyal /></> },
-                    { k: 'يتحوّل إلى', v: <span className="ok-ink">مصروف</span> },
-                    { k: 'قيمة المنحة', v: <><Num>{r.granted}</Num> <Riyal /></> },
-                    { k: 'المصروف قبل الدفعة', v: <><Num>{r.spent}</Num> <Riyal /></> },
-                    {
-                      k: 'المتبقي بعد الصرف',
-                      v: left < 0
-                        ? <b className="bad"><Num>{left}</Num> <Riyal /></b>
-                        : <><Num>{left}</Num> <Riyal /></>,
-                    },
-                  ]}
-                />
-                <div className="paybar">
-                  <span style={{ width: `${Math.min(100, Math.round((after / r.granted) * 100))}%` }} />
-                </div>
-                <p className={left < 0 ? 'bad cnote' : 'sub cnote'}>
-                  {pct(Math.round((after / r.granted) * 100))} من المنحة بعد تنفيذ هذه الدفعة ·
-                  {left < 0 ? /* doc rule 14 */ ' تتجاوز الدفعة قيمة المنحة فيتوقّف الاعتماد والتنفيذ.' : /* doc rule 14 */ ' تمنع القواعد أي صرف يتجاوز قيمة المنحة.'}
-                </p>
-              </Glass>
-
-              {/* Note: rule 17 - "automatic notifications at every request stage". Notifications
-                  live inside the log as a line under each transition, but the log reads in
-                  chronological order while the question "who was notified" reads by recipient - the
-                  same data read along two different axes, so a separate card answers the second
-                  question without duplicating storage. */}
-              <Glass>
-                <Head
-                  title="الإشعارات"
-                  meta={<span className="sub">{/* doc rule 17 */}لكل انتقال إشعار</span>}
-                />
-                <ul className="paynotif">
-                  {r.log.filter((e) => e.notified).map((e, i) => (
-                    <li key={`${e.step}-${i}`}>
-                      <Icon name={icons.send} size="sm" />
-                      <span className="trim1">{e.notified}</span>
-                      <span className="pc-sp" />
-                      <DateText>{e.at}</DateText>
-                    </li>
-                  ))}
-                  {r.log.every((e) => !e.notified) && (
-                    <li className="sub">لا توجد إشعارات بعد.</li>
+                  {r.condition && (
+                    <div className="payq-cond">
+                      <span className="lb">شروط الدفعة</span>
+                      <span>{isolate(r.condition)}</span>
+                    </div>
                   )}
-                </ul>
-              </Glass>
-
-              {/* === H-3 - what the entity sees ===
-                  Note: the entity doesn't see all seven statuses. "Awaiting grants manager" and
-                  "awaiting finance" tell the entity who's holding it up on our side, which isn't
-                  theirs and they can't act on it - so it reads as worry, not information. The five
-                  shown here are the ones the entity can actually act on. */}
-              <Glass>
-                <Head
-                  title="كما تراه الجهة"
-                  meta={<Tag tone={ent.tone}>{ent.label}</Tag>}
-                />
-                <ul className="payeye">
-                  {ENTITY_STATES.map((x) => (
-                    <li key={x.key} className={x.key === ent.key ? 'on' : ''}>
-                      <span className="payeye-h">
-                        <b>{x.label}</b>
-                        <span className="pc-sp" />
-                        {x.act
-                          ? <span className="payeye-a">{x.act}</span>
-                          : x.waiting
-                            ? <span className="sub">بالانتظار</span>
-                            : <span className="sub">اكتملت</span>}
-                      </span>
-                      <span className="sub">{x.inner}</span>
+                  {/* Client meeting 20 Oct · what the payment rests on */}
+                  {basisOfRequest(r) && (
+                    <div className="payq-cond">
+                      <span className="lb">أساس الدفعة</span>
+                      <span>{basisOfRequest(r)}</span>
+                    </div>
+                  )}
+                  <ul className="payq-ck">
+                    {r.checks.map((c) => (
+                      <li key={c.rule} className={c.ok ? 'ok' : 'no'}>
+                        <Icon name={c.ok ? icons.check : icons.alert} size="sm" />
+                        <span>{c.label}</span>
+                        {/* doc rule c.rule */}
+                      </li>
+                    ))}
+                    <li className={bankOk ? 'ok' : 'no'}>
+                      <Icon name={bankOk ? icons.check : icons.alert} size="sm" />
+                      <span>{r.bank.name}{bankOk ? '' : ' · الحساب غير نشط'}</span>
+                      <span className="payq-r">الحساب المعتمد</span>
                     </li>
-                  ))}
-                </ul>
-                <p className="sub cnote">
-                  للدورة في المؤسسة <b><Num>8</Num> مراحل</b>، وترى الجهة منها{' '}
-                  <b><Num>{ENTITY_STATES.length}</Num></b> · وتُجمع مراحل الإذن في
-                  «مؤهلة للصرف · تحت إجراء الدفع» لأن الجهة لا تملك أي إجراء فيها.
-                </p>
-              </Glass>
+                  </ul>
+                </Glass>
 
-              {/* === H-5, H-6, H-7 - bank account === */}
-              {!asEntity && <Glass>
-                <Head
-                  title="حساب الدفع"
-                  meta={
-                    bankBad.length
-                      ? <Tag tone="warn"><Num>{bankBad.length}</Num> ملاحظة</Tag>
-                      : <Tag tone="ok">جاهز</Tag>
-                  }
-                />
-                {/* Note: the entity has one account per beneficiary purpose (Quran memorization,
-                    iftar, sacrifices) - so the list isn't decorative, it's the reason the rule
-                    exists. */}
-                <ul className="paybank">
-                  {entBanks.map((b) => (
-                    <li key={b.id} className={b.id === payBank?.id ? 'on' : ''}>
-                      <span className="paybank-h">
-                        <b>{b.purpose}</b>
-                        <span className="sub trim1">· {b.bank}</span>
-                        <span className="pc-sp" />
-                        {b.id === payBank?.id && <Tag tone="mute">حساب الدفعة</Tag>}
-                        {!b.active && <Tag tone="warn">غير نشط</Tag>}
-                      </span>
-                      <span className="sub num">{b.iban}</span>
-                    </li>
-                  ))}
-                </ul>
+                {/* Attachments - rule 21: tied to the request, not stored elsewhere. */}
+                <Glass>
+                  <Head
+                    title="المرفقات"
+                    meta={<span className="sub"><Num>{r.docs.length}</Num> {nounAfter(r.docs.length, NOUN.doc)}</span>}
+                  />
+                  {r.docs.length ? (
+                    <div className="docgrid">
+                      {r.docs.map((d, i) => (
+                        <DocFile key={`${i}-${d.name}`} name={d.name} meta={readDate(d.at)} />
+                      ))}
+                    </div>
+                  ) : <Empty title="لا مرفقات على الدفعة بعد." />}
+                </Glass>
+              </>}
 
-                {bankBad.map((b, i) => (
-                  <p key={i} className="bad cnote">
-                    {b.say}{/* doc · b.rule */}
-                  </p>
-                ))}
-
-                <p className="sub cnote">
-                  تُصرف الدفعة إلى <b>حساب واحد</b> ولا تُقسَّم. وتغيير الحساب من صلاحية{' '}
-                  <b>{BANK_CHANGE_ROLES.join(' أو ')}</b> لا{' '}
-                  <b>{BANK_CHANGE_DENIED}</b>، إذ يصله كل شيء جاهزًا
-                  للتنفيذ، ولا يتواصل مباشرة مع الجهات.
-                </p>
-              </Glass>}
-
-              {/* === H-4 - the two documents aren't the same type === */}
-              <Glass>
-                <Head title="إثبات الصرف" meta={<span className="sub">مستندان بوزنين مختلفين</span>} />
-                <ul className="payproof">
-                  {PAY_PROOFS.map((x) => (
-                    <li key={x.key}>
-                      <span className="payproof-h">
-                        <b>{x.label}</b>
-                        <span className="sub">· {x.by}</span>
-                        <span className="pc-sp" />
-                        <Tag tone={x.required ? 'warn' : 'mute'}>
-                          {x.required ? 'إلزامي' : 'اختياري'}
-                        </Tag>
-                      </span>
-                      <span className="sub">{x.why}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="sub cnote">
-                  الأهم أن <b>تُثبت المؤسسة أنها حوّلت المبلغ</b> · أما إقرار الجهة
-                  بالاستلام فيُغلق الدورة من جهتها، ولا يوقف الدفعة.
-                </p>
-              </Glass>
-
-              {/* Rule 12 - disbursement follows the approved source breakdown. */}
-              {!asEntity && <Glass>
-                <Head
-                  title="مصادر التمويل"
-                  meta={
-                    r.sources.length > 1
-                      ? <Tag tone="teal">مصدران</Tag>
-                      : <span className="sub">مصدر واحد</span>
-                  }
-                />
-                <ul className="paysrc">
-                  {r.sources.map((s) => (
-                    <li key={s.name}>
-                      <span className="trim1">{s.name}</span>
-                      <span className="num">{pct(s.share)}</span>
-                      <span className="paysrc-v num">
-                        {Math.round((r.asked * s.share) / 100).toLocaleString('en-US')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                {r.sources.length > 1 && (
-                  <p className="sub cnote">
-                    تُلزم القواعد {/* doc rule 12 */} بالصرف وفق هذا التوزيع، ويُنشأ أمر الصرف على أساسه.
-                  </p>
-                )}
-              </Glass>}
-
-              {/* Audit log - rule 16 - with a notification on every transition (rule 17). */}
-              <Glass>
-                <Head
-                  title="سجل التدقيق"
-                  meta={<span className="sub">كل انتقال بتاريخه ومنفّذه</span>}
-                />
-                <ol className="paylog">
-                  {[...r.log].reverse().map((e, i) => (
-                    <li key={`${e.step}-${i}`}>
-                      {/* doc · step e.step */}
-                      <div className="paylog-b">
-                        <div className="paylog-t">{e.what}</div>
-                        <div className="sub">
-                          {e.who}
-                          {e.role !== e.who && <> · {e.role}</>}
-                          <span className="pc-dot" />
-                          <DateText>{e.at}</DateText>
-                        </div>
-                        {e.note && <div className="paylog-n">{isolate(e.note)}</div>}
-                        {e.notified && (
-                          <div className="paylog-i sub">
-                            <Icon name={icons.send} size="sm" />
-                            إشعار · {e.notified}
-                          </div>
-                        )}
+              {tab === 'order' && <>
+                <Glass>
+                  <Head
+                    title={`أمر الصرف · ${orderNo}`}
+                    meta={
+                      r.state === 'paid'
+                        ? <Tag tone="ok">نُفّذ</Tag>
+                        : r.order
+                          ? <Tag tone="teal">معتمد · جاهز للتنفيذ</Tag>
+                          : orderReady
+                            ? <Tag tone="warn">مسودة · بانتظار اعتماد المالية</Tag>
+                            : <Tag tone="mute">لم يُنشأ بعد</Tag>
+                    }
+                  />
+                  {orderReady ? (
+                    <>
+                      <KV rows={[
+                        { k: 'قيمة الأمر', v: <Money sm>{r.asked}</Money> },
+                        { k: 'الحساب المعتمد', v: <>{r.bank.name}{r.bank.active ? '' : <span className="bad"> · غير نشط</span>}</> },
+                        { k: 'مصادر التمويل', v: r.sources.map((x) => `${x.name} ${pct(x.share)}`).join(' · ') },
+                      ]} />
+                      <div className="rowf gp-2">
+                        <Link className="btn btn-2 btn-sm" to={ROUTES.paymentOrder(r.id)}>
+                          <Icon name={icons.doc} size="sm" />
+                          افتح أمر الصرف
+                        </Link>
                       </div>
-                    </li>
-                  ))}
-                </ol>
-              </Glass>
+                    </>
+                  ) : (
+                    <Empty title="يُنشأ أمر الصرف بعد اعتماد الإدارة المالية." />
+                  )}
+                </Glass>
+
+                {/* 9.2.17 · 9.1.output-2 - the executed transfer, with its proof. */}
+                <Glass>
+                  <Head title="التحويل المنفَّذ" meta={r.transfer ? <Tag tone="ok">تم الصرف</Tag> : <Tag tone="mute">لم يُنفَّذ</Tag>} />
+                  {r.transfer ? (
+                    <KV
+                      rows={[
+                        { k: 'تاريخ التحويل', v: <DateText>{r.transfer.at}</DateText> },
+                        { k: 'البنك', v: r.transfer.bank },
+                        { k: 'الحساب', v: <span className="num">{r.transfer.iban}</span> },
+                        { k: 'نفّذه', v: <Person name={r.transfer.by} /> },
+                        { k: 'إثبات التحويل', v: <span className="trim1">{r.transfer.proof}</span> },
+                      ]}
+                    />
+                  ) : <Empty title="لم يُنفَّذ التحويل بعد." />}
+                </Glass>
+
+                {/* === H-4 - the two documents aren't the same type === */}
+                <Glass>
+                  <Head title="إثبات الصرف" />
+                  <ul className="payproof">
+                    {PAY_PROOFS.map((x) => (
+                      <li key={x.key}>
+                        <span className="payproof-h">
+                          <b>{x.label}</b>
+                          <span className="sub">· {x.by}</span>
+                          <span className="pc-sp" />
+                          <Tag tone={x.required ? 'warn' : 'mute'}>
+                            {x.required ? 'إلزامي' : 'اختياري'}
+                          </Tag>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Glass>
+              </>}
+
+              {tab === 'agreement' && (
+                /* Rule 10 - the agreement and its validity shown on the request. */
+                isExternalParty(r.entityId) ? (
+                  <Glass>
+                    <Head title="الوثيقة الخارجية" meta={<Tag tone="mute">جهة خارجية</Tag>} />
+                    <KV
+                      rows={[
+                        { k: 'الوثيقة', v: extDocsOf(r.projectId).length ? extDocsOf(r.projectId).map((d) => d.file).join(' · ') : <span className="sub">لم تُسجَّل وثيقة بعد</span> },
+                        { k: 'المشروع', v: <Link className="tlink" to={ROUTES.project(r.projectId)}><Mono>{r.projectId}</Mono></Link> },
+                        { k: 'الجهة', v: <Link className="tlink" to={ROUTES.entity(r.entityId)}>{r.entityName}</Link> },
+                      ]}
+                    />
+                  </Glass>
+                ) : (
+                  <Glass>
+                    <Head
+                      title="الاتفاقية"
+                      meta={r.agreement.active ? <Tag tone="ok">سارية</Tag> : <Tag tone="no">غير سارية</Tag>}
+                    />
+                    <KV
+                      rows={[
+                        { k: 'رقم الاتفاقية', v: asEntity ? <Mono>{r.agreement.id}</Mono> : <Link className="tlink" to={ROUTES.agreement(r.agreement.id)}><Mono>{r.agreement.id}</Mono></Link> },
+                        { k: 'تنتهي في', v: <DateText>{r.agreement.endsAt}</DateText> },
+                        { k: 'قيمة المنحة', v: <Money sm>{r.granted}</Money> },
+                        { k: 'الدفعة', v: <><Num>{r.no}</Num> من <Num>{r.of}</Num> · مستحقة <DateText>{r.dueAt}</DateText></> },
+                        { k: 'قيمة الدفعة المعتمدة', v: <Money sm>{r.due}</Money> },
+                        /* 9.1.input-3 - the representative authorized to sign, from the agreement in force */
+                        ...(r.rep ? [{ k: 'ممثل الجهة المخوّل', v: <>{r.rep.name} <span className="sub">· {r.rep.title}</span></> }] : []),
+                      ]}
+                    />
+                  </Glass>
+                )
+              )}
+
+              {tab === 'plan' && <PlanTab plan={planOfProject(r.projectId)} granted={r.granted} />}
+
+              {tab === 'funding' && <>
+                {/* Rule 12 - disbursement follows the approved source breakdown. */}
+                <Glass>
+                  <Head
+                    title="مصادر تمويل الدفعة"
+                    meta={r.sources.length > 1 ? <Tag tone="teal">مصدران</Tag> : <span className="sub">مصدر واحد</span>}
+                  />
+                  <ul className="paysrc">
+                    {r.sources.map((s) => (
+                      <li key={s.name}>
+                        <span className="trim1">{s.name}</span>
+                        <span className="num">{pct(s.share)}</span>
+                        <span className="paysrc-v num">
+                          {Math.round((r.asked * s.share) / 100).toLocaleString('en-US')}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Glass>
+                {prow && <FundingTab row={prow} />}
+              </>}
+
+              {tab === 'log' && (
+                /* Audit log - rule 16 - with a notification on every transition (rule 17). */
+                <Glass>
+                  <Head title="سجل تدقيق الدفعة" meta={<span className="sub"><Num>{r.log.length}</Num> {nounAfter(r.log.length, NOUN.entry)}</span>} />
+                  <ol className="paylog">
+                    {[...r.log].reverse().map((e, i) => (
+                      <li key={`${e.step}-${i}`}>
+                        {/* doc · step e.step */}
+                        <div className="paylog-b">
+                          <div className="paylog-t">{e.what}</div>
+                          <div className="sub">
+                            {e.who}
+                            {e.role !== e.who && <> · {e.role}</>}
+                            <span className="pc-dot" />
+                            <DateText>{e.at}</DateText>
+                          </div>
+                          {e.note && <div className="paylog-n">{isolate(e.note)}</div>}
+                          {e.notified && (
+                            <div className="paylog-i sub">
+                              <Icon name={icons.send} size="sm" />
+                              إشعار · {e.notified}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </Glass>
+              )}
             </div>
 
             <AssistantAside suggest={actions.length > 0 ? <NextStep s={nextPlan} exec={nextExec} /> : undefined} title="قراءة الدفعة" cta="اقرأ الدفعة" empty="لا ملاحظات على هذه الدفعة الآن." readings={readings} />
@@ -715,8 +650,6 @@ export default function RequestPage() {
             user={user}
             request={r}
             actions={actions}
-            note={note}
-            onNote={setNote}
             onAct={onAct}
           />
         )}

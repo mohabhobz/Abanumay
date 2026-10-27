@@ -1,6 +1,6 @@
 import { holds } from '@/data/shared/decisions'
 import { useState } from 'react'
-import { DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Select, Tabs, Tag, icons } from '@/components/ui'
+import { DockActions, DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Select, Tabs, Tag, icons } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
 import { isolate, nf } from '@/lib/format'
@@ -34,7 +34,6 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
   useClosing()
   const { role, user } = useRole()
   const [amount, setAmount] = useState('')
-  const [note, setNote] = useState('')
   const [bad, setBad] = useState<string[]>([])
   const f = c.finance
   const paid = paidToDate(c.projectId)
@@ -66,10 +65,12 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
       {mayVerify && (
         <div className="apv-row mt-3">
           <MoneyField value={amount} onChange={setAmount} label="المصروف الفعلي المعتمد" placeholder={nf.format(finLinesTotal(c))} />
-          <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة الاعتماد · اختيارية" aria-label="ملاحظة اعتماد المصروف" /></span>
-          <button type="button" className="btn btn-2 btn-sm" disabled={amount === ''} onClick={() => { const out = verifyInvoices(c.id, Number(amount), note, user.name); setBad(out); if (!out.length) { setAmount(''); setNote('') } }}>
-            اعتمد المصروف
-          </button>
+          {/* Client 26 Oct · the decision confirms in its popup · its note there */}
+          <DockActions
+            actions={[{ label: 'اعتمد المصروف', kind: 'btn-2 btn-sm', stops: amount === '' ? ['اكتب المصروف الفعلي المعتمد أولًا'] : [] }]}
+            subject={<>{c.projectName} · المصروف الفعلي {nf.format(Number(amount) || 0)} ريال</>}
+            onRun={(_x, n) => { const out = verifyInvoices(c.id, Number(amount), n, user.name); setBad(out); if (!out.length) setAmount(''); return out }}
+          />
         </div>
       )}
       {due > 0 && !c.recovery && mayClaim && (
@@ -78,10 +79,6 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
         </div>
       )}
       <Err list={bad} />
-      <p className="sub cnote">
-        يعتمد المشرف المصروف الفعلي من التقرير المالي التنفيذي وأدلة المخرجات{/* doc 10.4.6 */} · والفواتير التفصيلية ليست شرطًا · وما صُرف ولم يُستخدم وفرٌ يُسترد أو يُعاد توجيهه،
-        ويعود مع المحجوز غير المصروف إلى مخصص المجال{/* doc 10.9.7 · re-audit 17 Oct · an empty «()» stood here */}.
-      </p>
     </Glass>
   )
 }
@@ -104,7 +101,6 @@ export function ExceptionCard({ c, asEntity }: { c: CloseRow; asEntity: boolean 
   return (
     <Glass>
       <Head title="المشروع مغلق · للقراءة والأرشفة" meta={list.length ? <Tag tone="warn"><Num>{list.length}</Num> تعديل استثنائي</Tag> : <Tag tone="mute">بلا تعديل</Tag>} />
-      <p className="sub cnote">لا يُحذف المشروع المغلق ولا يُعاد فتحه بالطريقة الاعتيادية · وأي تعديل لاحق إجراء استثنائي موثّق بقرار ومستنده{/* doc 10.4.32 */}.</p>
       {list.length > 0 && (
         <ul className="apv-list">
           {list.map((x, i) => (
@@ -137,16 +133,19 @@ export function ExceptionCard({ c, asEntity }: { c: CloseRow; asEntity: boolean 
 export function ReopenCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }) {
   useClosing()
   const { role, user } = useRole()
-  const [reason, setReason] = useState('')
   const [bad, setBad] = useState<string[]>([])
   if (asEntity || !mayReopen(c, role.key)) return null
   return (
     <Glass>
       <Head title="إعادة فتح المشروع" meta={<Tag tone="mute">صلاحية {role.title}</Tag>} />
-      <p className="sub cnote">الأصل ألّا يُفتح المشروع بعد إغلاقه · وعند الحاجة يُعاد فتح دورة التقرير بسبب إلزامي يُسجَّل في السجل، ويبقى الإغلاق السابق إصدارًا محفوظًا · والتسويات المالية المعتمدة لا تتغير.</p>
       <div className="apv-row">
-        <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب إعادة الفتح" placeholder="سبب إعادة الفتح · إلزامي" /></span>
-        <button type="button" className="btn btn-2 btn-sm" disabled={!reason.trim()} onClick={() => { const out = reopenClosing(c.id, reason, user.name, role.key); setBad(out); if (!out.length) setReason('') }}>أعد فتح المشروع</button>
+        {/* Client 26 Oct · the reason in the decision's popup */}
+        <DockActions
+          actions={[{ label: 'أعد فتح المشروع', kind: 'btn-2 btn-sm', needsNote: true }]}
+          subject={<>{c.projectName} · تُعاد دورة التقرير ويبقى الإغلاق السابق إصدارًا محفوظًا</>}
+          placeholder="سبب إعادة الفتح"
+          onRun={(_x, n) => { const out = reopenClosing(c.id, n, user.name, role.key); setBad(out); return out }}
+        />
       </div>
       <Err list={bad} />
     </Glass>
@@ -158,7 +157,6 @@ export function ReopenCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }) 
 export function RequirementsCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }) {
   useClosing()
   const { role, user } = useRole()
-  const [note, setNote] = useState('')
   const [bad, setBad] = useState<string[]>([])
   const req = requirementsOf(c)
   const miss = req.filter((x) => !x.ok).length
@@ -179,19 +177,18 @@ export function RequirementsCard({ c, asEntity }: { c: CloseRow; asEntity: boole
       </ul>
       {maySettle && open.length > 0 && (
         <>
-          <p className="sub cnote">الدفعات التي لم تُصرف تُسوّى بقرار بدل صرفها، ويُحرَّر محجوزها عند الإغلاق (<bdi>{/* doc 10.4.2 */}</bdi>):</p>
           <div className="apv-row mt-2">
-            <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="سبب التسوية · إلزامي" aria-label="سبب تسوية الدفعة" /></span>
-            {open.map((s) => (
-              <button key={s.no} type="button" className="btn btn-2 btn-sm" disabled={!note.trim()} onClick={() => { const out = settleSlot(c.projectId, s.no, note, user.name); setBad(out); if (!out.length) setNote('') }}>
-                سوِّ الدفعة <Num>{s.no}</Num>
-              </button>
-            ))}
+            {/* Client 26 Oct · the reason in the decision's popup */}
+            <DockActions
+              actions={open.map((s) => ({ label: `سوِّ الدفعة ${s.no}`, kind: 'btn-2 btn-sm', needsNote: true, no: s.no }))}
+              subject={<>{c.projectName} · تُسوّى بقرار بدل صرفها ويُحرَّر محجوزها عند الإغلاق</>}
+              placeholder="سبب التسوية"
+              onRun={(x, n) => { const out = settleSlot(c.projectId, x.no, n, user.name); setBad(out); return out }}
+            />
           </div>
         </>
       )}
       <Err list={bad} />
-      <p className="sub cnote">لا يتحوّل المشروع إلى «مكتمل» قبل اعتماد التقرير والتقييم واستيفاء هذه كلها معًا · القاعدتان 8 و18.</p>
     </Glass>
   )
 }
@@ -311,9 +308,6 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
         <div className="payq-cond"><span className="lb">القرار النهائي · {DECISION_SAY[rec.decision.kind]}</span><span>{isolate(rec.decision.text)} · {rec.decision.by}{rec.decision.file ? ` · ${rec.decision.file}` : ''}</span></div>
       )}
       <Err list={bad} />
-      {asEntity && left > 0 && receiving && (
-        <p className="sub cnote">حوّل المبلغ المتبقي إلى حساب المؤسسة وأرسل إشعار التحويل لمشرف المنح · يُسجَّل كل مبلغ ويُطابَق حتى اكتمال الاسترداد.</p>
-      )}
     </Glass>
   )
 }
@@ -336,7 +330,7 @@ export function RedirectCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }
   const b = redirectBase(c)
   return (
     <Glass>
-      <Head title="إعادة توجيه الدعم" meta={r ? <Tag tone="ok">بقرار معتمد</Tag> : <span className="sub">داخل العلاقة نفسها · بقرار رسمي</span>} />
+      <Head title="إعادة توجيه الدعم" meta={r ? <Tag tone="ok">بقرار معتمد</Tag> : undefined} />
       {r ? (
         <KV
           rows={[
@@ -366,7 +360,6 @@ export function RedirectCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }
           <Err list={bad} />
         </>
       )}
-      <p className="sub cnote">يتحول المشروع إلى «أعيد توجيه الدعم» عند اكتمال إغلاقه، مع المبلغ الأصلي والمستخدم والمعاد توجيهه والغرض والقرار والشواهد.</p>
     </Glass>
   )
 }
@@ -408,7 +401,6 @@ export function FeedbackCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }
           </div>
         </>
       )}
-      {!fb && <p className="sub cnote">اختياري · مؤجَّل في الإجراء لمرحلة لاحقة{/* doc 10.4.30 */}، ولا يمنع الإغلاق.</p>}
       <Err list={bad} />
     </Glass>
   )
@@ -467,7 +459,7 @@ export function VersionsCard({ c }: { c: CloseRow }) {
         : { tone: 'warn' as const, say: 'مُعاد · محفوظ' }
   return (
     <Glass>
-      <Head title="الإصدارات" meta={<span className="sub">نسخة واحدة نشطة · وما قبلها محفوظ بملفاته</span>} />
+      <Head title="الإصدارات" />
       <Tabs
         items={[
           { slug: 'report', label: 'التقرير الختامي', count: c.versions.length },
@@ -509,7 +501,6 @@ export function VersionsCard({ c }: { c: CloseRow }) {
           )
         })}
       </ul>
-      <p className="sub cnote">كل إعادة تُنشئ إصدارًا جديدًا ويُحفظ السابق بحالته وملفاته ليُقرأ ويُقارَن (القاعدتان 15 و19) · وهي القاعدة نفسها في الخطط وكل الإجراءات.</p>
     </Glass>
   )
 }
@@ -534,10 +525,9 @@ export function LogsCard({ c }: { c: CloseRow }) {
   )
   return (
     <Glass>
-      <Head title="سجلّ الإجراء" meta={<span className="sub">سجلّان منفصلان{/* doc rule 17 */} · الآن: {closeSayOf(c)}</span>} />
+      <Head title="سجلّ الإجراء" meta={<span className="sub">الآن: {closeSayOf(c)}</span>} />
       {part('دورة التقرير الختامي', c.audit)}
       {part('دورة تقييم المشروع', c.evalAudit ?? [])}
-      <p className="sub cnote">تمنع القواعد {/* doc rule 21 */} أي تعديل بعد الإغلاق النهائي · وأي تغيير بعده إجراء جديد.</p>
     </Glass>
   )
 }

@@ -1,7 +1,7 @@
 import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, MultiSelect, Num, Pager, SearchBox, Select, Tabs, Tag } from '@/components/ui'
+import { FieldMultiSelect, DateText, Empty, Glass, Head, Num, Pager, SearchBox, Select, Tabs, Tag } from '@/components/ui'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useRole } from '@/hooks/useRole'
@@ -78,10 +78,10 @@ export default function NotifyHubPage() {
             <div className="pmain">
               <h1 className="ptitle">الإشعارات</h1>
               <p className="sub mt-1">
-                <Num>{all.length}</Num> رسالة منها <Num>{external}</Num> عبر البريد والرسائل النصية · القنوات يضبطها مدير النظام
+                <Num>{all.length}</Num> رسالة منها <Num>{external}</Num> عبر البريد والرسائل النصية
               </p>
             </div>
-            {!admin && <Tag tone="mute">القنوات للاطلاع · يحرّرها مدير النظام</Tag>}
+            {!admin && <Tag tone="mute">القنوات للاطلاع</Tag>}
           </header>
 
           <Tabs items={TABS} active={tab} onChange={(s) => setParams({ tab: s })} />
@@ -134,7 +134,7 @@ export default function NotifyHubPage() {
 
           {tab === 'channels' && (
             <Glass className="tblcard">
-              <Head title="القنوات حسب الموضوع" meta={<span className="sub">داخل النظام دائمًا · البريد والرسائل اختيار</span>} />
+              <Head title="القنوات حسب الموضوع" />
               <div className="tblwrap">
                 <table className="tbl cfgtbl" aria-label="قنوات الإشعار">
                   <thead>
@@ -150,9 +150,9 @@ export default function NotifyHubPage() {
                         {AUDS.map((a) => (
                           <td key={a}>
                             {admin ? (
-                              <MultiSelect
+                              <FieldMultiSelect
                                 label={`قنوات ${TOPIC_SAY[t]} · ${AUDIENCE_SAY[a]}`}
-                                all="داخل النظام"
+                                placeholder="داخل النظام"
                                 values={d[a][t]}
                                 options={CHNL}
                                 onChange={(v) => setD((x) => ({ ...x, [a]: { ...x[a], [t]: (v.includes('app') ? v : ['app', ...v]) as EscChannel[] } }))}
@@ -175,9 +175,8 @@ export default function NotifyHubPage() {
             return (
               <>
                 <Glass>
-                  <Head title="بوابة الإرسال" meta={<Tag tone={tp.gateway.mode === 'api' && tp.gateway.endpoint ? 'teal' : 'warn'}>{tp.gateway.mode === 'api' && tp.gateway.endpoint ? 'مربوطة بخدمة الخادم' : 'غير مربوطة · تُسجَّل الرسائل بنصها'}</Tag>} />
-                  <p className="sub">البريد والرسائل النصية تمرّ ببوابة واحدة · قبل التعاقد مع مزوّد تُسجَّل كل رسالة بنصها النهائي هنا، وعند ربط خدمة الخادم تُسلَّم لها لترسلها وتعيد حالة التسليم.</p>
-                  <div className="apv-row mt-2">
+                  <Head title="بوابة الإرسال" meta={<Tag tone={tp.gateway.mode === 'api' && tp.gateway.endpoint ? 'teal' : 'warn'}>{tp.gateway.mode === 'api' && tp.gateway.endpoint ? 'مربوطة بخدمة الخادم' : 'غير مربوطة'}</Tag>} />
+                  <div className="apv-row">
                     <Select label="الوضع" value={tp.gateway.mode} options={[{ value: 'log', label: 'تسجيل فقط' }, { value: 'api', label: 'خدمة الخادم' }]} onChange={(v) => admin && setTp((x) => ({ ...x, gateway: { ...x.gateway, mode: (v ?? 'log') as 'log' | 'api' } }))} />
                     <span className="fld"><input value={tp.gateway.endpoint} disabled={!admin} onChange={(e) => setTp((x) => ({ ...x, gateway: { ...x.gateway, endpoint: e.target.value } }))} aria-label="عنوان خدمة الإرسال" placeholder="https://api…/notify" dir="ltr" /></span>
                     <span className="fld"><input value={tp.gateway.sender} disabled={!admin} onChange={(e) => setTp((x) => ({ ...x, gateway: { ...x.gateway, sender: e.target.value } }))} aria-label="اسم المرسل" placeholder="اسم المرسل" dir="ltr" /></span>
@@ -189,8 +188,7 @@ export default function NotifyHubPage() {
                   </div>
                 </Glass>
                 <Glass>
-                  <Head title="قالب الموضوع" meta={<Select label="الموضوع" value={tTopic} options={TOPICS.map((x) => ({ value: x, label: TOPIC_SAY[x] }))} onChange={(v) => v && setTTopic(v as Topic)} />} />
-                  <p className="sub cnote">المتغيّرات: {PLACEHOLDERS.map((x) => <bdi key={x} className="num"> {x}</bdi>)} · تُملأ من الإشعار عند الإرسال</p>
+                  <Head title="قالب الموضوع" hint={`المتغيّرات: ${PLACEHOLDERS.join(' ')}`} meta={<Select label="الموضوع" value={tTopic} options={TOPICS.map((x) => ({ value: x, label: TOPIC_SAY[x] }))} onChange={(v) => v && setTTopic(v as Topic)} />} />
                   <div className="regfields">
                     <label className="regf"><span className="lb">عنوان البريد</span><span className="fld"><input value={t.subject} disabled={!admin} onChange={(e) => put('subject', e.target.value)} aria-label="عنوان البريد" /></span></label>
                     <label className="regf"><span className="lb">نص البريد</span><span className="fld"><textarea rows={6} value={t.body} disabled={!admin} onChange={(e) => put('body', e.target.value)} aria-label="نص البريد" /></span></label>
@@ -198,7 +196,7 @@ export default function NotifyHubPage() {
                   </div>
                 </Glass>
                 <Glass>
-                  <Head title="معاينة" meta={<span className="sub">على آخر إشعار من هذا الموضوع · {sample.to}</span>} />
+                  <Head title="معاينة" meta={<span className="sub">{sample.to}</span>} />
                   <p><b>{fillTemplate(t.subject, sample)}</b></p>
                   <p className="sub prose pre">{fillTemplate(t.body, sample)}</p>
                   <p className="sub cnote">الرسالة النصية: {fillTemplate(t.sms, sample)}</p>
@@ -206,7 +204,7 @@ export default function NotifyHubPage() {
                 {admin && tDirty && (
                   <SaveBar
                     count={1}
-                    sentence={<>قوالب الإشعارات والبوابة<span className="decsep" /><span className="sub">تُطبَّق على الرسائل التالية فور الحفظ</span></>}
+                    sentence="قوالب الإشعارات والبوابة"
                     onSave={() => { saveTemplates(tp, user.name); setTSaved(structuredClone(tp)) }}
                     onDiscard={() => setTp(structuredClone(tSaved))}
                   />
@@ -218,7 +216,7 @@ export default function NotifyHubPage() {
           {admin && dirty && (
             <SaveBar
               count={1}
-              sentence={<>قنوات الإشعار<span className="decsep" /><span className="sub">تُطبَّق على الرسائل التالية فور الحفظ</span></>}
+              sentence="قنوات الإشعار"
               onSave={() => { saveNotifyRules({ channels: d }, user.name); setSaved(structuredClone(d)) }}
               onDiscard={() => setD(saved)}
             />

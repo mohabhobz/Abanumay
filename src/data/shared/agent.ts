@@ -19,8 +19,10 @@ export interface SuggestOpt<A extends AgentAct> {
   best: boolean
   /** Why it can't run from the assistant now · the dock is where it runs then */
   blocked?: string
-  /** The note it carries when pressed here */
+  /** The note it carries when pressed here · the popup opens with it, editable */
   note: string
+  /** Client 26 Oct · its reason is written in the decision popup the option opens */
+  mustNote: boolean
 }
 export interface Suggestion<A extends AgentAct> {
   /** The suggested exit · absent when the step is held */
@@ -75,7 +77,7 @@ export function suggestNext<A extends AgentAct>(
     else {
       const file = fwd.find((a) => a.needsFile)
       const st = [...new Set(fwd.flatMap((a) => ctx.stops?.(a) ?? []))]
-      hold = st.length ? 'الخطوة التالية متوقفة على شرط لم يتحقق' : file ? `الخطوة التالية تحتاج ${typeof file.needsFile === 'string' ? file.needsFile : 'مرفقًا'} · ارفعه من شريط القرار` : 'الخطوة التالية تحتاج ملاحظتك · اكتبها في شريط القرار'
+      hold = st.length ? 'الخطوة التالية متوقفة على شرط لم يتحقق' : file ? `الخطوة التالية تحتاج ${typeof file.needsFile === 'string' ? file.needsFile : 'مرفقًا'} · ارفعه من شريط القرار` : 'الخطوة التالية تحتاج سببك · اضغطها واكتبه في نافذة القرار'
       why = st.slice(0, 4)
     }
   }
@@ -83,12 +85,12 @@ export function suggestNext<A extends AgentAct>(
   const options = actions.map((a): SuggestOpt<A> => {
     const note = back(a) ? backNote : ''
     const stop = ctx.stops?.(a)?.[0]
-    const blocked = neg(a) && !back(a) ? 'قرار نهائي · يُتخذ من شريط القرار مع سببه'
-      : a.needsFile ? `يحتاج ${typeof a.needsFile === 'string' ? a.needsFile : 'مرفقًا'} · من شريط القرار`
+    /* Client 26 Oct · a decision that needs a reason opens the same popup as the bar, the reason
+       written there · only a file still sends it to the bar, where the file is attached */
+    const blocked = a.needsFile ? `يحتاج ${typeof a.needsFile === 'string' ? a.needsFile : 'مرفقًا'} · من شريط القرار`
       : stop ? stop
-      : (a.needsNote || back(a)) && !note ? 'يحتاج ملاحظتك · اكتبها في شريط القرار'
       : undefined
-    return { action: a, best: a === best, blocked, note }
+    return { action: a, best: a === best, blocked, note, mustNote: Boolean(a.needsNote || back(a) || neg(a)) }
   }).sort((x, y) => Number(y.best) - Number(x.best))
 
   return { best, hold, why, confidence, options }

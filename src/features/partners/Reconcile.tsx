@@ -41,10 +41,8 @@ export function ReconcileTab({ me, canAct }: { me: string; canAct: boolean }) {
   return (
     <>
       <Glass>
-        <Head title="مطابقة دفعات إحسان مع المنصة" meta={<span className="sub"><bdi>{/* doc 11.4.23 · 11.4.24 */}</bdi></span>} />
-        <p className="sub">صدّر عمليات الصرف من منصة إحسان (CSV أو Excel) وارفعها هنا · تُطابق كل عملية برقمها مع الدفعة المسجّلة في النظام، وتظهر الفروق لمراجعتها.</p>
-        <p className="sub cnote">الأعمدة المطلوبة: «رقم العملية» و«المبلغ» · واختياري: «التاريخ» و«المشروع».</p>
-        <div className="rowf gp-2 mt-2">
+        <Head title="مطابقة دفعات إحسان مع المنصة" hint="الأعمدة المطلوبة: «رقم العملية» و«المبلغ» · واختياري: «التاريخ» و«المشروع»" />
+        <div className="rowf gp-2">
           {canAct && <UploadButton label="ملف عمليات المنصة" accept=".csv,.xlsx" onPick={(f) => { void take(f) }} />}
           <button type="button" className="btn btn-2 btn-sm" onClick={() => downloadCsv('قالب-مطابقة-إحسان.csv', [['رقم العملية', 'المبلغ', 'التاريخ', 'المشروع']])}>نزّل القالب</button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => downloadCsv('مثال-عمليات-إحسان.csv', sampleTable())}>نزّل ملف مثال</button>

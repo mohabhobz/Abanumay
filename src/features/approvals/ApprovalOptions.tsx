@@ -48,11 +48,10 @@ export function ApprovalOptions({ row }: { row: ProjectRow }) {
   return (
     <Glass>
       <Head title="خيارات الاعتماد" meta={<Tag tone="warn">{HOLDER_LABEL[seat as Holder]}</Tag>} />
-      <p className="sub cnote">تُتخذ مع القرار قبل إصداره · ويُسجَّل كل تعديل في سجل المشروع بقيمته قبل وبعد.</p>
       <ul className="cfglist">
         {mgr && (
           <li>
-            <span className="cfgl"><b>هل المشروع له خطة؟</b><span className="sub">{pk === 'portfolio' ? 'المحفظة تتطلب خطة دائمًا' : pk === 'external' ? 'المشروع الخارجي بلا خطة' : 'يظهر الاختيار في شريط القرار كما حدّدته'}</span></span>
+            <span className="cfgl"><b>هل المشروع له خطة؟</b></span>
             {pk === 'regular' ? (
               <span className="cfgchips" role="radiogroup" aria-label="الخطة">
                 {([true, false] as const).map((v) => (
@@ -66,7 +65,7 @@ export function ApprovalOptions({ row }: { row: ProjectRow }) {
         )}
         {mgr && (
           <li>
-            <span className="cfgl"><b>مصدر التمويل</b><span className="sub">{hold?.doc ? 'من مصادر ميزانية البند المرتبط' : 'يُختار بعد ربط المشروع بالميزانية في «الارتباط المالي»'}</span></span>
+            <span className="cfgl"><b>مصدر التمويل</b>{!hold?.doc && <span className="sub">يُختار بعد ربط المشروع بالميزانية</span>}</span>
             {sources.length > 0 ? (
               <FieldSelect value={f.source?.code ?? ''} label="مصدر التمويل" placeholder="اختر المصدر"
                 options={sources.map((x) => ({ value: x.code, label: sourceName(x.code) }))}
@@ -82,13 +81,13 @@ export function ApprovalOptions({ row }: { row: ProjectRow }) {
         )}
         {mgr && (
           <li>
-            <span className="cfgl"><b>مشرف المنح</b><span className="sub">تعديل المشرف وحده يُبقي المجال ومساراته وأهدافه</span></span>
+            <span className="cfgl"><b>مشرف المنح</b></span>
             {row.owner ? <Person name={row.owner} /> : <Tag tone="warn">غير مُسنَد</Tag>}
             <button type="button" className="btn btn-2 btn-sm" onClick={() => setModal('owner')}>عدّل المشرف</button>
           </li>
         )}
         <li className="aopt-ed">
-          <span className="cfgl"><b>مبلغ الدعم · <Money sm>{amount}</Money></b><span className="sub">{fin ? <>الحد الأعلى للزيادة <Money sm>{fin.maxRaise}</Money> · يُحدَّث الحجز تلقائيًا</> : 'يُحدَّث الحجز تلقائيًا عند الارتباط'}</span></span>
+          <span className="cfgl"><b>مبلغ الدعم · <Money sm>{amount}</Money></b>{fin && <span className="sub">الحد الأعلى للزيادة <Money sm>{fin.maxRaise}</Money></span>}</span>
             <label className="regf">
               <span className="lb">المبلغ الجديد</span>
               <MoneyField value={to ? String(to) : ''} label="مبلغ الدعم الجديد" onChange={(x) => setTo(Number(x) || 0)} />
@@ -100,7 +99,7 @@ export function ApprovalOptions({ row }: { row: ProjectRow }) {
             <button type="button" className="btn btn-2 btn-sm" disabled={!(to > 0) || !why.trim() || to === amount} onClick={() => { const w = changeAmount(row, seat, to, why, me); setSaid(w); if (!w.length) { setTo(0); setWhy('') } }}>ثبّت المبلغ الجديد</button>
           </li>
         <li className="aopt-ed">
-          <span className="cfgl"><b>عدد المستفيدين · <span className="num">{nf.format(row.beneficiaries)}</span></b><span className="sub">{benefs.length ? `عُدّل ${nf.format(benefs.length)} مرة` : 'كما قدّرته الجهة'}</span></span>
+          <span className="cfgl"><b>عدد المستفيدين · <span className="num">{nf.format(row.beneficiaries)}</span></b>{benefs.length > 0 && <span className="sub">عُدّل {nf.format(benefs.length)} مرة</span>}</span>
             <label className="regf">
               <span className="lb">العدد الجديد</span>
               <span className="fld"><input className="num" inputMode="numeric" value={bTo ? nf.format(bTo) : ''} aria-label="عدد المستفيدين الجديد" onChange={(e) => setBTo(Number(e.target.value.replace(/[^\d]/g, '')) || 0)} /></span>
@@ -112,7 +111,7 @@ export function ApprovalOptions({ row }: { row: ProjectRow }) {
             <button type="button" className="btn btn-2 btn-sm" disabled={!(bTo > 0) || !bWhy.trim() || bTo === row.beneficiaries} onClick={() => { const w = changeBeneficiaries(row, seat, bTo, bWhy, me); setSaid(w); if (!w.length) { setBTo(0); setBWhy('') } }}>ثبّت العدد الجديد</button>
           </li>
         <li className="aopt-ed">
-          <span className="cfgl"><b>ملاحظات {HOLDER_LABEL[seat as Holder]}</b><span className="sub">تُحفظ مع القرار في سجل المشروع</span></span>
+          <span className="cfgl"><b>ملاحظات {HOLDER_LABEL[seat as Holder]}</b></span>
           <label className="regf regf-w">
             <span className="lb">الملاحظة</span>
             <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على القرار" placeholder="ملاحظة تُحفظ مع القرار في سجل المشروع" /></span>

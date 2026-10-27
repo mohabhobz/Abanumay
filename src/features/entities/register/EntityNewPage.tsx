@@ -6,8 +6,7 @@ import { useMemo, useRef, useState } from 'react'
 import { DOC_EXPIRY, duplicates, expiredDocs, formatIssue } from '@/data/entities/validate'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, Empty, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, type StepItem, DockWhy,
-} from '@/components/ui'
+  BackTo, Empty, Glass, Head, Icon, icons, Mono, Num, Steps, Tag, type StepItem, DockWhy } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { AnalysisCard } from '@/components/assistant'
 import { requestPartner } from '@/data/partners/store'
@@ -94,7 +93,7 @@ export default function EntityNewPage() {
 
   const formStages = useMemo(() => stagesFor(partner), [partner])
   const STAGES = useMemo(
-    () => [{ key: 'partner', label: 'نوع الشراكة', note: '' }, ...formStages.map((s) => ({ key: s.key, label: s.label, note: s.note }))],
+    () => [{ key: 'partner', label: 'نوع الشراكة' }, ...formStages.map((s) => ({ key: s.key, label: s.label }))],
     [formStages],
   )
   const tab = STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : STAGES[0].key
@@ -188,7 +187,7 @@ export default function EntityNewPage() {
 
   /* Side column sticks and stretches to the end of the screen - same as the portal. */
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 240 })
+  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
 
   /* Batch 7 · entities#11 · the internal form checks duplicates too (name, email, mobile, IBAN) · it
      never called them, so a supervisor could register an entity that already exists */
@@ -210,22 +209,14 @@ export default function EntityNewPage() {
   const fields = formStages.find((s) => s.key === tab)?.fields ?? []
   const strategic = partner === 'strategic'
 
-  /* Journey stages - three, not five, with the difference stated in the column. */
+  /* Journey stages - three, not five · Client 26 Oct · guidance lines removed */
   const steps: StepItem[] = [
-    { label: 'تسجيل البيانات', note: 'مشرف المنح', state: done ? 'done' : 'now' },
-    {
-      label: 'إنشاء الجهة',
-      note: /* doc rule 32 */ 'فورًا · بلا مراجعة',
-      state: done ? 'done' : 'todo',
-    },
+    { label: 'تسجيل البيانات', state: done ? 'done' : 'now' },
+    { label: 'إنشاء الجهة', state: done ? 'done' : 'todo' },
     ...(strategic
-      ? [{ label: 'دعوة المنسّق', note: 'بريد بدور «الشريك الاستراتيجي»', state: done ? 'done' : 'todo' } as StepItem]
+      ? [{ label: 'دعوة المنسّق', state: done ? 'done' : 'todo' } as StepItem]
       : []),
-    {
-      label: strategic ? 'تغذية المحفظة' : 'إنشاء مشاريعها',
-      note: strategic ? 'يضيف الشريك مشاريعها الفرعية · ويعتمدها مدير المنح' : 'من داخل النظام لا من بوابتها',
-      state: 'todo',
-    },
+    { label: strategic ? 'تغذية المحفظة' : 'إنشاء مشاريعها', state: 'todo' },
   ]
 
   /* v3 · 2.4.34 · direct registration is for the authority holders settings name · anyone else is
@@ -236,10 +227,7 @@ export default function EntityNewPage() {
         <div className="viewstack"><div className="screen col">
           <BackTo label="الجهات" onClick={() => navigate(ROUTES.entities)} />
           <Glass>
-            <Empty
-              title="التسجيل المباشر لأصحاب الصلاحية"
-              note={`يسجّل الجهات الشريكة والكيانات الاستراتيجية من داخل النظام: ${ENTITY_RULES.registerBy.map((k) => roleByKey(k).title).join(' أو ') || 'لا أحد بعد'} · يُضبط من إعدادات الجهات.`}
-            />
+            <Empty title="التسجيل المباشر لأصحاب الصلاحية" />
           </Glass>
         </div></div>
       </AppLayout>
@@ -255,10 +243,6 @@ export default function EntityNewPage() {
           <header>
             <div>
               <h1 className="ptitle">تسجيل جهة مباشرةً</h1>
-              <p className="sub mt-1">
-                {/* doc rule 32 */}يسجّل مشرف المنح جهة شريكة
-                دون المرور بالبوابة · شريك منفّذ أو جهة خارجية · وتُنشأ فورًا بلا مراجعة
-              </p>
             </div>
             {/* Note: the "22 missing" tag was removed from the page header - a third count of the
                 same missing items next to the card and the doc. The colored tag now belongs to the
@@ -290,10 +274,6 @@ export default function EntityNewPage() {
                       : <Tag tone="ok">مكتمل</Tag>
                   }
                 />
-                {stage.note && <p className="sub cnote">{stage.note}</p>}
-                {lite && tab !== 'partner' && (
-                  <p className="sub cnote">{/* Client 20 Oct (#41) */}الإلزامي لـ«{partnerKind(partner as PartnerKind).label}» حقلان فقط · اسم الجهة وبيانات الحساب البنكي · والباقي اختياري</p>
-                )}
 
                 {tab === 'partner' && (
                   <>
@@ -341,22 +321,11 @@ export default function EntityNewPage() {
                         </li>
                       ))}
                     </ul>
-                    <p className="sub cnote">
-                      القادم من البوابة العامة يُصنَّف <b>شريك مستفيد</b> تلقائيًا
-                      ولا يظهر له هذا الحقل · وهذا هو الفرق الحقيقي بين المدخلين.
-                    </p>
                   </>
                 )}
 
                 {tab === 'docs' && (
                   <>
-                    <div className="regwho">
-                      <Person name="مشرف المنح" quiet={false} />
-                      <span className="sub">
-                        المستندات هنا ترفعها <b>المؤسسة</b> نيابةً عن الشريك · لأنه لا
-                        يدخل المنصة أصلًا
-                      </span>
-                    </div>
                     <ul className="regdocs">
                       {REG_DOCS.map((d) => {
                         const required = need(d)
@@ -425,7 +394,7 @@ export default function EntityNewPage() {
                     {fields.map((f) => (
                       <Field
                         key={f.key}
-                        f={lite ? { ...f, req: f.key === 'name' } : f}
+                        f={{ ...f, hint: undefined, ...(lite ? { req: f.key === 'name' } : {}) }}
                         value={val[f.key] ?? ''}
                         parent={f.dependsOn ? val[f.dependsOn] ?? '' : ''}
                         onChange={(x) => setField(f.key, x)}
@@ -438,7 +407,7 @@ export default function EntityNewPage() {
                 {tab === 'id' && clash && (
                   <p className="bad cnote">
                     رقم الترخيص <Mono>{val.licenseNo}</Mono> مسجَّل لـ «{clash.name}»
-                    بنفس التصنيف{/* doc rule 8 */} تمنع التكرار.
+                    بنفس التصنيف{/* doc rule 8 */}.
                   </p>
                 )}
 
@@ -450,7 +419,7 @@ export default function EntityNewPage() {
                 )}
 
                 {dups.length > 0 && (
-                  <p className="bad cnote">بيانات مكرّرة: {dups.map((d) => `${d.label} مع «${d.who}»`).join(' · ')} · لا تُحفظ جهة مكرّرة{/* doc 2.4.10 */}</p>
+                  <p className="bad cnote">بيانات مكرّرة: {dups.map((d) => `${d.label} مع «${d.who}»`).join(' · ')} {/* doc 2.4.10 */}</p>
                 )}
 
                 <div className="regfoot">
@@ -488,13 +457,6 @@ export default function EntityNewPage() {
               <Glass>
                 <Head title="مسار التسجيل" meta={<span className="sub">{strategic ? 'أربع محطات' : 'ثلاث محطات'}</span>} />
                 <Steps items={steps} flow="ladder" />
-                {/* Note: the difference from the portal is stated, not inferred from the stage
-                    count - five there, three here, and the reason is that the two sides are
-                    different, not that this screen is a shortened version. */}
-                <p className="sub cnote">
-                  لا ضوابط قبول ولا رمز تحقّق ولا مراجعة · فهذه للطرف القادم من خارج
-                  النظام، أما المشرف فمعروف بجلسته، والجهة تُنشأ فورًا.
-                </p>
               </Glass>
 
               {/* Note: this card used to render even while sitting on the type stage - repeating
@@ -515,17 +477,6 @@ export default function EntityNewPage() {
                       </li>
                     ))}
                   </ul>
-                  {partner === 'implementer' && (
-                    <p className="sub cnote">
-                      لا تدخل المنصة · فيُدار المشروع والدفعات من داخل النظام بيد مشرف المنح.
-                    </p>
-                  )}
-                  {strategic && (
-                    <p className="sub cnote">
-                      مثل منصة إحسان · تمنحها المؤسسة مبلغًا لمحفظة وهي توزّعه على مشاريعها الفرعية،
-                      ومنسّقها يدخل النظام ليغذّي المحفظة دون أن يعتمد أو يرفض.
-                    </p>
-                  )}
                 </Glass>
               )}
 
@@ -539,7 +490,7 @@ export default function EntityNewPage() {
               <AnalysisCard
                 title="مراجعة مساعد أبانمي"
                 cta="راجع الطلب"
-                empty="لا يوجد مانع في هذه المحطة · انتقل إلى المحطة التالية."
+                empty="لا يوجد مانع في هذه المحطة."
                 ask
                 onAsk={() => window.dispatchEvent(
                   new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
@@ -572,7 +523,7 @@ export default function EntityNewPage() {
                         <><span className="decsep" />أُرسلت دعوة الدخول إلى <span className="num">{val.coordEmail}</span></>
                       )}</>
                   : <>
-                      تُنشأ الجهة <b>فورًا</b> · لا يوجد طلب للمراجعة
+                      تسجيل جهة مباشرةً
                       {partner && (
                         <>
                           <span className="decsep" />

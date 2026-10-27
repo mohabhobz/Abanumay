@@ -77,7 +77,6 @@ export function EntityEdit({ e, d, section }: { e: EntityRow; d: EntityDetail; s
         <EditModal
           title={`${SECTION_TITLE[section]} · ${e.name}`}
           fields={entityFields(e, d, section)}
-          note="يُطبَّق التعديل فورًا على ملف الجهة دون طلب منها · ويُسجَّل في سجل الجهة وتُبلَّغ به."
           onClose={() => setOpen(false)}
           onSave={(changes: EditChange[], _v, reason) => adminEditEntity(e.id, changes, reason, meOf(role), role)}
         />
@@ -96,14 +95,13 @@ export function BankEdit({ entityId, b }: { entityId: string; b: BankAccount }) 
     { key: 'bank', label: 'اسم البنك', kind: 'select', options: BANKS, value: b.bank, required: true },
     { key: 'shortName', label: 'الاسم المختصر', value: b.shortName },
     { key: 'accountName', label: 'اسم الحساب البنكي', value: b.accountName, required: true },
-    { key: 'iban', label: 'رقم الآيبان', kind: 'text', value: b.iban, required: true, hint: 'SA ثم 22 رقمًا · لا يتكرر في حساب مفعّل لجهة أخرى' },
+    { key: 'iban', label: 'رقم الآيبان', kind: 'text', value: b.iban, required: true },
   ]
   return (
     <>
       <EditButton onClick={() => setOpen(true)} />
       {open && (
         <EditModal title={`تعديل الحساب · ${b.bank}`} fields={fields} onClose={() => setOpen(false)}
-          note="يُسجَّل التعديل في سجل الجهة · وطلبات الصرف القادمة تُحوَّل إلى الحساب بعد التعديل."
           onSave={(changes, _v, reason) => editBank(entityId, b.id, changes, reason, meOf(role), role)} />
       )}
     </>

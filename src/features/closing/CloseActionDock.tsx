@@ -1,6 +1,6 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { MISSING_ITEM, nounAfter } from '@/lib/format'
-import { Icon, Num, Person, icons } from '@/components/ui'
+import { DecisionDialog, Icon, Num, Person, Tag, icons } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import {
   closeCycle, closeStageLabel, evalBlockers, reportBlockers,
@@ -34,18 +34,18 @@ export interface CloseActionDockProps {
   row: CloseRow
   /** The exits come from the closing store · `closeActions(row, role)` */
   actions: CloseAct[]
-  note: string
-  onNote: (v: string) => void
-  onAct: (a: CloseAct, file?: string) => void
+  /** Runs the action · returns what refused it, which the popup shows */
+  onAct: (a: CloseAct, file?: string, note?: string) => string[] | void
 }
 
 export function CloseActionDock({
-  user, row, actions, note, onNote, onAct,
+  user, row, actions, onAct,
 }: CloseActionDockProps) {
   const bar = useRef<HTMLDivElement>(null)
   useProximity(bar)
 
-  const needNote = actions.some((a) => a.needsNote)
+  const [pick, setPick] = useState<CloseAct | null>(null)
+  const [file, setFile] = useState('')
   const cycle = closeCycle(row)
 
   /* Note: a request sitting with someone else states who, rather than disappearing or showing a
@@ -91,36 +91,14 @@ export function CloseActionDock({
           </span>
         </div>
 
-        {/* Field and buttons form one group that wraps together - the field doesn't split away from
-            "return" if the note runs to two lines. */}
+        {/* Client 26 Oct · the bar holds the buttons only · each one confirms in its popup, with the
+            reason (a return) or the file the step needs asked there */}
         <div className="payact-g">
-        {needNote && (
-          <label className="payact-n">
-            <span className="vis-h">ملاحظات الإعادة</span>
-            <input
-              value={note}
-              onChange={(e) => onNote(e.target.value)}
-              placeholder="سبب الإعادة · إلزامي"
-            />
-          </label>
-        )}
-
         <div className="rowf gp-2">
           {noteFirst(actions).map((x) => {
             /* The reason is written out, not left to color alone - the first issue is named, since
                "something's missing" makes users hunt for it visually. */
-            const why =
-              (x.needsNote && !note.trim())
-                ? 'اكتب سبب الإعادة أولًا'
-                : closeStops(row, x)[0] ?? ''
-            if (x.needsFile && !why) {
-              return (
-                <label key={x.label} className={`btn ${x.btn}`} title={`ارفع ${x.needsFile} · ${x.why}`}>
-                  <Icon name={icons.upload} size="sm" />{x.label}
-                  <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label={`${x.label} · ${x.needsFile}`} onChange={(e) => { const f = e.target.files?.[0]; if (f) onAct(x, f.name); e.target.value = '' }} />
-                </label>
-              )
-            }
+            const why = closeStops(row, x)[0] ?? ''
             return (
               <button
                 key={x.label}
@@ -128,15 +106,41 @@ export function CloseActionDock({
                 data-needs-note={x.needsNote ? '' : undefined}
                 disabled={Boolean(why)}
                 title={why || x.why}
-                onClick={() => onAct(x)}
+                onClick={() => { setPick(x); setFile('') }}
               >
-                {x.label}
+                {x.needsFile && <Icon name={icons.upload} size="sm" />}{x.label}
               </button>
             )
           })}
         </div>
         </div>
       </div>
+      {pick && (
+        <DecisionDialog
+          title={pick.label}
+          tone="btn-p"
+          subject={<>إغلاق {row.projectName} · {cycle === 'report' ? 'التقرير الختامي' : 'تقييم المشروع'}{pick.why ? ` · ${pick.why}` : ''}</>}
+          note={pick.needsNote ? 'required' : 'optional'}
+          notePlaceholder={pick.needsNote ? 'سبب الإعادة · يصل مع الطلب إلى كاتبه' : undefined}
+          stops={closeStops(row, pick)}
+          ready={!pick.needsFile || Boolean(file)}
+          onClose={() => setPick(null)}
+          onConfirm={(n) => onAct(pick, file || undefined, n)}
+        >
+          {pick.needsFile && (
+            <div className="regf">
+              <span className="lb">{pick.needsFile}<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <span className="apv-row">
+                <label className="btn btn-2 btn-sm">
+                  <Icon name={icons.upload} size="sm" />{file ? 'استبدل الملف' : 'ارفع الملف'}
+                  <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label={`${pick.label} · ${pick.needsFile}`} onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f.name); e.target.value = '' }} />
+                </label>
+                {file ? <Tag tone="ok">{file}</Tag> : <span className="sub">لا ملف بعد</span>}
+              </span>
+            </div>
+          )}
+        </DecisionDialog>
+      )}
     </div>
   )
 }

@@ -57,13 +57,12 @@ export function OtherDocs({ projectId, me, asEntity, canUpload }: { projectId: s
           </table>
         </div>
       ) : (
-        <p className="sub cnote">لا مرفقات أخرى بعد · ترفق الجهة أو الفريق ما يعزّز الطلب، أكثر من ملف في مرة واحدة.</p>
+        <p className="sub cnote">لا مرفقات أخرى بعد.</p>
       )}
       {canUpload && (
         <div className="apv-row">
           <UploadButton label="ارفع مرفقات أخرى" accept={ACCEPT} maxMb={50} onPick={() => undefined}
             onPickMany={(files) => { setSaid(''); uploadMore(projectId, files.map((f) => ({ name: f.name, size: f.size })), me) }} />
-          <span className="sub">أكثر من ملف في مرة · PDF وصور ومستندات وفيديو حتى 50 م.ب للملف</span>
         </div>
       )}
       {said && <p className="bad cnote" role="alert">{said}</p>}

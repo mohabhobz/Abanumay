@@ -87,15 +87,12 @@ export function ExportMenu({
             {note && <div className="fexp-s sub">{note}</div>}
             <button className="fopt" role="menuitem" onClick={pick(() => exportXlsx(sheet))}>
               <span className="fopt-t">Excel · xlsx</span>
-              <span className="fopt-n sub">خلايا حقيقية للفلترة والجمع</span>
             </button>
             <button className="fopt" role="menuitem" onClick={pick(printArea)}>
               <span className="fopt-t">PDF · عبر الطباعة</span>
-              <span className="fopt-n sub">ورقة رسمية للإرفاق في محضر</span>
             </button>
             <button className="fopt" role="menuitem" onClick={pick(() => exportPng(sheet))}>
               <span className="fopt-t">صورة · png</span>
-              <span className="fopt-n sub">لقطة للشريحة أو المحادثة</span>
             </button>
           </div>
         )}

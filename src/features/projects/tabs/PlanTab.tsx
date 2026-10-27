@@ -40,11 +40,10 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
   if (!p) {
     return (
       <Glass>
-        <Head title="خطة تنفيذ المشروع" meta="قرار مدير المنح قبل الاعتماد" />
+        <Head title="خطة تنفيذ المشروع" />
         <Empty
           art={{ done: 0 }}
           title="هذا المشروع لم تُفتح له خطة تنفيذ."
-          note="تُفتح خطة التنفيذ للمشاريع التي يقرّر مدير المنح أنها تتطلب خطة عمل · وهي إجراء مستقل يسير بالتوازي مع الاتفاقية: تكتب الجهة المراحل والأنشطة والشواهد، ويعتمدها مشرف المنح ثم مدير المنح، فتُثبَّت نسخة مرجعية يُقاس عليها الإنجاز."
           actions={onStart && (
             <button
               className="btn btn-p"
@@ -183,25 +182,14 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
         ]}
       />
 
-      {/* This line is the plan's effect on the project — without it, the tab would
-          just display numbers with no consequence. A completed plan lifts a
-          blocker on closing; it doesn't perform the closing itself. */}
-      {readyToClose(p) ? (
-        <p className="ok cnote">
-          قُبلت كل أنشطة الخطة · المشروع مؤهَّل للإغلاق، والإغلاق إجراء مستقل
-          له قواعده (التقرير الختامي · الاتصال المؤسسي · التقييم).
-        </p>
-      ) : (
-        <p className="sub cnote">
-          الخطة المطلوبة تُبقي المشروع في «استكمال متطلبات ما قبل التنفيذ» حتى تُعتمد · ولا يصبح
-          المشروع مؤهَّلًا للإغلاق قبل قبول كل أنشطة خطته
-          {live && <> · المقبول الآن {pct(done)}</>}.
-        </p>
+      {readyToClose(p) && (
+        <p className="ok cnote">قُبلت كل أنشطة الخطة · المشروع مؤهَّل للإغلاق.</p>
       )}
 
       </>)}
 
-      <div className="rowf gp-2">
+      {/* Client 27 Oct · the card's actions on its own foot, clear of the data above them */}
+      <div className="cardfoot">
         <Link to={ROUTES.plan(p.id)} className="btn btn-p">
           افتح الخطة
           <Icon name={icons.chevron} size="sm" />

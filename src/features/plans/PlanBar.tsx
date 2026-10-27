@@ -45,7 +45,6 @@ export function PlanBar({ done, claim, want, pending }: PlanBarProps) {
         <div className="bar over plbar plbar-w" />
         <div className="qr-barl">
           <span className="sub">لم تُعتمد بعد</span>
-          <span className="sub">يبدأ القياس بعد اعتماد النسخة المرجعية</span>
         </div>
       </>
     )

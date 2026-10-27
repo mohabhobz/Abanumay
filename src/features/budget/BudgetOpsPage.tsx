@@ -52,7 +52,7 @@ export default function BudgetOpsPage() {
           <header>
             <div>
               <h1 className="ptitle">طلبات عمليات الميزانية</h1>
-              <p className="sub mt-1">المناقلة والتعزيز والتخفيض · على الميزانيات المعتمدة، وداخل الميزانية الواحدة</p>
+
             </div>
             {mayAct('prepare', role) && (
               <Link className="btn btn-p" to={ROUTES.budgetOpNew}>
@@ -88,7 +88,7 @@ export default function BudgetOpsPage() {
           <Glass className="tblcard">
             <Head title="الطلبات" meta={<span className="sub"><Num>{rows.length}</Num> طلب</span>} />
             {rows.length === 0 ? (
-              <Empty title="لا طلبات هنا." note="يُنشأ الطلب من هنا أو من شاشة الميزانية المعتمدة." />
+              <Empty title="لا طلبات هنا." />
             ) : (
               <div className="tblwrap">
                 <table className="tbl">

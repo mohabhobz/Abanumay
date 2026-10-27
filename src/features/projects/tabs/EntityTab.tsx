@@ -91,10 +91,6 @@ export function EntityTab({ entity: E, bank, action, history }: EntityTabProps) 
             ),
           }))}
         />
-        <div className="sub mt-3">
-          خمسة مستندات ناقصة، منها تقرير الحوكمة وتقرير المراجع القانوني، وهي المدخلات التي
-          تُبنى عليها درجة الحوكمة.
-        </div>
       </Glass>
 
       <Glass>

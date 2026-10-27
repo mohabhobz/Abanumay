@@ -52,7 +52,6 @@ export function RecommendationCard({ row }: { row: ProjectRow }) {
         ]}
       />
       <p className="cnote"><b>المبررات:</b> {s.justification || '—'}</p>
-      <p className="sub cnote">توصية استشارية · لا يترتب عليها اعتماد ولا صرف · القرار لصاحب الصلاحية حسب مصفوفة الاعتماد.</p>
     </Glass>
   )
 }
@@ -81,7 +80,6 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
   const created = f.createdAt ?? row.createdAt?.replace('T', ' ') ?? `${row.submittedAt} 09:00`
   const days = row.startAt && row.endAt && !row.actualStartAt ? calendarDaysBetween(row.startAt, row.endAt) || (row.durationDays ?? 0) : (row.durationDays ?? 0)
   const expectedEnd = row.actualStartAt ? (row.startAt && days ? endAfterDays(row.startAt, days) : '') : (row.endAt ?? '')
-  const external = Boolean(row.platform)
   const approved = row.supportStatus === 'معتمد' || !['دراسة المشروع', 'استكمال بيانات المشروع'].includes(row.stage)
   const week = (row.execDays ?? foundationWeek()).map((n) => WEEKDAYS[n]).join('، ')
   /* a record from before the rule carries no actual start · its agreement's signature is that start */
@@ -94,18 +92,18 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
           { k: 'أُنشئ', v: <span className="num">{created}</span> },
           { k: 'أُرسل', v: <DateText>{f.sentAt?.slice(0, 10) ?? row.submittedAt}</DateText> },
           { k: 'تاريخ تقديم الطلب', v: <DateText>{row.submittedAt}</DateText> },
-          { k: 'تاريخ بدء التنفيذ المتوقع', v: row.startAt ? <><DateText>{row.startAt}</DateText> <span className="sub">· كما أدخلته الجهة</span></> : '—' },
+          { k: 'تاريخ بدء التنفيذ المتوقع', v: row.startAt ? <><DateText>{row.startAt}</DateText></> : '—' },
           { k: 'تاريخ انتهاء التنفيذ المتوقع', v: expectedEnd ? <DateText>{expectedEnd}</DateText> : '—' },
-          ...(days ? [{ k: 'المدة', v: <><Num>{days}</Num> يومًا <span className="sub">· من تاريخ البدء إلى تاريخ الانتهاء</span></> }] : []),
+          ...(days ? [{ k: 'المدة', v: <><Num>{days}</Num> يومًا</> }] : []),
           {
             k: 'تاريخ بدء التنفيذ الفعلي',
             v: row.actualStartAt
               ? <DateText>{row.actualStartAt}</DateText>
-              : signed ? <><DateText>{signed}</DateText> <span className="sub">· مع توقيع الاتفاقية</span></>
-              : <span className="sub">{external ? 'يُسجَّل مع اكتمال الاعتماد · المشروع الخارجي بلا اتفاقية' : 'يُسجَّل مع توقيع الاتفاقية'}</span>,
+              : signed ? <DateText>{signed}</DateText>
+              : '—',
           },
-          ...(row.actualStartAt && row.endAt ? [{ k: 'نهاية التنفيذ', v: <><DateText>{row.endAt}</DateText> <span className="sub">· من البداية الفعلية بالمدة نفسها</span></> }] : []),
-          { k: 'أيام التنفيذ من الأسبوع', v: <>{week} <span className="sub">· للعلم · لا تغيّر المدة</span></> },
+          ...(row.actualStartAt && row.endAt ? [{ k: 'نهاية التنفيذ', v: <><DateText>{row.endAt}</DateText></> }] : []),
+          { k: 'أيام التنفيذ من الأسبوع', v: week },
         ]}
       />
       {canReschedule && approved && days ? (
@@ -118,7 +116,6 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
             <label className="regf">
               <span className="lb">سبب التعديل<b className="regf-r" aria-label="إلزامي">*</b></span>
               <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب تعديل البداية" /></span>
-              <span className="sub regf-h">تنتقل النهاية بالمدة نفسها · <Num>{days}</Num> يومًا</span>
             </label>
             {err.length > 0 && <p className="bad">{err.join(' · ')}</p>}
             <div className="rowf gp-2">
@@ -196,7 +193,6 @@ export function RequestDocsCard({ row, me, asEntity, canUpload }: { row: Project
           <div key={g} className="stdy-g">
             <h3 className="stdy-h">
               {g === 'entity' ? 'مرفقات الجهة' : 'مرفقات داخلية'}
-              {' '}<Tag tone="mute">{g === 'entity' ? 'تراها الجهة والفريق' : 'للفريق الداخلي وحده'}</Tag>
             </h3>
             <DocList
               label={g === 'entity' ? 'مرفقات الجهة' : 'المرفقات الداخلية'}
@@ -230,14 +226,13 @@ export function RequestCloseCard({ row, me }: { row: ProjectRow; me: string }) {
     return (
       <Glass>
         <Head title={f.closed.kind === 'cancel' ? 'الطلب ملغى' : 'الطلب مؤرشف'} meta={<Tag tone="mute"><DateText>{f.closed.at}</DateText></Tag>} />
-        <p className="sub cnote">{f.closed.reason} · <Person name={f.closed.by} /> · لا يُحذف الطلب ولا توصياته، ويبقى كاملًا في السجل.</p>
+        <p className="sub cnote">{f.closed.reason} · <Person name={f.closed.by} /></p>
       </Glass>
     )
   }
   return (
     <Glass>
-      <Head title="إلغاء الطلب أو أرشفته" meta={<Tag tone="mute">لا حذف بعد الإرسال</Tag>} />
-      <p className="sub cnote">الطلب المرسل لا يُحذف ولا تُحذف توصياته · يُلغى إن انتهى سببه، أو يُؤرشف ليخرج من القوائم النشطة ويبقى في السجل.</p>
+      <Head title="إلغاء الطلب أو أرشفته" />
       <div className="rowf gp-2">
         <button type="button" className="btn btn-2" onClick={() => { setKind('archive'); setReason('') }}>أرشف الطلب</button>
         <button type="button" className="btn btn-d" onClick={() => { setKind('cancel'); setReason('') }}>ألغِ الطلب</button>
@@ -250,7 +245,7 @@ export function RequestCloseCard({ row, me }: { row: ProjectRow; me: string }) {
               <b>{kind === 'cancel' ? 'إلغاء الطلب' : 'أرشفة الطلب'}</b>
             </div>
             <div className="mb col">
-              <p className="sub cnote">{row.name} · يبقى الطلب وكل ما سُجّل عليه في السجل.</p>
+              <p className="sub cnote">{row.name}</p>
               <label className="regf">
                 <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
                 <span className="fld"><input autoFocus value={reason} onChange={(e) => setReason(e.target.value)} aria-label="السبب" /></span>

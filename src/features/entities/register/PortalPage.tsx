@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
+import { BankGrid, BankCard,
   CopyId, DateText, Glass, Head, Icon, KV, Mono, Num, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
 import { DocList, UploadButton } from '@/components/docs'
@@ -233,7 +233,7 @@ export default function PortalPage() {
           )}
 
           {/* Re-audit 7 Oct · staff read the portal as the entity sees it, and act on nothing */}
-          {preview && <p className="sub cnote"><Tag tone="mute">معاينة للقراءة فقط</Tag> تقرأ بوابة الجهة كما تراها · الإجراءات للجهة من حسابها</p>}
+          {preview && <p className="sub cnote"><Tag tone="mute">معاينة للقراءة فقط</Tag></p>}
           <ReadOnly on={preview}>
           <div className="g2">
             {/* Right - application card
@@ -301,7 +301,7 @@ export default function PortalPage() {
                         const f = REG_STAGES.flatMap((x) => x.fields).find((y) => y.key === k)
                         if (!f) return <p key={k} className="sub cnote">{fieldLabel(k)}</p>
                         return (
-                          <Field key={k} f={f} value={edit[k] ?? ''} parent={f.dependsOn ? edit[f.dependsOn] ?? '' : ''}
+                          <Field key={k} f={{ ...f, hint: undefined }} value={edit[k] ?? ''} parent={f.dependsOn ? edit[f.dependsOn] ?? '' : ''}
                             onChange={(x) => setEdit((s) => ({ ...s, [k]: x }))} error={editErr[k]} />
                         )
                       })}
@@ -339,10 +339,7 @@ export default function PortalPage() {
                 )}
 
                 {resent && (
-                  <p className="sub cnote">
-                    أُرسل الطلب إلى المؤسسة وحالته «تحت المراجعة» · ستصل رسالة إلى
-                    بريد الحساب فور مراجعته.
-                  </p>
+                  <p className="sub cnote" role="status">أُرسل الطلب إلى المؤسسة.</p>
                 )}
 
                 {/* Note: one button, stating what happens next. "Resubmit", not "edit": the entity
@@ -373,7 +370,7 @@ export default function PortalPage() {
               </Glass>
 
               <Glass>
-                <Head title="بيانات الطلب" meta={<span className="sub">كما أرسلتها الجهة</span>} />
+                <Head title="بيانات الطلب" />
                 <KV
                   rows={[
                     { k: 'التصنيف', v: reqOf.type },
@@ -387,12 +384,6 @@ export default function PortalPage() {
                     { k: 'المستندات المرفوعة', v: <><Num>{reqOf.docs.length}</Num> {nounAfter(reqOf.docs.length, NOUN.doc)}</> },
                   ]}
                 />
-                {!view.editable && (
-                  <p className="sub cnote">
-                    البيانات مقفلة الآن · وتُفتح للتعديل عندما تعيد المؤسسة الطلب
-                    للاستكمال، حتى لا تُعدَّل نسخة بينما يقرأ المراجع نسخة أخرى.
-                  </p>
-                )}
               </Glass>
 
               <Glass>
@@ -405,28 +396,20 @@ export default function PortalPage() {
                     built for a table row (44px thumbnail + padding = row height), so outside a
                     table that padding adds to the space above and below it, leaving the row loose
                     and unlike its counterpart on the project page (which the client has seen). */}
-                <ul className="rgbanks">
-                  {reqOf.banks.map((b, i) => (
-                    <li key={b.id}>
-                      <span className="rgbank-n num">{i + 1}</span>
-                      <div className="rgbank-b">
-                        <div className="rgbank-t">
-                          <b>{b.bankName}</b>
-                          <span className="sub">· {b.bankHolder}</span>
-                        </div>
-                        <div className="sub"><Mono>{b.iban}</Mono></div>
-                        <DocList
-                          label={`الشهادة البنكية · ${b.bankName}`}
-                          rows={[{
-                            name: b.doc || `${BANK_DOC_LABEL}.pdf`,
-                            meta: BANK_DOC_LABEL,
-                            uploaded: Boolean(b.doc),
-                          }]}
-                        />
-                      </div>
-                    </li>
+                <BankGrid>
+                  {reqOf.banks.map((b) => (
+                    <BankCard key={b.id} bank={b.bankName} iban={b.iban} holder={b.bankHolder}>
+                      <DocList
+                        label={`الشهادة البنكية · ${b.bankName}`}
+                        rows={[{
+                          name: b.doc || `${BANK_DOC_LABEL}.pdf`,
+                          meta: BANK_DOC_LABEL,
+                          uploaded: Boolean(b.doc),
+                        }]}
+                      />
+                    </BankCard>
                   ))}
-                </ul>
+                </BankGrid>
               </Glass>
               </>}
 
@@ -628,12 +611,6 @@ export default function PortalPage() {
                     title="خطط مشاريعك"
                     meta={<span className="sub"><Num>{plans.length}</Num> {nounAfter(plans.length, NOUN.plan)}</span>}
                   />
-                  {/* Note: this sentence is what prevents the biggest misunderstanding in this
-                      module: "uploaded the evidence" isn't "counted as complete". */}
-                  <p className="sub cnote">
-                    ترفع الجهة الشواهد وتُبلغ باكتمال النشاط · ويُحتسب الإنجاز بعد
-                    مراجعة مشرف المنح وقبوله{/* doc rule 14 */}.
-                  </p>
                   <ul className="ptl-miss ptl-plans">
                     {plans.map((pl) => (
                       <li key={pl.id}>
@@ -665,7 +642,7 @@ export default function PortalPage() {
                 me="entity"
                 placeholder="اكتب رسالة إلى المؤسسة…"
                 emptyTitle="قناة التواصل مفتوحة عند الحاجة"
-                emptyNote="راسل المؤسسة إن كان في الطلب ما يحتاج إلى توضيح · مثل مستند لا يُعرف مصدره، أو ملاحظة تحتاج إلى شرح. أما حالة الطلب فتُتابع من البطاقة المجاورة."
+                emptyNote="لا رسائل بعد."
               />
 
               {/* Note: the paragraph "this account is for your application..." was removed at the
@@ -676,7 +653,7 @@ export default function PortalPage() {
             <AssistantAside
               title="ما ينتظرك"
               cta="اعرض ما ينتظرك"
-              empty="لا شيء ينتظرك الآن · ستصلك الإشعارات حين يحتاج إجراء إلى ردّك."
+              empty="لا شيء ينتظرك الآن."
               ask={false}
               readings={portalReadings}
             />

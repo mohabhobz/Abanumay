@@ -5,13 +5,15 @@
 .agx-cl-h{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
 .agx-cl-h b{font-weight:600;color:var(--t1)}
 /* 12 Oct · audit UI-147 · UI-163 · the kind tag is one width, so the titles after it start on one edge */
-.agx-cl-h>.tag:first-child{flex:none;min-inline-size:calc(var(--sp-12) * 1.4);justify-content:center}
+.agx-cl-h>.tag{flex:none;min-inline-size:calc(var(--sp-12) * 1.4);justify-content:center}
 .agx-cl-t{flex:1;min-width:12rem}
 .agx-cl textarea,.agx-add textarea{width:100%;resize:vertical;font:inherit;line-height:var(--lh-text)}
 .agx-add{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-4);padding-top:var(--sp-4);box-shadow:inset 0 1px 0 var(--edge-1)}
 .agx-add>.btn{align-self:flex-start}
 .agx-doc{display:flex;align-items:center;gap:var(--sp-2);min-width:0}
 .agx-doc>.dfile{flex:1;min-width:0}
-.agx-hint{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-width:0}
+.agx-hint{display:flex;align-items:center;gap:var(--sp-3);min-width:0;flex:1 1 auto}
+.agx-hint>span:first-child{flex:1 1 auto;min-width:0}
+.agx-hint>.btn{flex:none}
 .agx-ver{flex-basis:100%;display:flex;flex-direction:column;gap:var(--sp-1);padding-inline-start:var(--sp-5)}
 .agx-ent{display:flex;flex-direction:column;gap:var(--sp-3)}
