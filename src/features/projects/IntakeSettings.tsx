@@ -1,7 +1,7 @@
 import { meOf, readRole } from '@/data/roles'
 import { calendarSnap, rederiveEnds } from '@/data/intake/flow'
 import { useMemo, useState } from 'react'
-import { FieldMultiSelect,
+import { WeekdayPicker, FieldMultiSelect,
   DateField, FieldSelect, Glass, Head, Icon, icons, Num, Person, Switch, Tag } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
 import { CfgNum } from '@/features/settings/CfgEdit'
@@ -135,17 +135,11 @@ export function CycleTab() {
           on={Boolean(d.countHolidays)}
           onChange={(v) => patch((x) => { x.countHolidays = v })}
         />
-        {/* Client 26 Oct · one multi-choice control everywhere · the menu with chips under it */}
-        <label className="regf">
+        {/* Client 27 Oct · the week as seven toggles, like the project's execution days */}
+        <div className="regf">
           <span className="lb">أيام العطلة الأسبوعية</span>
-          <FieldMultiSelect
-            values={d.weekend.map((i) => WEEKDAYS[i]!)}
-            options={WEEKDAYS}
-            label="أيام العطلة الأسبوعية"
-            placeholder="أيام العطلة"
-            onChange={(xs) => patch((x) => { x.weekend = xs.map((w) => WEEKDAYS.indexOf(w as (typeof WEEKDAYS)[number])).filter((n) => n >= 0).sort() })}
-          />
-        </label>
+          <WeekdayPicker days={WEEKDAYS} value={d.weekend} min={0} label="أيام العطلة الأسبوعية" onChange={(next) => patch((x) => { x.weekend = next })} />
+        </div>
         <ul className="cfglist">
           {[...d.holidays].sort((a, b) => a.date.localeCompare(b.date)).map((h) => (
             <li key={`${h.date}-${h.name}`}>

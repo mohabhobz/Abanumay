@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { textIssues } from '@/lib/textCheck'
 import { useNavigate } from 'react-router-dom'
-import {
+import { WeekdayPicker,
   DateField, DateText, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, DockWhy, blockerCount, FieldMultiSelect } from '@/components/ui'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { blockerReadings } from '@/features/shared/blockerReadings'
@@ -71,7 +71,7 @@ function PField({
   /* Client 24 Oct (#86) · the field and goal lists follow the budget · an option without an allocation
      stays listed, disabled with its reason, and a thin one carries a hint (`supportOption`) */
   const budgetOpts = opts.map((x) => supportOption(f.key, parent, x))
-  const Wrap = f.kind === 'multi' ? 'div' : 'label'
+  const Wrap = f.kind === 'multi' || f.kind === 'weekdays' ? 'div' : 'label'
 
   return (
     /* 26 Oct · the multiple choice takes one column like its neighbours (it spanned the row) · and is a
@@ -141,19 +141,13 @@ function PField({
         <StagesEditor list={stagesOf(value)} from={bounds?.from} to={bounds?.to} onChange={(x) => onChange(JSON.stringify(x))} />
       ) : f.kind === 'weekdays' ? (
         /* v3 · 3.4.15 · the project's own execution days · the foundation's week until the entity picks */
-        /* Client 26 Oct · one multi-choice control everywhere · the menu with chips under it */
-        (() => {
-          const cur = workDaysOf(value) ?? foundationWeek()
-          return (
-            <FieldMultiSelect
-              values={cur.map((i) => WEEKDAYS[i]!)}
-              options={WEEKDAYS}
-              label={f.label}
-              placeholder="أيام التنفيذ"
-              onChange={(xs) => { const next = xs.map((x) => WEEKDAYS.indexOf(x as (typeof WEEKDAYS)[number])).filter((n) => n >= 0).sort(); if (next.length) onChange(next.join(',')) }}
-            />
-          )
-        })()
+        /* Client 27 Oct · the seven days in view as toggles · a weekend-only project picks الجمعة and السبت directly */
+        <WeekdayPicker
+          days={WEEKDAYS}
+          value={workDaysOf(value) ?? foundationWeek()}
+          label={f.label}
+          onChange={(next) => onChange(next.join(','))}
+        />
       ) : f.kind === 'long' ? (
         <span className="fld fld-a">
           <textarea

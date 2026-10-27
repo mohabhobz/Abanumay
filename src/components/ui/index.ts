@@ -35,3 +35,4 @@ export { DecisionDialog, DockActions, type DecisionDialogProps, type DockAction 
 export { Hint } from './Hint'
 export { StatRow } from './primitives'
 export { BankCard, BankGrid, type BankCardProps } from './BankCard'
+export { WeekdayPicker } from './WeekdayPicker'
