@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { OTP_SAY, mmss, useTick } from './otp'
-import { Icon, icons, Mono, Num } from '@/components/ui'
+import { Button, Icon, icons, Mono, Num } from '@/components/ui'
 import {
   OTP_LEN, expiresIn, otp, resendIn, sendOtp, triesLeft, verifyOtp, type OtpPurpose,
 } from '@/data/entities/auth'
@@ -50,7 +50,7 @@ export function OtpPanel({
       <p className="sub cnote">
         أُرسل رمز من <Num>{OTP_LEN}</Num> أرقام إلى{' '}
         {c?.to.map((t, i) => <span key={t}>{i > 0 && ' و'}<Mono>{t}</Mono></span>)}
-        {onEdit && <> · <button type="button" className="lnk" onClick={onEdit}>تعديل</button></>}
+        {onEdit && <> · <Button plain type="button" className="lnk" onClick={onEdit}>تعديل</Button></>}
       </p>
       <div className="otp-row">
         <label className="payamt otp-in">
@@ -66,19 +66,19 @@ export function OtpPanel({
             aria-label="رمز التحقّق"
           />
         </label>
-        <button type="button" className="btn btn-p" disabled={dead || code.length !== OTP_LEN} onClick={check}>
+        <Button type="button" variant="p" disabled={dead || code.length !== OTP_LEN} onClick={check}>
           تحقّق
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn btn-2"
+          variant="2"
           disabled={wait > 0}
           title={wait > 0 ? `يُتاح رمز جديد بعد ${wait} ثانية` : 'أرسل رمزًا جديدًا'}
           onClick={() => { sendOtp(purpose, to, account); setMsg(''); setCode('') }}
         >
           <Icon name={icons.redo} size="sm" />
           {wait > 0 ? <>رمز جديد بعد <Num>{wait}</Num> ث</> : 'أرسل رمزًا جديدًا'}
-        </button>
+        </Button>
       </div>
       <p className="sub otp-meta">
         {dead

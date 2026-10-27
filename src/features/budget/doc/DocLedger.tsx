@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Icon, Mono, Money, Num, Person, Tag, icons } from '@/components/ui'
+import { ButtonLink, Button, DateText, Empty, Glass, Head, Icon, Mono, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { docSources, pathOf, sourceBalance, sourceByCode, splitOf, type BudgetDoc } from '@/data/mock/budgetTree'
 import {
@@ -61,10 +61,10 @@ export function LedgerCard({ doc, line }: { doc: BudgetDoc; line?: string }) {
         </div>
       )}
       {rows.length > 8 && (
-        <button className="btn btn-2 btn-sm mt-2" onClick={() => setAll((x) => !x)}>
+        <Button variant="2" size="sm" className="mt-2" onClick={() => setAll((x) => !x)}>
           <Icon name={all ? icons.chevronUp : icons.chevronDown} size="sm" />
           {all ? 'اعرض أقل' : `اعرض كل الحركات (${rows.length})`}
-        </button>
+        </Button>
       )}
     </Glass>
   )
@@ -76,7 +76,7 @@ export function DocRequests({ doc }: { doc: BudgetDoc }) {
     <Glass>
       <Head
         title="طلبات العمليات"
-        meta={mayAct('prepare', readRole()) ? <Link className="btn btn-2 btn-sm" to={`${ROUTES.budgetOpNew}?doc=${doc.id}`}><Icon name={icons.plus} size="sm" />طلب جديد</Link> : undefined}
+        meta={mayAct('prepare', readRole()) ? <ButtonLink variant="2" size="sm" to={`${ROUTES.budgetOpNew}?doc=${doc.id}`}><Icon name={icons.plus} size="sm" />طلب جديد</ButtonLink> : undefined}
       />
       {rows.length === 0 ? (
         <p className="sub cnote">لا طلبات مناقلة أو تعزيز أو تخفيض على هذه الميزانية.</p>

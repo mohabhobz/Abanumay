@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Glass, Head, Icon, icons, Num, Tag } from '@/components/ui'
+import { FieldBox, Button, Glass, Head, Icon, icons, Num, Tag } from '@/components/ui'
 import { FIELDS_BY_TRACK, GOALS_BY_FIELD, TRACKS } from '@/data/mock/taxonomy'
 import { addTaxon, isAdded, taxonIssue, taxonUse, useTaxonomy, type TaxonLevel } from '@/data/budget/taxonomy'
 import { NOUN, nounAfter } from '@/lib/format'
@@ -31,14 +31,14 @@ function Column({ level, items, picked, onPick, parent, parentSay }: {
     <Glass className="taxcol">
       <Head title={c.title} meta={parentSay ? <span className="sub trim1">{parentSay}</span> : <span className="sub"><Num>{items.length}</Num></span>} />
       <div className="taxadd">
-        <span className="fld">
+        <FieldBox>
           <input value={name} disabled={level !== 'track' && !parent} onChange={(e) => { setName(e.target.value); setBad('') }}
             onKeyDown={(e) => { if (e.key === 'Enter' && name.trim() && !issue) go() }} placeholder={c.ph} aria-label={c.ph} />
-        </span>
-        <button type="button" className="btn btn-2" disabled={!name.trim() || Boolean(issue)} title={issue || c.add} onClick={go}>
+        </FieldBox>
+        <Button type="button" variant="2" disabled={!name.trim() || Boolean(issue)} title={issue || c.add} onClick={go}>
           <Icon name={icons.plus} size="sm" />
           {c.add}
-        </button>
+        </Button>
       </div>
       {(bad || issue) && <p className="bad cnote">{bad || issue}</p>}
       {items.length ? (
@@ -48,7 +48,7 @@ function Column({ level, items, picked, onPick, parent, parentSay }: {
             return (
               <li key={x} className={picked === x ? 'on' : ''}>
                 {onPick
-                  ? <button type="button" className="taxpick" aria-pressed={picked === x} onClick={() => onPick(x)}><b>{x}</b></button>
+                  ? <Button plain type="button" className="taxpick" aria-pressed={picked === x} onClick={() => onPick(x)}><b>{x}</b></Button>
                   : <b>{x}</b>}
                 <span className="pc-sp" />
                 {isAdded(level, x) && <Tag tone="teal">مضاف</Tag>}

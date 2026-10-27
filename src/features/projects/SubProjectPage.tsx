@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  BackTo, DateText, DockActions, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Steps, Tabs, Tag, icons, type StepItem,
+  FormField, FieldBox, Button, BackTo, DateText, DockActions, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Steps, Tabs, Tag, icons, type StepItem,
 } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -197,7 +197,7 @@ export default function SubProjectPage() {
               </div>
               {/* Client 26 Oct · the bar holds the buttons only · each one confirms in its popup, with the reason there */}
               <div className="payact-g rowf gp-2">
-                {recording && acts.length === 0 && <button type="button" className="btn btn-p" onClick={() => setTab('results')}>سجّل النتائج</button>}
+                {recording && acts.length === 0 && <Button type="button" variant="p" onClick={() => setTab('results')}>سجّل النتائج</Button>}
                 <DockActions
                   actions={acts}
                   subject={<>{x.name} · {nf.format(x.amount)} ريال</>}
@@ -233,7 +233,7 @@ function DataCard({ pf, x, edit, by }: { pf: PortfolioRec; x: SubProject; edit: 
   }
   return (
     <Glass>
-      <Head title="بيانات المشروع الفرعي" meta={edit && !open ? <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>عدّل البيانات</button> : undefined} />
+      <Head title="بيانات المشروع الفرعي" meta={edit && !open ? <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(true)}>عدّل البيانات</Button> : undefined} />
       {!open && (
         <KV rows={[
           { k: 'الرقم', v: <span className="num">{x.serial ?? x.id}</span> },
@@ -254,17 +254,17 @@ function DataCard({ pf, x, edit, by }: { pf: PortfolioRec; x: SubProject; edit: 
       {open && (
         <div className="ptn-form">
           <div className="regfields">
-            <label className="regf"><span className="lb">المنفذ</span><FieldSelect value={d.implementer} onChange={(v) => setD({ ...d, implementer: v })} label="المنفذ" placeholder="اختر" options={(Object.keys(SUB_IMPL_SAY) as SubImplementer[]).map((k) => ({ value: k, label: SUB_IMPL_SAY[k] }))} /></label>
-            <label className="regf"><span className="lb">اسم المنفذ</span><span className="fld"><input value={d.implementerName} onChange={(e) => setD({ ...d, implementerName: e.target.value })} aria-label="اسم المنفذ" /></span></label>
-            <label className="regf"><span className="lb">المدينة</span><span className="fld"><input value={d.city} onChange={(e) => setD({ ...d, city: e.target.value })} aria-label="المدينة" /></span></label>
-            <label className="regf"><span className="lb">عدد المستفيد النهائي</span><span className="fld"><input inputMode="numeric" value={d.finalBeneficiaries} onChange={(e) => setD({ ...d, finalBeneficiaries: e.target.value.replace(/\D/g, '') })} aria-label="عدد المستفيد النهائي" /></span></label>
-            <label className="regf"><span className="lb">التكلفة</span><MoneyField value={d.cost} onChange={(v) => setD({ ...d, cost: v })} label="التكلفة" /></label>
+            <FormField label="المنفذ"><FieldSelect value={d.implementer} onChange={(v) => setD({ ...d, implementer: v })} label="المنفذ" placeholder="اختر" options={(Object.keys(SUB_IMPL_SAY) as SubImplementer[]).map((k) => ({ value: k, label: SUB_IMPL_SAY[k] }))} /></FormField>
+            <FormField label="اسم المنفذ"><FieldBox><input value={d.implementerName} onChange={(e) => setD({ ...d, implementerName: e.target.value })} aria-label="اسم المنفذ" /></FieldBox></FormField>
+            <FormField label="المدينة"><FieldBox><input value={d.city} onChange={(e) => setD({ ...d, city: e.target.value })} aria-label="المدينة" /></FieldBox></FormField>
+            <FormField label="عدد المستفيد النهائي"><FieldBox><input inputMode="numeric" value={d.finalBeneficiaries} onChange={(e) => setD({ ...d, finalBeneficiaries: e.target.value.replace(/\D/g, '') })} aria-label="عدد المستفيد النهائي" /></FieldBox></FormField>
+            <FormField label="التكلفة"><MoneyField value={d.cost} onChange={(v) => setD({ ...d, cost: v })} label="التكلفة" /></FormField>
           </div>
           <div className="apv-row">
             <span className="sub">{d.evalFile || 'التقييم التفصيلي · ملف'}</span>
             <UploadButton label="ملف التقييم" onPick={(f) => setD((y) => ({ ...y, evalFile: f.name }))} />
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>إلغاء</button>
-            <button type="button" className="btn btn-p btn-sm" onClick={save}>احفظ</button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>إلغاء</Button>
+            <Button type="button" variant="p" size="sm" onClick={save}>احفظ</Button>
           </div>
         </div>
       )}
@@ -325,15 +325,15 @@ function ResultsCard({ pf, x, recording, by }: { pf: PortfolioRec; x: SubProject
       {recording && (
         <div className="ptn-form">
           <div className="regfields">
-            <label className="regf"><span className="lb">التكلفة الفعلية</span><MoneyField value={v.cost} onChange={(c) => setV({ ...v, cost: c })} label="التكلفة الفعلية" /></label>
-            <label className="regf"><span className="lb">المستفيدون الفعليون</span><span className="fld"><input inputMode="numeric" value={v.reached} onChange={(e) => setV({ ...v, reached: e.target.value.replace(/\D/g, '') })} aria-label="المستفيدون الفعليون" /></span></label>
-            <label className="regf ptn-wide"><span className="lb">ملاحظات · اختياري</span><span className="fld"><input value={v.note} onChange={(e) => setV({ ...v, note: e.target.value })} aria-label="ملاحظات النتائج" placeholder={`المستهدف: ${x.outputs}`} /></span></label>
+            <FormField label="التكلفة الفعلية"><MoneyField value={v.cost} onChange={(c) => setV({ ...v, cost: c })} label="التكلفة الفعلية" /></FormField>
+            <FormField label="المستفيدون الفعليون"><FieldBox><input inputMode="numeric" value={v.reached} onChange={(e) => setV({ ...v, reached: e.target.value.replace(/\D/g, '') })} aria-label="المستفيدون الفعليون" /></FieldBox></FormField>
+            <FormField label="ملاحظات · اختياري" className="ptn-wide"><FieldBox><input value={v.note} onChange={(e) => setV({ ...v, note: e.target.value })} aria-label="ملاحظات النتائج" placeholder={`المستهدف: ${x.outputs}`} /></FieldBox></FormField>
           </div>
           <div className="apv-row">
             <span className="sub">{v.files.length ? v.files.join(' · ') : 'المرفقات · واحد أو أكثر'}</span>
             <UploadButton label="مرفق" onPick={(f) => setV((y) => ({ ...y, files: [...y.files, f.name] }))} />
-            {v.files.length > 0 && <button type="button" className="btn btn-ghost btn-sm" onClick={() => setV((y) => ({ ...y, files: y.files.slice(0, -1) }))}>احذف آخر مرفق</button>}
-            <button type="button" className="btn btn-p btn-sm" onClick={send}>أرسل النتائج لمشرف المنح</button>
+            {v.files.length > 0 && <Button type="button" variant="ghost" size="sm" onClick={() => setV((y) => ({ ...y, files: y.files.slice(0, -1) }))}>احذف آخر مرفق</Button>}
+            <Button type="button" variant="p" size="sm" onClick={send}>أرسل النتائج لمشرف المنح</Button>
           </div>
         </div>
       )}

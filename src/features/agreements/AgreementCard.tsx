@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { rowGo } from '@/lib/rowGo'
-import { DateText, Icon, icons, Money, Mono, Num, Person, Tag, Riyal} from '@/components/ui'
+import { ButtonLink, DateText, Icon, icons, Money, Mono, Num, Person, Tag, Riyal} from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, NOUN, nounAfter, pct } from '@/lib/format'
 import {
@@ -154,10 +154,10 @@ export function AgreementCard({ a }: { a: AgreementRow }) {
           button stays fixed, so the button sits at the same height on every card */}
       <footer className="payq-f">
         <span className="payq-when"><Person name={a.owner} /></span>
-        <Link className="btn btn-2 btn-sm" to={ROUTES.agreement(a.id)}>
+        <ButtonLink variant="2" size="sm" to={ROUTES.agreement(a.id)}>
           افتح الاتفاقية
           <Icon name={icons.chevron} size="sm" />
-        </Link>
+        </ButtonLink>
       </footer>
     </article>
   )

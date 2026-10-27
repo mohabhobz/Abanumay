@@ -1,3 +1,4 @@
+import { Button } from './Button'
 import type { ReactNode } from 'react'
 
 /**
@@ -19,7 +20,7 @@ export function Switch({
   lockNote?: ReactNode
 }) {
   return (
-    <button
+    <Button plain
       type="button"
       role="switch"
       aria-checked={on}
@@ -32,6 +33,6 @@ export function Switch({
         {(note || (disabled && lockNote)) && <span className="sub swrow-n">{disabled && lockNote ? lockNote : note}</span>}
       </span>
       <span className="swt" aria-hidden="true"><i /></span>
-    </button>
+    </Button>
   )
 }

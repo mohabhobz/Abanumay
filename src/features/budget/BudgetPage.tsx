@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Glass, Head, Icon, icons, Money, Num, Select, Tag } from '@/components/ui'
+import { ButtonLink, Button, Glass, Head, Icon, icons, Money, Num, Select, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { Mono } from '@/components/ui'
 import { countOf, nf, NOUN, nounAfter } from '@/lib/format'
@@ -103,17 +102,17 @@ export default function BudgetPage() {
               meta={
                 <span className="rowf gp-2">
                   <span className="sub"><Num>{shownBudgets.length}</Num> {nounAfter(shownBudgets.length, NOUN.budget)}</span>
-                  <Link className="btn btn-2 btn-sm" to={ROUTES.budgetOps}>
+                  <ButtonLink variant="2" size="sm" to={ROUTES.budgetOps}>
                     <Icon name={icons.redo} size="sm" />
                     طلبات العمليات
                     {BUDGET_REQS.some((r) => ['submitted', 'finance', 'exec'].includes(r.state)) && (
                       <Tag tone="warn"><Num>{BUDGET_REQS.filter((r) => ['submitted', 'finance', 'exec'].includes(r.state)).length}</Num></Tag>
                     )}
-                  </Link>
-                  <Link className="btn btn-2 btn-sm" to={ROUTES.budgetReport}>
+                  </ButtonLink>
+                  <ButtonLink variant="2" size="sm" to={ROUTES.budgetReport}>
                     <Icon name={icons.chart} size="sm" />
                     التقرير المجمّع
-                  </Link>
+                  </ButtonLink>
                 </span>
               }
             />
@@ -135,10 +134,10 @@ export default function BudgetPage() {
                       {dep > 0 ? <Tag tone="mute">مشاريع مرتبطة بها: <Num>{dep}</Num></Tag> : <Tag tone="ok">بلا متعلقات</Tag>}
                       <Tag tone={budgetTone(d.state)}>{BUDGET_STATE_SAY[d.state]}</Tag>
                     </span>
-                    <Link className="btn btn-2 btn-sm" to={ROUTES.budgetDoc(d.id)}>
+                    <ButtonLink variant="2" size="sm" to={ROUTES.budgetDoc(d.id)}>
                       افتح الشجرة
                       <Icon name={icons.chevron} size="sm" />
-                    </Link>
+                    </ButtonLink>
                   </li>
                 )
               })}
@@ -270,7 +269,7 @@ function Balance({
         <ul className="bglist">
             {shown.map((x) => (
               <li key={x.path.join('/') || 'root'}>
-                <button className="bglist-i" onClick={() => setPeek(x)}>
+                <Button plain className="bglist-i" onClick={() => setPeek(x)}>
                   <span className="bglist-lv sub">{PLAN_LEVELS[x.level]}</span>
                   <span className="bglist-t">{x.label || root.label}</span>
                   {/* Fixed-width label with the number after it - in RTL, the number extends to the
@@ -294,7 +293,7 @@ function Balance({
                     </Tag>
                   </span>
                   <Icon name={icons.chevron} size="sm" />
-                </button>
+                </Button>
               </li>
             ))}
         </ul>
@@ -308,10 +307,10 @@ function Balance({
         )}
 
         {gaps.length > TOP && (
-          <button className="btn btn-2 btn-sm bgchk-t" onClick={() => setAll((x) => !x)}>
+          <Button variant="2" size="sm" className="bgchk-t" onClick={() => setAll((x) => !x)}>
             <Icon name={all ? icons.chevronUp : icons.chevronDown} size="sm" />
             {all ? 'اعرض أقل' : `اعرض المزيد (${gaps.length - TOP})`}
-          </button>
+          </Button>
         )}
       </Glass>
     </section>

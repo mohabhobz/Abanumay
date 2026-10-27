@@ -1,3 +1,4 @@
+import { Button } from './Button'
 import type { ReactNode } from 'react'
 import { CheckMark } from './menu'
 
@@ -18,7 +19,7 @@ export interface CheckChipProps {
 
 export function CheckChip({ on, onToggle, disabled, title, expands, children }: CheckChipProps) {
   return (
-    <button
+    <Button plain
       type="button"
       role="checkbox"
       aria-checked={on}
@@ -30,6 +31,6 @@ export function CheckChip({ on, onToggle, disabled, title, expands, children }: 
     >
       <span className="ckchip-b" aria-hidden="true">{on && <CheckMark />}</span>
       {children}
-    </button>
+    </Button>
   )
 }

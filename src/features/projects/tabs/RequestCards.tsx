@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
-import { DateField, DateText, Glass, Head, Icon, icons, KV, Money, Num, Person, Tag } from '@/components/ui'
+import { FormField, FieldBox, Modal, ModalHead, Button, DateField, DateText, Glass, Head, Icon, icons, KV, Money, Num, Person, Tag } from '@/components/ui'
 import { DocList, UploadButton } from '@/components/docs'
 import type { ProjectRow } from '@/types/domain'
 import { studyScore } from '@/data/intake/criteria'
@@ -109,28 +108,26 @@ export function RequestMetaCard({ row, me, canReschedule = false }: { row: Proje
       {canReschedule && approved && days ? (
         edit ? (
           <div className="regfields mt-3">
-            <label className="regf">
-              <span className="lb">بداية التنفيذ الفعلي</span>
+            <FormField label="بداية التنفيذ الفعلي">
               <DateField value={start} onChange={setStart} label="بداية التنفيذ الفعلي" />
-            </label>
-            <label className="regf">
-              <span className="lb">سبب التعديل<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب تعديل البداية" /></span>
-            </label>
+            </FormField>
+            <FormField label="سبب التعديل" required>
+              <FieldBox><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب تعديل البداية" /></FieldBox>
+            </FormField>
             {err.length > 0 && <p className="bad">{err.join(' · ')}</p>}
             <div className="rowf gp-2">
-              <button type="button" className="btn btn-p btn-sm" onClick={() => {
+              <Button type="button" variant="p" size="sm" onClick={() => {
                 const e = rescheduleStart(row.id, start, why, me ?? '')
                 setErr(e)
                 if (!e.length) { setEdit(false); setWhy('') }
-              }}>احفظ البداية الفعلية</button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setEdit(false); setErr([]) }}>إلغاء</button>
+              }}>احفظ البداية الفعلية</Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setEdit(false); setErr([]) }}>إلغاء</Button>
             </div>
           </div>
         ) : (
-          <button type="button" className="btn btn-2 btn-sm mt-2" onClick={() => { setStart(row.actualStartAt ?? row.startAt ?? ''); setEdit(true) }}>
+          <Button type="button" variant="2" size="sm" className="mt-2" onClick={() => { setStart(row.actualStartAt ?? row.startAt ?? ''); setEdit(true) }}>
             <Icon name={icons.edit} size="sm" />{row.actualStartAt ? 'عدّل بداية التنفيذ الفعلي' : 'سجّل بداية التنفيذ الفعلي'}
-          </button>
+          </Button>
         )
       ) : null}
       {f.versions.length > 0 && (
@@ -234,33 +231,24 @@ export function RequestCloseCard({ row, me }: { row: ProjectRow; me: string }) {
     <Glass>
       <Head title="إلغاء الطلب أو أرشفته" />
       <div className="rowf gp-2">
-        <button type="button" className="btn btn-2" onClick={() => { setKind('archive'); setReason('') }}>أرشف الطلب</button>
-        <button type="button" className="btn btn-d" onClick={() => { setKind('cancel'); setReason('') }}>ألغِ الطلب</button>
+        <Button type="button" variant="2" onClick={() => { setKind('archive'); setReason('') }}>أرشف الطلب</Button>
+        <Button type="button" variant="d" onClick={() => { setKind('cancel'); setReason('') }}>ألغِ الطلب</Button>
       </div>
-      {kind && createPortal(
-        <div className="bmask" role="presentation" onClick={() => setKind(null)}>
-          <div className="chrome modal" role="dialog" aria-modal="true" aria-label={kind === 'cancel' ? 'إلغاء الطلب' : 'أرشفة الطلب'} onClick={(e) => e.stopPropagation()}>
-            <div className="mh">
-              <Icon name={kind === 'cancel' ? icons.close : icons.folder} size="md" />
-              <b>{kind === 'cancel' ? 'إلغاء الطلب' : 'أرشفة الطلب'}</b>
-            </div>
+      {kind && <Modal label={kind === 'cancel' ? 'إلغاء الطلب' : 'أرشفة الطلب'} onClose={() => setKind(null)}>
+            <ModalHead icon={kind === 'cancel' ? icons.close : icons.folder} title={kind === 'cancel' ? 'إلغاء الطلب' : 'أرشفة الطلب'} />
             <div className="mb col">
               <p className="sub cnote">{row.name}</p>
-              <label className="regf">
-                <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
-                <span className="fld"><input autoFocus value={reason} onChange={(e) => setReason(e.target.value)} aria-label="السبب" /></span>
-              </label>
+              <FormField label="السبب" required>
+                <FieldBox><input autoFocus value={reason} onChange={(e) => setReason(e.target.value)} aria-label="السبب" /></FieldBox>
+              </FormField>
             </div>
             <div className="mf">
-              <button className={`btn ${kind === 'cancel' ? 'btn-d' : 'btn-p'}`} disabled={!reason.trim()} onClick={() => { closeRequest(row.id, kind, reason.trim(), me); setKind(null) }}>
+              <Button variant={kind === 'cancel' ? 'd' : 'p'} disabled={!reason.trim()} onClick={() => { closeRequest(row.id, kind, reason.trim(), me); setKind(null) }}>
                 {kind === 'cancel' ? 'ألغِ الطلب' : 'أرشف الطلب'}
-              </button>
-              <button className="btn btn-2" onClick={() => setKind(null)}>تراجع</button>
+              </Button>
+              <Button variant="2" onClick={() => setKind(null)}>تراجع</Button>
             </div>
-          </div>
-        </div>,
-        document.body,
-      )}
+          </Modal>}
     </Glass>
   )
 }

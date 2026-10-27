@@ -1,4 +1,4 @@
-import { DateField, DateText, FieldSelect, Icon, Money, Num, Riyal, Tag, icons } from '@/components/ui'
+import { FieldBox, Button, DateField, DateText, FieldSelect, Icon, Money, Num, Riyal, Tag, icons } from '@/components/ui'
 import { BASIS_SAY, COND_SAY, basisLine, basisOf, condMet, condOptions } from '@/data/agreements/conds'
 import type { PayCond } from '@/types/domain'
 import { nf, pct } from '@/lib/format'
@@ -126,7 +126,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: 
 
                 <td className="n">
                   {edit ? (
-                    <span className="fld">
+                    <FieldBox>
                       <input
                         className="num"
                         inputMode="numeric"
@@ -135,7 +135,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: 
                         aria-label={`مبلغ الدفعة ${r.no}`}
                       />
                       <Riyal />
-                    </span>
+                    </FieldBox>
                   ) : <Money sm>{r.amount}</Money>}
                 </td>
 
@@ -192,14 +192,14 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: 
                     </span>
                   ) : basisOf(r) ? <span className="pbasis mb-2"><Tag tone="mute">{basisLine(basisOf(r))}</Tag></span> : null}
                   {edit ? (
-                    <span className="fld">
+                    <FieldBox>
                       <input
                         value={r.requirement}
                         placeholder="مثال: التقرير المرحلي الأول"
                         onChange={(e) => patch(i, { requirement: e.target.value })}
                         aria-label={`شرط الدفعة ${r.no}`}
                       />
-                    </span>
+                    </FieldBox>
                   ) : <span className="sub">{r.requirement || ((r.conds ?? []).length ? '' : 'بلا شرط')}</span>}
                   {/* v3 · 8.2.9 · 12.4.14 · the structured conditions · each read against its record */}
                   {((r.conds ?? []).length > 0 || (edit && projectId)) && (
@@ -213,9 +213,9 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: 
                               : c.label}
                             {st && <span className="sub"> · {st.say}</span>}
                             {edit && (
-                              <button type="button" className="iact" aria-label={`احذف الشرط ${c.label || c.ref}`} title="احذف" onClick={() => patch(i, { conds: (r.conds ?? []).filter((x) => condKey(x) !== condKey(c)) })}>
+                              <Button plain type="button" className="iact" aria-label={`احذف الشرط ${c.label || c.ref}`} title="احذف" onClick={() => patch(i, { conds: (r.conds ?? []).filter((x) => condKey(x) !== condKey(c)) })}>
                                 <Icon name={icons.close} size="sm" />
-                              </button>
+                              </Button>
                             )}
                           </Tag>
                         )
@@ -244,14 +244,14 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: 
 
                 {edit && (
                   <td className="n">
-                    <button
-                      className="btn btn-ghost btn-sm"
+                    <Button
+                      variant="ghost" size="sm"
                       title={`احذف الدفعة ${r.no}`}
                       aria-label={`احذف الدفعة ${r.no}`}
                       onClick={() => drop(i)}
                     >
                       <Icon name={icons.close} size="sm" />
-                    </button>
+                    </Button>
                   </td>
                 )}
               </tr>
@@ -281,12 +281,12 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: 
 
       {edit && (
         <div className="rowf gp-2 mt-3">
-          <button className="btn btn-2 btn-sm" onClick={add}>
+          <Button variant="2" size="sm" onClick={add}>
             <Icon name={icons.plus} size="sm" />
             أضف دفعة
-          </button>
-          <button
-            className="btn btn-ghost btn-sm"
+          </Button>
+          <Button
+            variant="ghost" size="sm"
             disabled={gap === 0 || rows.length === 0}
             title={
               gap === 0
@@ -296,7 +296,7 @@ export function ScheduleEditor({ rows, amount, onChange, readOnly, projectId }: 
             onClick={settle}
           >
             وزّع الباقي على الأخيرة
-          </button>
+          </Button>
 
         </div>
       )}

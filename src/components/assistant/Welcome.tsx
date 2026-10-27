@@ -1,5 +1,5 @@
 import { useRef, type CSSProperties, type ReactNode } from 'react'
-import { Icon, icons, type IconName } from '@/components/ui'
+import { Button, Icon, icons, type IconName } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import { AbLeaf } from '@/components/soul'
 
@@ -55,7 +55,7 @@ export function Welcome({ greet, sub, cards, onPick, composer }: WelcomeProps) {
       {/* Shortcuts sit under the input box — writing is the primary input, these are quick paths. */}
       <div className="wcards" ref={grid}>
         {cards.map((c, i) => (
-          <button
+          <Button plain
             className="wcard glass"
             key={c.title}
             style={{ '--d': `calc(var(--mo-stagger) * ${Math.min(i, 2)})` } as CSSProperties}
@@ -64,7 +64,7 @@ export function Welcome({ greet, sub, cards, onPick, composer }: WelcomeProps) {
             <span className="badge badge-30"><Icon name={icons[c.icon as IconName]} /></span>
             <span className="wc-t">{c.title}</span>
             <span className="wc-s">{c.sub}</span>
-          </button>
+          </Button>
         ))}
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { hasLegacy, legacyOf } from '@/data/payments/legacy'
 import { Link } from 'react-router-dom'
-import { StatRow, DateText, Empty, Glass, Head, Money, Num, Riyal, Stat, Steps, Tag } from '@/components/ui'
+import { Button, StatRow, DateText, Empty, Glass, Head, Money, Num, Riyal, Stat, Steps, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { sequence } from '@/lib/steps'
 import { DocFile } from '@/components/docs'
@@ -56,9 +56,9 @@ export function PaymentsTab({ payments, granted, projectId, paidBefore = 0, exam
           title="لا توجد دفعات بعد."
           actions={
             example && onOpenExample ? (
-              <button className="btn btn-2" onClick={() => onOpenExample(example.id)}>
+              <Button variant="2" onClick={() => onOpenExample(example.id)}>
                 اعرض دفعات مشروع في الصرف
-              </button>
+              </Button>
             ) : undefined
           }
         />

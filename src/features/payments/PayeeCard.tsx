@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DateText, Glass, Head, KV, Person, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, DateText, Glass, Head, KV, Person, Tag } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
 import { isExternal, mayPayee, setPayee, usePayments } from '@/data/payments/store'
@@ -27,16 +27,16 @@ export function PayeeCard({ r }: { r: PayRequest }) {
           { k: 'المستفيد الفعلي', v: r.payee.name },
           { k: 'المرجع', v: r.payee.ref },
           { k: 'المستند المبرّر', v: r.payee.doc },
-          { k: 'سجّله', v: <><Person name={r.payee.by} /> · <DateText>{r.payee.at}</DateText>{may && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setEdit(true); setName(r.payee!.name); setRef(r.payee!.ref); setDoc(r.payee!.doc) }}>عدّل قبل أمر الصرف</button>}</> },
+          { k: 'سجّله', v: <><Person name={r.payee.by} /> · <DateText>{r.payee.at}</DateText>{may && <Button type="button" variant="ghost" size="sm" onClick={() => { setEdit(true); setName(r.payee!.name); setRef(r.payee!.ref); setDoc(r.payee!.doc) }}>عدّل قبل أمر الصرف</Button>}</> },
         ]} />
       ) : (
         <div className="regfields">
-          <label className="regf"><span className="lb">المستفيد الفعلي</span><span className="fld"><input value={name} onChange={(e) => setName(e.target.value)} aria-label="المستفيد الفعلي" /></span></label>
-          <label className="regf"><span className="lb">المرجع</span><span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="مرجع التحويل لطرف ثالث" /></span></label>
+          <FormField label="المستفيد الفعلي"><FieldBox><input value={name} onChange={(e) => setName(e.target.value)} aria-label="المستفيد الفعلي" /></FieldBox></FormField>
+          <FormField label="المرجع"><FieldBox><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="مرجع التحويل لطرف ثالث" /></FieldBox></FormField>
           <span className="rowf gp-2">
             <span className="sub">{doc || 'المستند أو الاتفاقية الرسمية المبرّرة'}</span>
             <UploadButton label="المستند المبرّر" onPick={(f) => setDoc(f.name)} />
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = setPayee(r.id, { name, ref, doc }, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'التحويل لطرف ثالث' }); if (!out.length) setEdit(false) }}>سجّل في الإذن</button>
+            <Button type="button" variant="2" size="sm" onClick={() => { const out = setPayee(r.id, { name, ref, doc }, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'التحويل لطرف ثالث' }); if (!out.length) setEdit(false) }}>سجّل في الإذن</Button>
           </span>
         </div>
       )}

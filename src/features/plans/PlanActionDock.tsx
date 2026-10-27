@@ -1,6 +1,6 @@
 import { mayApprovePlan } from '@/data/plans/auth'
 import { useRef, useState } from 'react'
-import { DecisionDialog, Num, Person } from '@/components/ui'
+import { Button, DecisionDialog, Num, Person } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import { planIssues, waitingReview } from '@/data/mock/plans'
 import type { CurrentUser, DecisionKind, PlanRow, PlanStage } from '@/types/domain'
@@ -107,7 +107,7 @@ export function PlanActionDock({
               <b><Num>{queue}</Num> {nounAfter(queue, NOUN.activity)}</b> بانتظار قبولك
             </span>
           </div>
-          <button className="btn btn-p" onClick={onReview}>راجع أول نشاط</button>
+          <Button variant="p" onClick={onReview}>راجع أول نشاط</Button>
         </div>
       </div>
     )
@@ -134,7 +134,7 @@ export function PlanActionDock({
                since "something's wrong" makes the user search for it. */
             const stop = x.gated && issues.length > 0 ? issues[0].say : ''
             return (
-              <button
+              <Button plain
                 key={x.label}
                 className={`btn ${x.kind}`}
                 data-needs-note={x.needsNote ? '' : undefined}
@@ -143,7 +143,7 @@ export function PlanActionDock({
                 onClick={() => setPick(x)}
               >
                 {x.label}
-              </button>
+              </Button>
             )
           })}
         </div>

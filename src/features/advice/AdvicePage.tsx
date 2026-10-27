@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { DateText, Glass, Head, Icon, icons, KV, Money, Num, Person, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, DateText, Glass, Head, Icon, icons, KV, Money, Num, Person, Tag } from '@/components/ui'
 import { DocList } from '@/components/docs'
 import { Background } from '@/components/shell'
 import Logo from '@/assets/LogoColor'
@@ -55,18 +55,18 @@ export default function AdvicePage() {
                   <span className="sub">شاشة المستشار · وصول مؤقت</span>
                 </div>
                 <span className="pc-sp" />
-                <button className="btn btn-2 btn-sm" onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}>
+                <Button variant="2" size="sm" onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}>
                   <Icon name={icons.logout} size="sm" />
                   تسجيل الخروج
-                </button>
+                </Button>
               </div>
 
               {p && r && !unlocked ? (
                 <Glass>
                   <Head title="رمز الوصول" />
                   <form className="apv-row" onSubmit={(e) => { e.preventDefault(); const r = unlockAdvice(p.id, code); if (r.ok) setUnlocked(true); else setCodeErr(r.lockedFor ? `أُوقفت المحاولات ${countOf(r.lockedFor, NOUN.minute)} بعد ${ADVICE_MAX_TRIES} محاولات خاطئة` : `الرمز غير صحيح · بقيت ${countOf(r.left, NOUN.attempt)}`) }}>
-                    <span className="fld"><input className="num" inputMode="numeric" dir="ltr" value={code} onChange={(e) => { setCode(e.target.value); setCodeErr('') }} aria-label="رمز الوصول" /></span>
-                    <button type="submit" className="btn btn-p btn-sm">ادخل</button>
+                    <FieldBox><input className="num" inputMode="numeric" dir="ltr" value={code} onChange={(e) => { setCode(e.target.value); setCodeErr('') }} aria-label="رمز الوصول" /></FieldBox>
+                    <Button type="submit" variant="p" size="sm">ادخل</Button>
                   </form>
                   {codeErr && <p className="sub cnote bad" role="alert">{codeErr}</p>}
                 </Glass>
@@ -143,23 +143,22 @@ export default function AdvicePage() {
                           <>
                             <div className="cfgchips" role="radiogroup" aria-label="الرأي">
                               {VERDICTS.map((v) => (
-                                <button key={v} type="button" role="radio" aria-checked={verdict === v} className={`cfgchip${verdict === v ? ' on' : ''}`} onClick={() => setVerdict(v)}>
+                                <Button plain key={v} type="button" role="radio" aria-checked={verdict === v} className={`cfgchip${verdict === v ? ' on' : ''}`} onClick={() => setVerdict(v)}>
                                   {v}
-                                </button>
+                                </Button>
                               ))}
                             </div>
-                            <label className="regf regf-w mt-3">
-                              <span className="lb">الملاحظات<b className="regf-r" aria-label="إلزامي">*</b></span>
-                              <span className="fld fld-a">
+                            <FormField label="الملاحظات" required wide className="mt-3">
+                              <FieldBox area>
                                 <textarea rows={5} value={text} onChange={(e) => setText(e.target.value)} aria-label="ملاحظات المستشار" placeholder="ما تراه في جدوى المشروع وأثره وما يلزم تعديله" />
-                              </span>
-                            </label>
+                              </FieldBox>
+                            </FormField>
                             <div className="regfoot">
                               <span className="decsent">{c?.name ?? ''}</span>
                               <span className="pc-sp" />
-                              <button className="btn btn-p" disabled={!open || !verdict || !text.trim()} onClick={() => verdict && giveOpinion(p.id, text.trim(), verdict, c?.name ?? 'المستشار')}>
+                              <Button variant="p" disabled={!open || !verdict || !text.trim()} onClick={() => verdict && giveOpinion(p.id, text.trim(), verdict, c?.name ?? 'المستشار')}>
                                 أرسل الرأي
-                              </button>
+                              </Button>
                             </div>
                           </>
                         )}

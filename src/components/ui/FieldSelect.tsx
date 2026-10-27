@@ -1,3 +1,5 @@
+import { FieldBox } from './FormField'
+import { Button } from './Button'
 import { useId } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { optLabel, optValue, type SelectOption } from './filters'
@@ -52,7 +54,7 @@ export function FieldSelect({
 
   return (
     <span className={`fldsel${end ? ' end' : ''}`} ref={box}>
-      <button
+      <Button plain
         type="button"
         id={`${id}-b`}
         className={`fld fldsel-b${disabled ? ' off' : ''}`}
@@ -66,7 +68,7 @@ export function FieldSelect({
           {current ? optLabel(current) : placeholder}
         </span>
         <Icon name={icons.chevronDown} size="sm" />
-      </button>
+      </Button>
 
       {open && (
         <MenuPanel
@@ -143,7 +145,7 @@ export function FieldMultiSelect({
   return (
     <span className="fmsel">
       <span className={`fldsel${end ? ' end' : ''}`} ref={box}>
-        <button
+        <Button plain
           type="button"
           id={`${id}-b`}
           className={`fld fldsel-b${disabled ? ' off' : ''}`}
@@ -156,7 +158,7 @@ export function FieldMultiSelect({
         >
           <span className={`fldsel-t${values.length && noChips ? '' : ' ph'}`}>{summary}</span>
           <Icon name={icons.chevronDown} size="sm" />
-        </button>
+        </Button>
 
         {open && (
           <MenuPanel
@@ -169,9 +171,9 @@ export function FieldMultiSelect({
             foot={otherOn && other ? (
               <label className="fmsel-o">
                 <span className="lb">اسم {OTHER === 'أخرى' ? 'الخيار الآخر' : OTHER}</span>
-                <span className="fld">
+                <FieldBox>
                   <input autoFocus value={other.text} onChange={(e) => other.onText(e.target.value)} aria-label={`اسم ${OTHER}`} placeholder={other.placeholder ?? 'اكتب ما ليس في القائمة'} />
-                </span>
+                </FieldBox>
               </label>
             ) : undefined}
           >
@@ -190,11 +192,11 @@ export function FieldMultiSelect({
             return (
               <span key={v} className={`fmsel-chip${empty ? ' warn' : ''}`}>
                 {empty
-                  ? <button type="button" className="fmsel-chip-t lnk" onClick={() => setOpen(true)} title="اكتب اسمه">{OTHER} · اكتب اسمه</button>
+                  ? <Button plain type="button" className="fmsel-chip-t lnk" onClick={() => setOpen(true)} title="اكتب اسمه">{OTHER} · اكتب اسمه</Button>
                   : <>{people && <Face name={labelOf(v)} size="sm" />}<span className="fmsel-chip-t">{chipOf(v)}</span></>}
-                <button type="button" className="fmsel-x" aria-label={`أزل ${chipOf(v)}`} disabled={disabled} onClick={() => drop(v)}>
+                <Button plain type="button" className="fmsel-x" aria-label={`أزل ${chipOf(v)}`} disabled={disabled} onClick={() => drop(v)}>
                   <Icon name={icons.close} size="sm" />
-                </button>
+                </Button>
               </span>
             )
           })}

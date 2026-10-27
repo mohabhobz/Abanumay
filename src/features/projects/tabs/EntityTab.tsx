@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '@/app/routes'
-import { Glass, Head, Tag, Mono, KV, DateText } from '@/components/ui'
+import { Button, Glass, Head, Tag, Mono, KV, DateText } from '@/components/ui'
 import { useRole } from '@/hooks/useRole'
 import { askData, DATA_ASKS, useEntityFlow } from '@/data/entities/store'
 import { entityRows } from '@/data/mock/entities'
@@ -84,10 +84,10 @@ export function EntityTab({ entity: E, bank, action, history }: EntityTabProps) 
             action: d.uploaded ? undefined : askedOf(d.name) ? (
               <span className="rowf gp-2">
                 <Tag tone="mute">طُلب · <DateText>{askedOf(d.name)!.at.slice(0, 10)}</DateText></Tag>
-                <button type="button" className="lnk" onClick={() => ask(d.name)}>ذكّر الجهة</button>
+                <Button plain type="button" className="lnk" onClick={() => ask(d.name)}>ذكّر الجهة</Button>
               </span>
             ) : (
-              <button type="button" className="lnk" disabled={busy === d.name} onClick={() => ask(d.name)}>اطلبه من الجهة</button>
+              <Button plain type="button" className="lnk" disabled={busy === d.name} onClick={() => ask(d.name)}>اطلبه من الجهة</Button>
             ),
           }))}
         />

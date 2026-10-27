@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DateText, FieldSelect, Glass, Head, Icon, Money, MoneyField, Num, Person, Tag, icons } from '@/components/ui'
+import { FormField, FieldBox, Button, DateText, FieldSelect, Glass, Head, Icon, Money, MoneyField, Num, Person, Tag, icons } from '@/components/ui'
 import type { ProjectRow } from '@/types/domain'
 import { HOLDER_LABEL, type Holder } from '@/data/holders'
 import { meOf, readRole } from '@/data/roles'
@@ -55,9 +55,9 @@ export function ApprovalOptions({ row }: { row: ProjectRow }) {
             {pk === 'regular' ? (
               <span className="cfgchips" role="radiogroup" aria-label="الخطة">
                 {([true, false] as const).map((v) => (
-                  <button key={String(v)} type="button" role="radio" aria-checked={f.needsPlan === v} className={`cfgchip${f.needsPlan === v ? ' on' : ''}`} onClick={() => setSaid(setPlanNeed(row, v, me))}>
+                  <Button plain key={String(v)} type="button" role="radio" aria-checked={f.needsPlan === v} className={`cfgchip${f.needsPlan === v ? ' on' : ''}`} onClick={() => setSaid(setPlanNeed(row, v, me))}>
                     {v ? 'يتطلب خطة' : 'لا يتطلب خطة'}
-                  </button>
+                  </Button>
                 ))}
               </span>
             ) : <Tag tone="mute">{pk === 'portfolio' ? 'يتطلب خطة' : 'لا يتطلب خطة'}</Tag>}
@@ -76,47 +76,42 @@ export function ApprovalOptions({ row }: { row: ProjectRow }) {
         {mgr && (
           <li>
             <span className="cfgl"><b>إعادة تسكين المشروع</b><span className="sub">{row.track} · {row.field} · {row.goal}</span></span>
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => setModal('rehouse')}>أعد التسكين</button>
+            <Button type="button" variant="2" size="sm" onClick={() => setModal('rehouse')}>أعد التسكين</Button>
           </li>
         )}
         {mgr && (
           <li>
             <span className="cfgl"><b>مشرف المنح</b></span>
             {row.owner ? <Person name={row.owner} /> : <Tag tone="warn">غير مُسنَد</Tag>}
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => setModal('owner')}>عدّل المشرف</button>
+            <Button type="button" variant="2" size="sm" onClick={() => setModal('owner')}>عدّل المشرف</Button>
           </li>
         )}
         <li className="aopt-ed">
           <span className="cfgl"><b>مبلغ الدعم · <Money sm>{amount}</Money></b>{fin && <span className="sub">الحد الأعلى للزيادة <Money sm>{fin.maxRaise}</Money></span>}</span>
-            <label className="regf">
-              <span className="lb">المبلغ الجديد</span>
+            <FormField label="المبلغ الجديد">
               <MoneyField value={to ? String(to) : ''} label="مبلغ الدعم الجديد" onChange={(x) => setTo(Number(x) || 0)} />
-            </label>
-            <label className="regf regf-w">
-              <span className="lb">مبررات التعديل<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="مبررات تعديل المبلغ" placeholder="مثال: خفض بند التجهيزات بعد مقارنة التكلفة بالمجال" /></span>
-            </label>
-            <button type="button" className="btn btn-2 btn-sm" disabled={!(to > 0) || !why.trim() || to === amount} onClick={() => { const w = changeAmount(row, seat, to, why, me); setSaid(w); if (!w.length) { setTo(0); setWhy('') } }}>ثبّت المبلغ الجديد</button>
+            </FormField>
+            <FormField label="مبررات التعديل" required wide>
+              <FieldBox><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="مبررات تعديل المبلغ" placeholder="مثال: خفض بند التجهيزات بعد مقارنة التكلفة بالمجال" /></FieldBox>
+            </FormField>
+            <Button type="button" variant="2" size="sm" disabled={!(to > 0) || !why.trim() || to === amount} onClick={() => { const w = changeAmount(row, seat, to, why, me); setSaid(w); if (!w.length) { setTo(0); setWhy('') } }}>ثبّت المبلغ الجديد</Button>
           </li>
         <li className="aopt-ed">
           <span className="cfgl"><b>عدد المستفيدين · <span className="num">{nf.format(row.beneficiaries)}</span></b>{benefs.length > 0 && <span className="sub">عُدّل {nf.format(benefs.length)} مرة</span>}</span>
-            <label className="regf">
-              <span className="lb">العدد الجديد</span>
-              <span className="fld"><input className="num" inputMode="numeric" value={bTo ? nf.format(bTo) : ''} aria-label="عدد المستفيدين الجديد" onChange={(e) => setBTo(Number(e.target.value.replace(/[^\d]/g, '')) || 0)} /></span>
-            </label>
-            <label className="regf regf-w">
-              <span className="lb">مبررات التعديل<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <span className="fld"><input value={bWhy} onChange={(e) => setBWhy(e.target.value)} aria-label="مبررات تعديل عدد المستفيدين" placeholder="مثال: الفئة المستهدفة في المدينة أقل من تقدير الجهة" /></span>
-            </label>
-            <button type="button" className="btn btn-2 btn-sm" disabled={!(bTo > 0) || !bWhy.trim() || bTo === row.beneficiaries} onClick={() => { const w = changeBeneficiaries(row, seat, bTo, bWhy, me); setSaid(w); if (!w.length) { setBTo(0); setBWhy('') } }}>ثبّت العدد الجديد</button>
+            <FormField label="العدد الجديد">
+              <FieldBox><input className="num" inputMode="numeric" value={bTo ? nf.format(bTo) : ''} aria-label="عدد المستفيدين الجديد" onChange={(e) => setBTo(Number(e.target.value.replace(/[^\d]/g, '')) || 0)} /></FieldBox>
+            </FormField>
+            <FormField label="مبررات التعديل" required wide>
+              <FieldBox><input value={bWhy} onChange={(e) => setBWhy(e.target.value)} aria-label="مبررات تعديل عدد المستفيدين" placeholder="مثال: الفئة المستهدفة في المدينة أقل من تقدير الجهة" /></FieldBox>
+            </FormField>
+            <Button type="button" variant="2" size="sm" disabled={!(bTo > 0) || !bWhy.trim() || bTo === row.beneficiaries} onClick={() => { const w = changeBeneficiaries(row, seat, bTo, bWhy, me); setSaid(w); if (!w.length) { setBTo(0); setBWhy('') } }}>ثبّت العدد الجديد</Button>
           </li>
         <li className="aopt-ed">
           <span className="cfgl"><b>ملاحظات {HOLDER_LABEL[seat as Holder]}</b></span>
-          <label className="regf regf-w">
-            <span className="lb">الملاحظة</span>
-            <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على القرار" placeholder="ملاحظة تُحفظ مع القرار في سجل المشروع" /></span>
-          </label>
-          <button type="button" className="btn btn-2 btn-sm" disabled={!note.trim()} onClick={() => { const w = addLevelNote(row, seat, note, me); setSaid(w); if (!w.length) setNote('') }}>أضف الملاحظة</button>
+          <FormField label="الملاحظة" wide>
+            <FieldBox><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على القرار" placeholder="ملاحظة تُحفظ مع القرار في سجل المشروع" /></FieldBox>
+          </FormField>
+          <Button type="button" variant="2" size="sm" disabled={!note.trim()} onClick={() => { const w = addLevelNote(row, seat, note, me); setSaid(w); if (!w.length) setNote('') }}>أضف الملاحظة</Button>
         </li>
       </ul>
 

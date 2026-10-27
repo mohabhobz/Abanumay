@@ -1,7 +1,7 @@
 import { meOf, readRole } from '@/data/roles'
 import { calendarSnap, rederiveEnds } from '@/data/intake/flow'
 import { useMemo, useState } from 'react'
-import { WeekdayPicker, FieldMultiSelect,
+import { FormField, FieldBox, Button, WeekdayPicker, FieldMultiSelect,
   DateField, FieldSelect, Glass, Head, Icon, icons, Num, Person, Switch, Tag } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
 import { CfgNum } from '@/features/settings/CfgEdit'
@@ -49,18 +49,15 @@ export function CycleTab() {
           meta={live ? <Tag tone="ok">البوابة مفتوحة الآن</Tag> : <Tag tone="mute">البوابة مغلقة</Tag>}
         />
         <div className="cfgrow">
-          <label className="regf cfgwide">
-            <span className="lb">اسم الدورة</span>
-            <span className="fld"><input value={d.name} onChange={(e) => patch((x) => { x.name = e.target.value })} aria-label="اسم الدورة" /></span>
-          </label>
-          <label className="regf">
-            <span className="lb">من</span>
+          <FormField label="اسم الدورة" className="cfgwide">
+            <FieldBox><input value={d.name} onChange={(e) => patch((x) => { x.name = e.target.value })} aria-label="اسم الدورة" /></FieldBox>
+          </FormField>
+          <FormField label="من">
             <DateField value={d.from} onChange={(v) => patch((x) => { x.from = v })} label="بداية فترة التقديم" />
-          </label>
-          <label className="regf">
-            <span className="lb">إلى</span>
+          </FormField>
+          <FormField label="إلى">
             <DateField value={d.to} onChange={(v) => patch((x) => { x.to = v })} label="نهاية فترة التقديم" />
-          </label>
+          </FormField>
         </div>
         {badPeriod && <p className="sub cnote"><Tag tone="warn">فترة غير صحيحة</Tag> نهاية الفترة تسبق بدايتها.</p>}
       </Glass>
@@ -136,46 +133,43 @@ export function CycleTab() {
           onChange={(v) => patch((x) => { x.countHolidays = v })}
         />
         {/* Client 27 Oct · the week as seven toggles, like the project's execution days */}
-        <div className="regf">
-          <span className="lb">أيام العطلة الأسبوعية</span>
+        <FormField label="أيام العطلة الأسبوعية" as="div">
           <WeekdayPicker days={WEEKDAYS} value={d.weekend} min={0} label="أيام العطلة الأسبوعية" onChange={(next) => patch((x) => { x.weekend = next })} />
-        </div>
+        </FormField>
         <ul className="cfglist">
           {[...d.holidays].sort((a, b) => a.date.localeCompare(b.date)).map((h) => (
             <li key={`${h.date}-${h.name}`}>
               <b className="num">{h.date}</b>
               <span>{h.name}</span>
               <span className="pc-sp" />
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => patch((x) => { x.holidays = x.holidays.filter((z) => !(z.date === h.date && z.name === h.name)) })}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => patch((x) => { x.holidays = x.holidays.filter((z) => !(z.date === h.date && z.name === h.name)) })}>
                 <Icon name={icons.close} size="sm" />
                 احذف
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
         <div className="cfgrow">
-          <label className="regf">
-            <span className="lb">تاريخ الإجازة</span>
+          <FormField label="تاريخ الإجازة">
             <DateField value={hDate} onChange={setHDate} label="تاريخ الإجازة" />
-          </label>
-          <label className="regf cfgwide">
-            <span className="lb">اسمها</span>
-            <span className="fld"><input value={hName} onChange={(e) => setHName(e.target.value)} aria-label="اسم الإجازة" placeholder="مثال: عيد الأضحى" /></span>
-          </label>
-          <button
+          </FormField>
+          <FormField label="اسمها" className="cfgwide">
+            <FieldBox><input value={hName} onChange={(e) => setHName(e.target.value)} aria-label="اسم الإجازة" placeholder="مثال: عيد الأضحى" /></FieldBox>
+          </FormField>
+          <Button
             type="button"
-            className="btn btn-2 cfgadd"
+            variant="2" className="cfgadd"
             disabled={!hDate || !hName.trim()}
             onClick={() => { patch((x) => { x.holidays.push({ date: hDate, name: hName.trim() }) }); setHDate(''); setHName('') }}
           >
             أضف الإجازة
-          </button>
+          </Button>
         </div>
       </Glass>
 
       <Glass>
         <Head title="بيانات العرض التجريبية" meta={<Tag tone="mute">النموذج الأولي</Tag>} />
-        <button type="button" className="btn btn-2" onClick={resetIntake}>أعد بيانات الاستقبال لحالتها الأولى</button>
+        <Button type="button" variant="2" onClick={resetIntake}>أعد بيانات الاستقبال لحالتها الأولى</Button>
       </Glass>
 
       {dirty && (
@@ -293,26 +287,25 @@ export function CriteriaTab() {
               />
               <span className="pc-sp" />
               <CfgNum value={c.weight} min={0} label={`وزن ${c.label}`} suffix="نقطة" onChange={(v) => setD((x) => x.map((y, j) => (j === i ? { ...y, weight: Math.min(100, v) } : y)))} />
-              <button type="button" className="btn btn-ghost btn-sm" disabled={d.length <= 1} onClick={() => setD((x) => x.filter((_, j) => j !== i))}>
+              <Button type="button" variant="ghost" size="sm" disabled={d.length <= 1} onClick={() => setD((x) => x.filter((_, j) => j !== i))}>
                 <Icon name={icons.close} size="sm" />
                 احذف
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
         <div className="cfgrow">
-          <label className="regf cfgwide">
-            <span className="lb">معيار جديد</span>
-            <span className="fld"><input value={name} onChange={(e) => setName(e.target.value)} aria-label="معيار جديد" placeholder="مثال: الشراكات مع جهات أخرى" /></span>
-          </label>
-          <button
+          <FormField label="معيار جديد" className="cfgwide">
+            <FieldBox><input value={name} onChange={(e) => setName(e.target.value)} aria-label="معيار جديد" placeholder="مثال: الشراكات مع جهات أخرى" /></FieldBox>
+          </FormField>
+          <Button
             type="button"
-            className="btn btn-2 cfgadd"
+            variant="2" className="cfgadd"
             disabled={!name.trim()}
             onClick={() => { setD((x) => [...x, { key: `c${Date.now()}`, label: name.trim(), group: 'فني', weight: 0 }]); setName('') }}
           >
             أضف المعيار
-          </button>
+          </Button>
         </div>
       </Glass>
       {dirty && (
@@ -353,26 +346,25 @@ export function ConsultantsTab() {
               />
               <span className="pc-sp" />
               <CfgNum value={c.accessDays} min={1} label={`مدة وصول ${c.name}`} suffix="يومًا وصول" onChange={(v) => setOne(i, (x) => ({ ...x, accessDays: v }))} />
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setD((x) => ({ ...x, list: x.list.filter((_, j) => j !== i) }))}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setD((x) => ({ ...x, list: x.list.filter((_, j) => j !== i) }))}>
                 <Icon name={icons.close} size="sm" />
                 احذف
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
         <div className="cfgrow">
-          <label className="regf cfgwide">
-            <span className="lb">مستشار جديد</span>
-            <span className="fld"><input value={name} onChange={(e) => setName(e.target.value)} aria-label="اسم المستشار" placeholder="الاسم الكامل" /></span>
-          </label>
-          <button
+          <FormField label="مستشار جديد" className="cfgwide">
+            <FieldBox><input value={name} onChange={(e) => setName(e.target.value)} aria-label="اسم المستشار" placeholder="الاسم الكامل" /></FieldBox>
+          </FormField>
+          <Button
             type="button"
-            className="btn btn-2 cfgadd"
+            variant="2" className="cfgadd"
             disabled={!name.trim()}
             onClick={() => { setD((x) => ({ ...x, list: [...x.list, { key: `c${Date.now()}`, name: name.trim(), title: 'مستشار', domains: [], accessDays: 7 }] })); setName('') }}
           >
             أضف المستشار
-          </button>
+          </Button>
         </div>
       </Glass>
       <Glass>
@@ -449,25 +441,21 @@ export function ProspectsTab() {
           </tbody>
         </table>
         <div className="cfgrow">
-          <label className="regf cfgwide">
-            <span className="lb">الجهة</span>
-            <span className="fld"><input value={n.name} onChange={(e) => setN({ ...n, name: e.target.value })} aria-label="اسم الجهة المقترحة" /></span>
-          </label>
-          <label className="regf">
-            <span className="lb">المجال</span>
+          <FormField label="الجهة" className="cfgwide">
+            <FieldBox><input value={n.name} onChange={(e) => setN({ ...n, name: e.target.value })} aria-label="اسم الجهة المقترحة" /></FieldBox>
+          </FormField>
+          <FormField label="المجال">
             <FieldSelect value={n.field} label="مجال الجهة المقترحة" options={ALL_FIELDS} onChange={(v) => setN({ ...n, field: v })} />
-          </label>
-          <label className="regf">
-            <span className="lb">المتابِع</span>
+          </FormField>
+          <FormField label="المتابِع">
             <FieldSelect value={n.owner} label="متابع الجهة المقترحة" options={[...OWNERS]} onChange={(v) => setN({ ...n, owner: v })} />
-          </label>
-          <label className="regf cfgwide">
-            <span className="lb">ملاحظة</span>
-            <span className="fld"><input value={n.note} onChange={(e) => setN({ ...n, note: e.target.value })} aria-label="ملاحظة" placeholder="لماذا نقترحها" /></span>
-          </label>
-          <button
+          </FormField>
+          <FormField label="ملاحظة" className="cfgwide">
+            <FieldBox><input value={n.note} onChange={(e) => setN({ ...n, note: e.target.value })} aria-label="ملاحظة" placeholder="لماذا نقترحها" /></FieldBox>
+          </FormField>
+          <Button
             type="button"
-            className="btn btn-2 cfgadd"
+            variant="2" className="cfgadd"
             disabled={!n.name.trim() || !n.field || !n.owner}
             onClick={() => {
               setD((x) => [...x, { id: `pr${Date.now()}`, ...n, name: n.name.trim(), year, status: 'مقترحة' }])
@@ -475,7 +463,7 @@ export function ProspectsTab() {
             }}
           >
             أضف لسنة {year}
-          </button>
+          </Button>
         </div>
       </Glass>
       {dirty && (

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Nil, Tag } from '@/components/ui'
+import { FieldBox, Nil, Tag } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
 import { CFG, isConfigured, persist } from '@/lib/config'
 import { useRole } from '@/hooks/useRole'
@@ -27,7 +27,7 @@ export function CfgNum({ value, onChange, label, suffix, min = 0 }: {
 }) {
   return (
     <span className="cfgnum">
-      <span className="fld">
+      <FieldBox>
         <input
           className="num"
           inputMode="numeric"
@@ -39,7 +39,7 @@ export function CfgNum({ value, onChange, label, suffix, min = 0 }: {
           }}
           aria-label={label}
         />
-      </span>
+      </FieldBox>
       {suffix && <span className="sub">{suffix}</span>}
     </span>
   )

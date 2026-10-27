@@ -1,7 +1,7 @@
 import { useLegacy } from '@/data/payments/legacy'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { GateArc, Mono, Money, Num, Person, Tabs, Tag } from '@/components/ui'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ButtonLink, GateArc, Mono, Money, Num, Person, Tabs, Tag } from '@/components/ui'
 import { DecisionBar, Crumbs } from '@/components/shell'
 import { EhsanCard, EhsanNoAgreement, RoutingCard } from '@/features/partners/parts'
 import { viaEhsan } from '@/data/partners/store'
@@ -673,7 +673,7 @@ export default function ProjectPage() {
             </p>
           ) : undefined}
           lead={(holder === 'committee' || holder === 'board') && seat?.mine ? (
-            <Link className="btn btn-p" to={holder === 'committee' ? ROUTES.committee : ROUTES.board}>افتح الجلسة</Link>
+            <ButtonLink variant="p" to={holder === 'committee' ? ROUTES.committee : ROUTES.board}>افتح الجلسة</ButtonLink>
           ) : ((role.key === 'grants-manager' && holder === 'manager') || (role.key === 'ceo' && holder === 'exec')) && seat?.mine ? (
             <BudgetLinkAction
               project={{

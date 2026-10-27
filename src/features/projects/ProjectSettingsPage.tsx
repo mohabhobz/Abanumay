@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BackTo, Glass, Head, Money, Num, Tabs, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, BackTo, Glass, Head, Money, Num, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -143,9 +143,8 @@ function ApprovalTab() {
       <Glass>
         <Head title="جرّب المبلغ" />
         <div className="cfgrow">
-          <label className="regf cfgwide">
-            <span className="lb">مبلغ المشروع</span>
-            <span className="fld">
+          <FormField label="مبلغ المشروع" className="cfgwide">
+            <FieldBox>
               <input
                 className="num"
                 inputMode="numeric"
@@ -153,8 +152,8 @@ function ApprovalTab() {
                 onChange={(e) => setProbe(e.target.value)}
                 aria-label="مبلغ المشروع"
               />
-            </span>
-          </label>
+            </FieldBox>
+          </FormField>
         </div>
         <p className="sub cnote">
           مبلغ <Money>{amount}</Money> يعتمده <b>{who.role}</b>
@@ -226,15 +225,15 @@ function ReasonsTab() {
       <ul className="cfglist">
         {d.map((r, i) => (
           <li key={i}>
-            <span className="fld"><input value={r} aria-label={`السبب ${i + 1}`} onChange={(e) => setD((x) => x.map((y, j) => (j === i ? e.target.value : y)))} /></span>
+            <FieldBox><input value={r} aria-label={`السبب ${i + 1}`} onChange={(e) => setD((x) => x.map((y, j) => (j === i ? e.target.value : y)))} /></FieldBox>
             <span className="pc-sp" />
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => setD((x) => x.filter((_, j) => j !== i))}>احذف</button>
+            <Button type="button" variant="2" size="sm" onClick={() => setD((x) => x.filter((_, j) => j !== i))}>احذف</Button>
           </li>
         ))}
         <li>
-          <span className="fld"><input value={add} aria-label="سبب جديد" placeholder="سبب جديد" onChange={(e) => setAdd(e.target.value)} /></span>
+          <FieldBox><input value={add} aria-label="سبب جديد" placeholder="سبب جديد" onChange={(e) => setAdd(e.target.value)} /></FieldBox>
           <span className="pc-sp" />
-          <button type="button" className="btn btn-2 btn-sm" disabled={!add.trim()} onClick={() => { setD((x) => [...x, add.trim()]); setAdd('') }}>أضف</button>
+          <Button type="button" variant="2" size="sm" disabled={!add.trim()} onClick={() => { setD((x) => [...x, add.trim()]); setAdd('') }}>أضف</Button>
         </li>
       </ul>
       {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
@@ -270,15 +269,15 @@ function ExclusionTab() {
       <ul className="cfglist cfglist-w">
         {d.map((r, i) => (
           <li key={r.key}>
-            <span className="fld"><input value={r.label} aria-label={`معيار الاستبعاد ${i + 1}`} onChange={(e) => setD((x) => x.map((y, j) => (j === i ? { ...y, label: e.target.value } : y)))} /></span>
+            <FieldBox><input value={r.label} aria-label={`معيار الاستبعاد ${i + 1}`} onChange={(e) => setD((x) => x.map((y, j) => (j === i ? { ...y, label: e.target.value } : y)))} /></FieldBox>
             <span className="pc-sp" />
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => setD((x) => x.filter((_, j) => j !== i))}>احذف</button>
+            <Button type="button" variant="2" size="sm" onClick={() => setD((x) => x.filter((_, j) => j !== i))}>احذف</Button>
           </li>
         ))}
         <li>
-          <span className="fld"><input value={add} aria-label="معيار استبعاد جديد" placeholder="معيار جديد · سؤال يُجاب بنعم أو لا" onChange={(e) => setAdd(e.target.value)} /></span>
+          <FieldBox><input value={add} aria-label="معيار استبعاد جديد" placeholder="معيار جديد · سؤال يُجاب بنعم أو لا" onChange={(e) => setAdd(e.target.value)} /></FieldBox>
           <span className="pc-sp" />
-          <button type="button" className="btn btn-2 btn-sm" disabled={!add.trim()} onClick={() => { setD((x) => [...x, { key: exclusionKey(), label: add.trim() }]); setAdd('') }}>أضف</button>
+          <Button type="button" variant="2" size="sm" disabled={!add.trim()} onClick={() => { setD((x) => [...x, { key: exclusionKey(), label: add.trim() }]); setAdd('') }}>أضف</Button>
         </li>
       </ul>
       {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}

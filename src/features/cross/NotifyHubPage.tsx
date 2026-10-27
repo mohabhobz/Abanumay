@@ -1,7 +1,7 @@
 import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { FieldMultiSelect, DateText, Empty, Glass, Head, Num, Pager, SearchBox, Select, Tabs, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, FieldMultiSelect, DateText, Empty, Glass, Head, Num, Pager, SearchBox, Select, Tabs, Tag } from '@/components/ui'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useRole } from '@/hooks/useRole'
@@ -178,21 +178,21 @@ export default function NotifyHubPage() {
                   <Head title="بوابة الإرسال" meta={<Tag tone={tp.gateway.mode === 'api' && tp.gateway.endpoint ? 'teal' : 'warn'}>{tp.gateway.mode === 'api' && tp.gateway.endpoint ? 'مربوطة بخدمة الخادم' : 'غير مربوطة'}</Tag>} />
                   <div className="apv-row">
                     <Select label="الوضع" value={tp.gateway.mode} options={[{ value: 'log', label: 'تسجيل فقط' }, { value: 'api', label: 'خدمة الخادم' }]} onChange={(v) => admin && setTp((x) => ({ ...x, gateway: { ...x.gateway, mode: (v ?? 'log') as 'log' | 'api' } }))} />
-                    <span className="fld"><input value={tp.gateway.endpoint} disabled={!admin} onChange={(e) => setTp((x) => ({ ...x, gateway: { ...x.gateway, endpoint: e.target.value } }))} aria-label="عنوان خدمة الإرسال" placeholder="https://api…/notify" dir="ltr" /></span>
-                    <span className="fld"><input value={tp.gateway.sender} disabled={!admin} onChange={(e) => setTp((x) => ({ ...x, gateway: { ...x.gateway, sender: e.target.value } }))} aria-label="اسم المرسل" placeholder="اسم المرسل" dir="ltr" /></span>
-                    <button type="button" className="btn btn-2 btn-sm" disabled={!tp.gateway.endpoint} onClick={() => {
+                    <FieldBox><input value={tp.gateway.endpoint} disabled={!admin} onChange={(e) => setTp((x) => ({ ...x, gateway: { ...x.gateway, endpoint: e.target.value } }))} aria-label="عنوان خدمة الإرسال" placeholder="https://api…/notify" dir="ltr" /></FieldBox>
+                    <FieldBox><input value={tp.gateway.sender} disabled={!admin} onChange={(e) => setTp((x) => ({ ...x, gateway: { ...x.gateway, sender: e.target.value } }))} aria-label="اسم المرسل" placeholder="اسم المرسل" dir="ltr" /></FieldBox>
+                    <Button type="button" variant="2" size="sm" disabled={!tp.gateway.endpoint} onClick={() => {
                       setPing('جارٍ الاختبار…')
                       fetch(tp.gateway.endpoint, { method: 'HEAD' }).then((r) => setPing(r.ok ? 'الخدمة تستجيب' : `ردّت الخدمة بالرمز ${r.status}`)).catch(() => setPing('تعذّر الوصول إلى الخدمة'))
-                    }}>اختبر الاتصال</button>
+                    }}>اختبر الاتصال</Button>
                     {ping && <span className="sub">{ping}</span>}
                   </div>
                 </Glass>
                 <Glass>
                   <Head title="قالب الموضوع" hint={`المتغيّرات: ${PLACEHOLDERS.join(' ')}`} meta={<Select label="الموضوع" value={tTopic} options={TOPICS.map((x) => ({ value: x, label: TOPIC_SAY[x] }))} onChange={(v) => v && setTTopic(v as Topic)} />} />
                   <div className="regfields">
-                    <label className="regf"><span className="lb">عنوان البريد</span><span className="fld"><input value={t.subject} disabled={!admin} onChange={(e) => put('subject', e.target.value)} aria-label="عنوان البريد" /></span></label>
-                    <label className="regf"><span className="lb">نص البريد</span><span className="fld"><textarea rows={6} value={t.body} disabled={!admin} onChange={(e) => put('body', e.target.value)} aria-label="نص البريد" /></span></label>
-                    <label className="regf"><span className="lb">الرسالة النصية · <Num>{fillTemplate(t.sms, sample).length}</Num> حرفًا · <Num>{smsSegments(fillTemplate(t.sms, sample))}</Num> رسالة</span><span className="fld"><textarea rows={2} value={t.sms} disabled={!admin} onChange={(e) => put('sms', e.target.value)} aria-label="الرسالة النصية" /></span></label>
+                    <FormField label="عنوان البريد"><FieldBox><input value={t.subject} disabled={!admin} onChange={(e) => put('subject', e.target.value)} aria-label="عنوان البريد" /></FieldBox></FormField>
+                    <FormField label="نص البريد"><FieldBox><textarea rows={6} value={t.body} disabled={!admin} onChange={(e) => put('body', e.target.value)} aria-label="نص البريد" /></FieldBox></FormField>
+                    <FormField label={<>الرسالة النصية · <Num>{fillTemplate(t.sms, sample).length}</Num> حرفًا · <Num>{smsSegments(fillTemplate(t.sms, sample))}</Num> رسالة</>}><FieldBox><textarea rows={2} value={t.sms} disabled={!admin} onChange={(e) => put('sms', e.target.value)} aria-label="الرسالة النصية" /></FieldBox></FormField>
                   </div>
                 </Glass>
                 <Glass>

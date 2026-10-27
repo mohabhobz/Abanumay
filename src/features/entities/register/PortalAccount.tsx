@@ -1,6 +1,5 @@
 import { accountLine, accountSay } from '@/data/shared/decisions'
-import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, Icon, KV, Mono, Tag, icons } from '@/components/ui'
+import { ButtonLink, DateText, Glass, Head, Icon, KV, Mono, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { activationTone } from '@/lib/tone'
 import { entityCode } from '@/lib/format'
@@ -67,10 +66,10 @@ export function PortalAccount({ e }: { e: EntityRow }) {
       {!blocked && (
         <footer className="payq-f">
           <span className="pc-sp" />
-          <Link className={`btn ${lapsed.length && !open ? 'btn-p' : 'btn-2'}`} to={`${ROUTES.entityUpdate}?entity=${e.id}${open ? `&id=${open.id}` : ''}`}>
+          <ButtonLink variant={lapsed.length && !open ? 'p' : '2'} to={`${ROUTES.entityUpdate}?entity=${e.id}${open ? `&id=${open.id}` : ''}`}>
             <Icon name={icons.edit} size="sm" />
             {open && open.state !== 'review' ? 'أكمل طلب التحديث' : open ? 'اعرض طلب التحديث' : 'حدّث بيانات الجهة'}
-          </Link>
+          </ButtonLink>
         </footer>
       )}
     </Glass>

@@ -1,6 +1,6 @@
 import { downloadDoc } from '@/lib/download'
 import { useState } from 'react'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { DocThumb } from './DocThumb'
 import { DocPreview } from './DocPreview'
 import { docKind, isScan, KIND_LABEL } from './kind'
@@ -39,7 +39,7 @@ export function DocFile({ name, meta, block, download = true, src, mime }: DocFi
   return (
     <>
       <div className={`dfile${block ? ' block' : ''}`}>
-        <button
+        <Button plain
           type="button"
           className="dfile-b"
           onClick={() => setOpen(true)}
@@ -54,7 +54,7 @@ export function DocFile({ name, meta, block, download = true, src, mime }: DocFi
               {meta && ` · ${meta}`}
             </span>
           </span>
-        </button>
+        </Button>
 
         {/* Download is a separate button: clicking the file itself opens it, and downloading is a
             different decision — merging them turns every preview into a download. */}

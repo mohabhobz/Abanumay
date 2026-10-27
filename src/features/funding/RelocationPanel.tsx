@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { DockActions, DateText, FieldSelect, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
+import { ButtonLabel, FormField, FieldBox, Modal, ModalHead, Button, DockActions, DateText, FieldSelect, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { CfgNum } from '@/features/settings/CfgEdit'
 import { linesFor } from '@/features/budget/lines'
 import { isolate, nf } from '@/lib/format'
@@ -117,9 +116,9 @@ export function RelocationPanel({ row }: { row: ProjectRow }) {
         </div>
       )}
       {canAsk && (
-        <button className="btn btn-2 btn-sm" onClick={() => setEdit(open ?? 'new')}>
+        <Button variant="2" size="sm" onClick={() => setEdit(open ?? 'new')}>
           <Icon name={icons.edit} size="sm" />{open ? `عدّل ${open.id} وأرسله` : 'طلب إعادة تسكين'}
-        </button>
+        </Button>
       )}
       {edit && <RelocForm row={row} base={edit === 'new' ? undefined : edit} paid={paid} onClose={() => setEdit(null)} />}
     </>
@@ -167,28 +166,22 @@ function RelocForm({ row, base, paid, onClose }: { row: ProjectRow; base?: Reloc
   const req = { id, projectId: row.id, projectName: row.name, by: me, scope, reason, files, to: to.filter((x) => x.nodeId) }
   const issues = relocationIssues(req)
 
-  return createPortal(
-    <div className="bmask" role="presentation" onClick={onClose}>
-      <div className="chrome modal modal-w" role="dialog" aria-modal="true" aria-label="طلب إعادة تسكين مشروع" onClick={(e) => e.stopPropagation()}>
-        <div className="mh">
-          <Icon name={icons.budget} size="md" />
-          <b>طلب إعادة تسكين · {id}</b>
+  return <Modal label="طلب إعادة تسكين مشروع" onClose={onClose} className="modal-w">
+        <ModalHead icon={icons.budget} title={<>طلب إعادة تسكين · {id}</>}>
           <span className="pc-sp" />
           <span className="sub trim1">{row.name}</span>
-        </div>
+        </ModalHead>
         <div className="mb col bglink">
-          <div className="regf">
-            <span className="lb">المبالغ المراد إعادة تسكينها<b className="regf-r" aria-label="إلزامي">*</b></span>
+          <FormField label="المبالغ المراد إعادة تسكينها" required as="div">
             <div className="cfgchips" role="radiogroup" aria-label="المبالغ المراد إعادة تسكينها">
               {(['unpaid', 'all'] as const).map((v) => (
-                <button key={v} type="button" role="radio" aria-checked={scope === v} className={`cfgchip${scope === v ? ' on' : ''}`} onClick={() => { setScope(v); setTo((xs) => fit(xs, movingOf(l.shares, v))) }}>
+                <Button plain key={v} type="button" role="radio" aria-checked={scope === v} className={`cfgchip${scope === v ? ' on' : ''}`} onClick={() => { setScope(v); setTo((xs) => fit(xs, movingOf(l.shares, v))) }}>
                   {SCOPE_SAY[v]} · {nf.format(movingOf(l.shares, v))}
-                </button>
+                </Button>
               ))}
             </div>
-          </div>
-          <div className="regf">
-            <span className="lb">الارتباط المالي الجديد<b className="regf-r" aria-label="إلزامي">*</b></span>
+          </FormField>
+          <FormField label="الارتباط المالي الجديد" required as="div">
             <ul className="bgsrc">
               {to.map((x, i) => (
                 <li key={i}>
@@ -204,15 +197,15 @@ function RelocForm({ row, base, paid, onClose }: { row: ProjectRow; base?: Reloc
                     ? <CfgNum value={x.amount} label={`مبلغ البند ${i + 1}`} onChange={(n) => setTo((xs) => xs.map((y, j) => (j === i ? { ...y, amount: n } : y)))} />
                     : <span className="sub"><Money sm>{need}</Money></span>}
                   {to.length > 1 ? (
-                    <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف السطر ${i + 1}`} onClick={() => setTo((xs) => fit(xs.filter((_, j) => j !== i)))}><Icon name={icons.close} size="sm" /></button>
+                    <Button type="button" variant="ghost" size="sm" aria-label={`احذف السطر ${i + 1}`} onClick={() => setTo((xs) => fit(xs.filter((_, j) => j !== i)))}><Icon name={icons.close} size="sm" /></Button>
                   ) : <span />}
                 </li>
               ))}
             </ul>
-            <button type="button" className="btn btn-2 btn-sm bglink-go" onClick={() => setTo((xs) => [...xs, { docId: '', nodeId: '', amount: Math.max(0, need - xs.reduce((a, y) => a + y.amount, 0)) }])}>
+            <Button type="button" variant="2" size="sm" className="bglink-go" onClick={() => setTo((xs) => [...xs, { docId: '', nodeId: '', amount: Math.max(0, need - xs.reduce((a, y) => a + y.amount, 0)) }])}>
               <Icon name={icons.plus} size="sm" />أضف بندًا آخر
-            </button>
-          </div>
+            </Button>
+          </FormField>
 
           <SideBySide from={l.shares} to={to} scope={scope} />
           <h4 className="fnd-h">الدفعات المصروفة <span className="sub"><Num>{paid.length}</Num></span></h4>
@@ -221,28 +214,24 @@ function RelocForm({ row, base, paid, onClose }: { row: ProjectRow; base?: Reloc
           ) : <p className="sub cnote">لا دفعات مصروفة على المشروع.</p>}
           <Effects r={{ from: l.shares, to: to.filter((x) => x.nodeId), scope }} />
 
-          <label className="regf">
-            <span className="lb">سبب إعادة التسكين<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب إعادة التسكين" placeholder="مثال: نقل التمويل إلى بند الهدف الصحيح بعد إعادة الهيكلة" /></span>
-          </label>
+          <FormField label="سبب إعادة التسكين" required>
+            <FieldBox><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب إعادة التسكين" placeholder="مثال: نقل التمويل إلى بند الهدف الصحيح بعد إعادة الهيكلة" /></FieldBox>
+          </FormField>
           <div className="apv-row">
             {files.map((f) => <Tag key={f} tone="ok"><Icon name={icons.clip} size="sm" /> {f}</Tag>)}
-            <label className="btn btn-2 btn-sm">
+            <ButtonLabel variant="2" size="sm">
               <Icon name={icons.upload} size="sm" />أرفق القرار أو المستند الداعم
               <input className="vis-h" type="file" accept=".pdf,.doc,.docx,.png,.jpg" aria-label="المستند الداعم لإعادة التسكين" onChange={(e) => { const x = e.target.files?.[0]; if (x) setFiles((fs) => [...new Set([...fs, x.name])]); e.target.value = '' }} />
-            </label>
+            </ButtonLabel>
           </div>
           {(said.length > 0 || issues.length > 0) && (
             <ul className="apv-sig" aria-live="polite">{(said.length ? said : issues).map((x) => <li key={x} className="no"><Icon name={icons.alert} size="sm" /><span>{x}</span></li>)}</ul>
           )}
         </div>
         <div className="mf">
-          <button className="btn btn-p" disabled={issues.length > 0} title={issues[0]} onClick={() => { const w = saveRelocation(req, true); setSaid(w); if (!w.length) onClose() }}>أرسل للاعتماد النهائي</button>
-          <button className="btn btn-2" onClick={() => { const w = saveRelocation(req, false); setSaid(w); if (!w.length) onClose() }}>احفظ مسودة</button>
-          <button className="btn btn-2" onClick={onClose}>إلغاء</button>
+          <Button variant="p" disabled={issues.length > 0} title={issues[0]} onClick={() => { const w = saveRelocation(req, true); setSaid(w); if (!w.length) onClose() }}>أرسل للاعتماد النهائي</Button>
+          <Button variant="2" onClick={() => { const w = saveRelocation(req, false); setSaid(w); if (!w.length) onClose() }}>احفظ مسودة</Button>
+          <Button variant="2" onClick={onClose}>إلغاء</Button>
         </div>
-      </div>
-    </div>,
-    document.body,
-  )
+      </Modal>
 }

@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { FieldMultiSelect, DateText, Glass, Head, Num, Tag } from '@/components/ui'
+import { ButtonLink, Button, FieldMultiSelect, DateText, Glass, Head, Num, Tag } from '@/components/ui'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -108,7 +107,7 @@ export default function EscalationSettingsPage() {
             </div>
             <div className="rowf gp-2">
               {!admin && <Tag tone="mute">للاطلاع</Tag>}
-              <Link className="btn btn-2 btn-sm" to={ROUTES.escalation}>تقرير المتأخر والمتعثر</Link>
+              <ButtonLink variant="2" size="sm" to={ROUTES.escalation}>تقرير المتأخر والمتعثر</ButtonLink>
             </div>
           </header>
 
@@ -150,8 +149,8 @@ export default function EscalationSettingsPage() {
                     {admin ? (
                       <span className="rowf gp-2">
                         <span className="cfgchips xs-chips" role="radiogroup" aria-label={`قاعدة التعثر في ${p.label}`}>
-                          <button type="button" role="radio" aria-checked={n === null} className={`cfgchip${n === null ? ' on' : ''}`} onClick={() => putStuck(p.key, null)}>ضعف المدة</button>
-                          <button type="button" role="radio" aria-checked={n !== null} className={`cfgchip${n !== null ? ' on' : ''}`} onClick={() => putStuck(p.key, n ?? 7)}>أيام عمل إضافية</button>
+                          <Button plain type="button" role="radio" aria-checked={n === null} className={`cfgchip${n === null ? ' on' : ''}`} onClick={() => putStuck(p.key, null)}>ضعف المدة</Button>
+                          <Button plain type="button" role="radio" aria-checked={n !== null} className={`cfgchip${n !== null ? ' on' : ''}`} onClick={() => putStuck(p.key, n ?? 7)}>أيام عمل إضافية</Button>
                         </span>
                         {n !== null && <CfgNum value={n} min={1} label={`أيام التعثر في ${p.label}`} suffix="يوم عمل" onChange={(x) => putStuck(p.key, Math.max(1, x))} />}
                       </span>

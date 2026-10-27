@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Glass, Head, Icon, icons, Money, Mono, Empty, Riyal, Tabs } from '@/components/ui'
+import { ButtonLink, Glass, Head, Icon, icons, Money, Mono, Empty, Riyal, Tabs } from '@/components/ui'
 import {
   Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS, CHART_INKS,
   StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, MoneyRing, type Hue,
@@ -191,10 +191,10 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
             sub={<>{df.format(new Date())} · {user.role}</>}
             action={
               /* A link, not a button - leads to the reports screen. */
-              <Link className="btn btn-ghost btn-sm" to={ROUTES.reports}>
+              <ButtonLink variant="ghost" size="sm" to={ROUTES.reports}>
                 <Icon name={icons.chart} size="sm" />
                 التقارير الكاملة
-              </Link>
+              </ButtonLink>
             }
           />
           )}

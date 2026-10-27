@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
-import { DateText, Glass, Head, Icon, Person, Steps, Tag, icons, type StepItem } from '@/components/ui'
+import { FormField, FieldBox, Modal, ModalHead, Button, DateText, Glass, Head, Icon, Person, Steps, Tag, icons, type StepItem } from '@/components/ui'
 import { BUDGET_STATE_SAY, budgetTone, type BudgetState } from '@/data/mock/budgetTree'
 import { whoActs, type BudgetEvent } from '@/data/budget/store'
 import { noReviewStep } from '@/data/budget/rules'
@@ -73,10 +72,10 @@ export function FlowCard({ state, events }: { state: BudgetState; events: Budget
       <h3 className="stdy-h mt-3">السجل</h3>
       <History events={shown} />
       {events.length > 4 && (
-        <button className="btn btn-2 btn-sm mt-2" onClick={() => setAll((x) => !x)}>
+        <Button variant="2" size="sm" className="mt-2" onClick={() => setAll((x) => !x)}>
           <Icon name={all ? icons.chevronUp : icons.chevronDown} size="sm" />
           {all ? 'اعرض أقل' : 'اعرض السجل كاملًا'}
-        </button>
+        </Button>
       )}
     </Glass>
   )
@@ -101,36 +100,29 @@ export function NoteModal({ title, cta, tone, required, reasons, onClose, onDone
   const said = picks.length
     ? (other ? `${OTHER}: ${note.trim()}` : note.trim() ? `${reason} · ${note.trim()}` : reason)
     : note.trim()
-  return createPortal(
-    <div className="bmask" role="presentation" onClick={onClose}>
-      <div className="chrome modal" role="dialog" aria-modal="true" aria-label={title} onClick={(x) => x.stopPropagation()}>
-        <div className="mh"><Icon name={required ? icons.redo : icons.check} size="md" /><b>{title}</b></div>
+  return <Modal label={title} onClose={onClose}>
+        <ModalHead icon={required ? icons.redo : icons.check} title={title} />
         <div className="mb col">
 
           {picks.length > 0 && (
-            <div className="regf regf-w">
-              <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
+            <FormField label="السبب" required wide as="div">
               <div className="cfgchips" role="radiogroup" aria-label="السبب">
                 {picks.map((r) => (
-                  <button key={r} type="button" role="radio" aria-checked={reason === r} className={`cfgchip${reason === r ? ' on' : ''}`} onClick={() => setReason(r)}>{r}</button>
+                  <Button plain key={r} type="button" role="radio" aria-checked={reason === r} className={`cfgchip${reason === r ? ' on' : ''}`} onClick={() => setReason(r)}>{r}</Button>
                 ))}
               </div>
-            </div>
+            </FormField>
           )}
-          <label className="regf">
-            <span className="lb">{picks.length ? (other ? 'اكتب السبب' : 'ملاحظة') : 'الملاحظة'}{(picks.length ? other : required) && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
-            <span className="fld fld-a">
+          <FormField label={picks.length ? (other ? 'اكتب السبب' : 'ملاحظة') : 'الملاحظة'} required={(picks.length ? other : required)}>
+            <FieldBox area>
               <textarea rows={3} autoFocus={!picks.length} value={note} onChange={(x) => setNote(x.target.value)} aria-label="الملاحظة" />
-            </span>
-          </label>
+            </FieldBox>
+          </FormField>
 
         </div>
         <div className="mf">
-          <button className={`btn ${tone}`} disabled={!ok} onClick={() => { onDone(said); onClose() }}>{cta}</button>
-          <button className="btn btn-2" onClick={onClose}>تراجع</button>
+          <Button plain className={`btn ${tone}`} disabled={!ok} onClick={() => { onDone(said); onClose() }}>{cta}</Button>
+          <Button variant="2" onClick={onClose}>تراجع</Button>
         </div>
-      </div>
-    </div>,
-    document.body,
-  )
+      </Modal>
 }

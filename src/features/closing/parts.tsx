@@ -1,6 +1,6 @@
 import { holds } from '@/data/shared/decisions'
 import { useState } from 'react'
-import { DockActions, DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Select, Tabs, Tag, icons } from '@/components/ui'
+import { FormField, FieldBox, Button, DockActions, DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Select, Tabs, Tag, icons } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
 import { isolate, nf } from '@/lib/format'
@@ -75,7 +75,7 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
       )}
       {due > 0 && !c.recovery && mayClaim && (
         <div className="act-a">
-          <button type="button" className="btn btn-p btn-sm" onClick={() => setBad(openSavingsRecovery(c.id, user.name))}>طالب الجهة بإعادة الوفر</button>
+          <Button type="button" variant="p" size="sm" onClick={() => setBad(openSavingsRecovery(c.id, user.name))}>طالب الجهة بإعادة الوفر</Button>
         </div>
       )}
       <Err list={bad} />
@@ -111,15 +111,15 @@ export function ExceptionCard({ c, asEntity }: { c: CloseRow; asEntity: boolean 
       {may && (
         <>
           <div className="regfields">
-            <label className="regf"><span className="lb">الحقل</span><Select value={field} all="اختر الحقل" allowEmpty={false} options={EXC_FIELDS.map((x) => ({ value: x.key, label: x.label }))} onChange={(v) => setField(v as ExcField)} /></label>
-            <label className="regf"><span className="lb">القيمة الجديدة</span><span className="fld"><input value={value} onChange={(e) => setValue(e.target.value)} aria-label="القيمة الجديدة" /></span></label>
-            <label className="regf"><span className="lb">سبب التعديل</span><span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التعديل الاستثنائي" /></span></label>
-            <label className="regf"><span className="lb">رقم القرار</span><span className="fld"><input value={decision} onChange={(e) => setDecision(e.target.value)} aria-label="رقم قرار التعديل" /></span></label>
+            <FormField label="الحقل"><Select value={field} all="اختر الحقل" allowEmpty={false} options={EXC_FIELDS.map((x) => ({ value: x.key, label: x.label }))} onChange={(v) => setField(v as ExcField)} /></FormField>
+            <FormField label="القيمة الجديدة"><FieldBox><input value={value} onChange={(e) => setValue(e.target.value)} aria-label="القيمة الجديدة" /></FieldBox></FormField>
+            <FormField label="سبب التعديل"><FieldBox><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التعديل الاستثنائي" /></FieldBox></FormField>
+            <FormField label="رقم القرار"><FieldBox><input value={decision} onChange={(e) => setDecision(e.target.value)} aria-label="رقم قرار التعديل" /></FieldBox></FormField>
           </div>
           <div className="apv-row mt-2">
             <span className="sub">{file || 'مستند القرار · إلزامي'}</span>
             <UploadButton label="مستند القرار" onPick={(f) => setFile(f.name)} />
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => { if (!field) { setBad(['اختر الحقل']); return } const out = recordException(c.id, { field, value, reason, decision, file }, user.name, role.key); setBad(out); if (!out.length) { setValue(''); setReason(''); setDecision(''); setFile('') } }}>سجّل التعديل الاستثنائي</button>
+            <Button type="button" variant="2" size="sm" onClick={() => { if (!field) { setBad(['اختر الحقل']); return } const out = recordException(c.id, { field, value, reason, decision, file }, user.name, role.key); setBad(out); if (!out.length) { setValue(''); setReason(''); setDecision(''); setFile('') } }}>سجّل التعديل الاستثنائي</Button>
           </div>
         </>
       )}
@@ -256,11 +256,11 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
       {staff && receiving && left > 0 && (
         <div className="apv-row mt-3 recrow">
           <MoneyField value={amount} onChange={setAmount} label="المبلغ المستلم" />
-          <span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="مرجع التحويل للمطابقة" aria-label="مرجع التحويل" /></span>
+          <FieldBox><input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="مرجع التحويل للمطابقة" aria-label="مرجع التحويل" /></FieldBox>
           <UploadButton label="إشعار التحويل" onPick={(f) => setFile(f.name)} />
-          <button type="button" className="btn btn-2 btn-sm" disabled={!amount || !ref.trim() || !file} onClick={() => done(recordReceipt(owner, Number(amount), ref, file, user.name), () => { setAmount(''); setRef(''); setFile('') })}>
+          <Button type="button" variant="2" size="sm" disabled={!amount || !ref.trim() || !file} onClick={() => done(recordReceipt(owner, Number(amount), ref, file, user.name), () => { setAmount(''); setRef(''); setFile('') })}>
             سجّل الاستلام
-          </button>
+          </Button>
         </div>
       )}
       {file && receiving && <p className="sub cnote">الإشعار: {file}</p>}
@@ -268,11 +268,11 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
       {/* 10.9.9 · when it can't be recovered · the claims are proven, then escalated */}
       {staff && rec.state === 'open' && left > 0 && (
         <div className="apv-row mt-3 recrow">
-          <span className="fld"><input value={claim} onChange={(e) => setClaim(e.target.value)} placeholder="المطالبات المرسلة وردّ الجهة" aria-label="إثبات المطالبات" /></span>
+          <FieldBox><input value={claim} onChange={(e) => setClaim(e.target.value)} placeholder="المطالبات المرسلة وردّ الجهة" aria-label="إثبات المطالبات" /></FieldBox>
           <UploadButton label="مستند المطالبة" onPick={(f) => setClaimFile(f.name)} />
-          <button type="button" className="btn btn-2 btn-sm" disabled={!claim.trim() || !claimFile} title={claimFile ? undefined : 'ارفع إثبات المطالبات المرسلة'} onClick={() => done(failRecovery(owner, claim, user.name, claimFile || undefined, role.key), () => { setClaim(''); setClaimFile('') })}>
+          <Button type="button" variant="2" size="sm" disabled={!claim.trim() || !claimFile} title={claimFile ? undefined : 'ارفع إثبات المطالبات المرسلة'} onClick={() => done(failRecovery(owner, claim, user.name, claimFile || undefined, role.key), () => { setClaim(''); setClaimFile('') })}>
             تعذّر الاسترداد · أثبت المطالبة
-          </button>
+          </Button>
         </div>
       )}
       {rec.claims.length > 0 && (
@@ -291,17 +291,17 @@ export function RecoveryCard({ rec, owner, asEntity }: { rec: Recovery; owner: {
       {staff && rec.state === 'failed' && (
         <div className="apv-row mt-3">
           <Select value={step} all="خطوة التصعيد" options={ESCALATION_STEPS.map((x) => ({ value: x, label: x }))} onChange={setStep} />
-          <span className="fld"><input value={stepText} onChange={(e) => setStepText(e.target.value)} placeholder="تفاصيل الخطوة" aria-label="تفاصيل التصعيد" /></span>
+          <FieldBox><input value={stepText} onChange={(e) => setStepText(e.target.value)} placeholder="تفاصيل الخطوة" aria-label="تفاصيل التصعيد" /></FieldBox>
           <UploadButton label={stepFile || 'مستند الخطوة'} onPick={(f) => setStepFile(f.name)} />
-          <button type="button" className="btn btn-2 btn-sm" disabled={!step || !stepFile} title={stepFile ? undefined : 'ارفع مستند خطوة التصعيد'} onClick={() => done(escalateRecovery(owner, step ?? '', stepText, user.name, stepFile, role.key), () => { setStep(undefined); setStepText(''); setStepFile('') })}>صعِّد</button>
+          <Button type="button" variant="2" size="sm" disabled={!step || !stepFile} title={stepFile ? undefined : 'ارفع مستند خطوة التصعيد'} onClick={() => done(escalateRecovery(owner, step ?? '', stepText, user.name, stepFile, role.key), () => { setStep(undefined); setStepText(''); setStepFile('') })}>صعِّد</Button>
         </div>
       )}
       {!asEntity && holds('recoveryBy', role.key) && rec.state === 'failed' && (
         <div className="apv-row mt-3">
           <Select value={kind} all="القرار النهائي" options={Object.entries(DECISION_SAY).map(([value, label]) => ({ value, label }))} onChange={setKind} />
-          <span className="fld"><input value={decision} onChange={(e) => setDecision(e.target.value)} placeholder="نص القرار" aria-label="نص القرار النهائي" /></span>
+          <FieldBox><input value={decision} onChange={(e) => setDecision(e.target.value)} placeholder="نص القرار" aria-label="نص القرار النهائي" /></FieldBox>
           <UploadButton label={decFile || 'مستند القرار'} onPick={(f) => setDecFile(f.name)} />
-          <button type="button" className="btn btn-p btn-sm" disabled={!kind || !decision.trim() || !decFile} title={decFile ? undefined : 'ارفع مستند القرار'} onClick={() => done(decideRecovery(owner, kind as never, decision, user.name, role.key, decFile), () => { setKind(undefined); setDecision(''); setDecFile('') })}>اعتمد القرار</button>
+          <Button type="button" variant="p" size="sm" disabled={!kind || !decision.trim() || !decFile} title={decFile ? undefined : 'ارفع مستند القرار'} onClick={() => done(decideRecovery(owner, kind as never, decision, user.name, role.key, decFile), () => { setKind(undefined); setDecision(''); setDecFile('') })}>اعتمد القرار</Button>
         </div>
       )}
       {rec.decision && (
@@ -348,14 +348,14 @@ export function RedirectCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }
           <KV rows={[{ k: 'المبلغ الأصلي', v: <Money sm>{b.original}</Money> }, { k: 'المستخدم', v: <Money sm>{b.used}</Money> }, { k: 'الحد الأقصى للتوجيه', v: c.finance?.verified == null ? <span className="sub">بعد اعتماد المصروف الفعلي</span> : <Money sm>{b.max}</Money> }]} />
           <div className="apv-row mt-3">
             <MoneyField value={amount} onChange={setAmount} label="المبلغ المعاد توجيهه" />
-            <span className="fld"><input value={purpose} onChange={(e) => setPurpose(e.target.value)} aria-label="الغرض الجديد" placeholder="الغرض الجديد داخل العلاقة نفسها" /></span>
-            <span className="fld"><input value={decision} onChange={(e) => setDecision(e.target.value)} aria-label="رقم القرار" placeholder="رقم القرار" /></span>
+            <FieldBox><input value={purpose} onChange={(e) => setPurpose(e.target.value)} aria-label="الغرض الجديد" placeholder="الغرض الجديد داخل العلاقة نفسها" /></FieldBox>
+            <FieldBox><input value={decision} onChange={(e) => setDecision(e.target.value)} aria-label="رقم القرار" placeholder="رقم القرار" /></FieldBox>
           </div>
           <div className="apv-row mt-2">
             <UploadButton label={file || 'مستند القرار'} onPick={(f) => setFile(f.name)} />
             <UploadButton label="شاهد" onPick={(f) => setEvidence((x) => [...x, f.name])} />
             {evidence.length > 0 && <span className="sub">{evidence.join('، ')}</span>}
-            <button type="button" className="btn btn-p btn-sm" onClick={() => setBad(redirectSupport(c.id, { redirected: Number(amount.replace(/[^\d]/g, '')) || 0, purpose, decision, decisionFile: file, evidence }, user.name, role.key))}>اعتمد إعادة التوجيه</button>
+            <Button type="button" variant="p" size="sm" onClick={() => setBad(redirectSupport(c.id, { redirected: Number(amount.replace(/[^\d]/g, '')) || 0, purpose, decision, decisionFile: file, evidence }, user.name, role.key))}>اعتمد إعادة التوجيه</Button>
           </div>
           <Err list={bad} />
         </>
@@ -386,18 +386,16 @@ export function FeedbackCard({ c, asEntity }: { c: CloseRow; asEntity: boolean }
         <>
           <div className="regfields">
             {FEEDBACK_ITEMS.map((x) => (
-              <label key={x.key} className="regf">
-                <span className="lb">{x.label}</span>
+              <FormField key={x.key} label={x.label}>
                 <Select value={scores[x.key] ? String(scores[x.key]) : undefined} all="اختر من 5" allowEmpty={false} options={['1', '2', '3', '4', '5'].map((v) => ({ value: v, label: v }))} onChange={(v) => setScores((s) => ({ ...s, [x.key]: Number(v) }))} />
-              </label>
+              </FormField>
             ))}
           </div>
-          <label className="regf">
-            <span className="lb">ملاحظاتكم</span>
-            <span className="fld"><textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} aria-label="ملاحظات الجهة على المؤسسة" /></span>
-          </label>
+          <FormField label="ملاحظاتكم">
+            <FieldBox><textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} aria-label="ملاحظات الجهة على المؤسسة" /></FieldBox>
+          </FormField>
           <div className="act-a">
-            <button type="button" className="btn btn-p btn-sm" disabled={FEEDBACK_ITEMS.some((x) => !scores[x.key])} onClick={() => setBad(sendFeedback(c.id, scores, comment, c.entityName || user.name))}>أرسل التقييم</button>
+            <Button type="button" variant="p" size="sm" disabled={FEEDBACK_ITEMS.some((x) => !scores[x.key])} onClick={() => setBad(sendFeedback(c.id, scores, comment, c.entityName || user.name))}>أرسل التقييم</Button>
           </div>
         </>
       )}
@@ -493,9 +491,9 @@ export function VersionsCard({ c }: { c: CloseRow }) {
               </span>
               <span className="pc-sp" />
               {snap && (
-                <button type="button" className="btn btn-2 btn-sm" onClick={() => setOpen(open === key ? '' : key)}>
+                <Button type="button" variant="2" size="sm" onClick={() => setOpen(open === key ? '' : key)}>
                   {open === key ? 'أخفِ المقارنة' : 'قارِن بالنشطة'}
-                </button>
+                </Button>
               )}
             </li>
           )

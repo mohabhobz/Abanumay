@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DateText, Glass, Head, Num, Person, Select, Tag } from '@/components/ui'
+import { FieldBox, Button, DateText, Glass, Head, Num, Person, Select, Tag } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
 import { isolate } from '@/lib/format'
@@ -80,13 +80,13 @@ export function PayExceptions({ request: r }: { request: PayRequest }) {
                 onChange={setRule}
               />
             )}
-            <span className="fld">
+            <FieldBox>
               <input value={text} onChange={(e) => setText(e.target.value)} placeholder="نص الموافقة أو الاستثناء ومرجعه · إلزامي" aria-label="نص الموافقة أو الاستثناء" />
-            </span>
+            </FieldBox>
             <UploadButton label="مرفق الموافقة" onPick={(f) => setFile(f.name)} />
-            <button type="button" className="btn btn-2 btn-sm" disabled={!text.trim() || (kind === 'waiver' && !rule)} onClick={submit}>
+            <Button type="button" variant="2" size="sm" disabled={!text.trim() || (kind === 'waiver' && !rule)} onClick={submit}>
               سجّل
-            </button>
+            </Button>
           </div>
           {file && <p className="sub cnote">المرفق: {file}</p>}
           {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}

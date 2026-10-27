@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { reportable } from '@/data/shared/testData'
 import { useNavigate } from 'react-router-dom'
 import {
-  Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, Pager, PAGE_SIZES, Person, SearchBox,
+  FieldBox, Button, Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, Pager, PAGE_SIZES, Person, SearchBox,
   Segments, Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -606,7 +606,7 @@ export default function ProjectsListPage() {
                 options={SORTS.slice(1).map((x) => ({ value: x.key, label: x.label }))}
                 onChange={(x) => set({ sort: x })}
               />
-              <button
+              <Button plain
                 className={`fchip${advOpen ? ' on' : ''}`}
                 onClick={() => set({ adv: advOpen ? undefined : '1' })}
                 aria-expanded={advOpen}
@@ -614,7 +614,7 @@ export default function ProjectsListPage() {
                 <Icon name={icons.filter} size="sm" />
                 فلاتر متقدمة
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
-              </button>
+              </Button>
               {/* Grouping is a different question from filtering: filtering reduces rows,
                   grouping reorganizes them into sub-tables with their own totals. */}
               
@@ -690,10 +690,10 @@ export default function ProjectsListPage() {
                   </div>
                 </div>
                 <div className="fgrid-x">
-                  <button className="fclear" onClick={() => setCustom(true)}>
+                  <Button plain className="fclear" onClick={() => setCustom(true)}>
                     <Icon name={icons.gear} size="sm" />
                     تخصيص الفلاتر
-                  </button>
+                  </Button>
                 </div>
               </>
             ))}
@@ -701,7 +701,7 @@ export default function ProjectsListPage() {
             {(chips.length > 0 || flags.length > 0) && (
               <div className="factive">
                 {chips.map((c) => (
-                  <button
+                  <Button plain
                     key={`${c.k as string}:${c.value}`}
                     className="fpill"
                     onClick={() =>
@@ -713,15 +713,15 @@ export default function ProjectsListPage() {
                     <span className="sub">{c.label}:</span>{' '}
                     {c.k === 'owner' ? <Person name={c.value} quiet={false} /> : c.k === 'res' ? OUTCOME_PICK_SAY[c.value as OutcomePick] ?? c.value : c.value}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 ))}
                 {flags.map(([k, label]) => (
-                  <button key={k as string} className="fpill" onClick={() => set({ [k]: undefined } as Partial<Params>)}>
+                  <Button plain key={k as string} className="fpill" onClick={() => set({ [k]: undefined } as Partial<Params>)}>
                     {label}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 ))}
-                <button className="fclear" onClick={clear}>مسح الكل</button>
+                <Button plain className="fclear" onClick={clear}>مسح الكل</Button>
               </div>
             )}
           </Glass>
@@ -736,15 +736,15 @@ export default function ProjectsListPage() {
               <span className="pc-sp" />
               {/* A forward is a recorded decision on each project's timeline · no silent undo */}
               {lastBulk.undo && (
-                <button
-                  className="btn btn-2 btn-sm"
+                <Button
+                  variant="2" size="sm"
                   onClick={() => { lastBulk.undo?.(); setLastBulk(null); bump((n) => n + 1) }}
                 >
                   <Icon name={icons.redo} size="sm" />
                   تراجع
-                </button>
+                </Button>
               )}
-              <button className="btn btn-2 btn-sm" onClick={() => setLastBulk(null)}>إغلاق</button>
+              <Button variant="2" size="sm" onClick={() => setLastBulk(null)}>إغلاق</Button>
             </Glass>
           )}
 
@@ -753,7 +753,7 @@ export default function ProjectsListPage() {
             <Glass>
               <Empty
                 title="لا توجد مشاريع بهذه الفلاتر."
-                actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
+                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
               />
             </Glass>
           ) : view === 'cards' ? (
@@ -786,7 +786,7 @@ export default function ProjectsListPage() {
           {grouped ? (
             <p className="sub" style={{ textAlign: 'center' }}>
               <span className="num">{countLeaves(groupTree(result.rows, group))}</span> مجموعات ·{' '}
-              <button className="lnk" onClick={() => set({ group: undefined })}>إلغاء التجميع</button>
+              <Button plain className="lnk" onClick={() => set({ group: undefined })}>إلغاء التجميع</Button>
             </p>
           ) : (
             <Pager
@@ -821,12 +821,12 @@ export default function ProjectsListPage() {
                 the project page, minus anything that needs a per-project target. */}
             {mixed && <span className="sub">اختر طلبات بنفس الحالة لتظهر الإجراءات</span>}
             {!mixed && bulkActions.some(needsNote) && (
-              <span className="fld bulk-note">
+              <FieldBox className="bulk-note">
                 <input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="مبررات القرار · تُسجَّل على كل مشروع" aria-label="مبررات القرار الجماعي" />
-              </span>
+              </FieldBox>
             )}
             {!mixed && bulkActions.map((a) => (
-              <button
+              <Button plain
                 key={a.label}
                 className={`btn btn-sm ${a.kind}`}
                 disabled={needsNote(a) && !bulkNote.trim()}
@@ -834,7 +834,7 @@ export default function ProjectsListPage() {
                 onClick={() => (role.key === 'supervisor' && BULK_RECOMMEND[a.label] ? runRecommend(a.label) : BULK_APPROVAL.includes(a.label) ? runApproval(a.label) : runBulk(BULK_OF[a.label]!, a.label))}
               >
                 {a.label}
-              </button>
+              </Button>
             ))}
 
             <Select
@@ -847,18 +847,18 @@ export default function ProjectsListPage() {
               onChange={setBulkOwner}
             />
             {bulkOwner && ownerPlan.change > 0 && (
-              <span className="fld bulk-note">
+              <FieldBox className="bulk-note">
                 <input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder={`سبب تعديل المشرف · ${units.project(ownerPlan.change)} لها مشرف حاليًا`} aria-label="سبب تعديل مشرف المنح" />
-              </span>
+              </FieldBox>
             )}
-            <button
-              className="btn btn-p btn-sm"
+            <Button
+              variant="p" size="sm"
               disabled={!bulkOwner || ownerPlan.take.length === 0 || (ownerPlan.change > 0 && !bulkNote.trim())}
               title={bulkOwner && ownerPlan.take.length === 0 ? 'لا مشروع من مجالات هذا المشرف في التحديد' : bulkOwner && ownerPlan.change > 0 && !bulkNote.trim() ? 'اكتب سبب تعديل المشرف' : bulkOwner && ownerPlan.off.length ? `${units.project(ownerPlan.off.length)} خارج مجالاته · لا تُسند` : undefined}
               onClick={applyBulk}
             >
               أسند المالك
-            </button>
+            </Button>
           </BulkBar>
         )}
       </div>

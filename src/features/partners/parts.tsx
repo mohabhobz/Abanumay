@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FieldMultiSelect, DockActions, DateField, DateText, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Tag, icons } from '@/components/ui'
+import { ButtonLink, FormField, FieldBox, Button, FieldMultiSelect, DockActions, DateField, DateText, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, Tag, icons } from '@/components/ui'
 import { DocReadNote, UploadButton, useDocReads } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -68,15 +68,15 @@ export function PayForm({ target, max, onDone }: { target: PayTarget; max: numbe
   return (
     <div className="ptn-form">
       <div className="regfields">
-        <label className="regf"><span className="lb">المبلغ المنفّذ</span><MoneyField value={amount} onChange={setAmount} label="المبلغ المنفّذ" /><span className="sub regf-h">المتبقي <span className="num">{nf.format(Math.max(0, max))}</span></span></label>
-        <label className="regf"><span className="lb">رقم العملية على المنصة</span><span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="رقم العملية على منصة إحسان" /></span></label>
-        <label className="regf"><span className="lb">تاريخ التنفيذ</span><DateField value={paidAt} onChange={setPaidAt} label="تاريخ التنفيذ" /></label>
-        <label className="regf"><span className="lb">ملاحظة</span><span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على الدفعة" /></span></label>
+        <FormField label="المبلغ المنفّذ"><MoneyField value={amount} onChange={setAmount} label="المبلغ المنفّذ" /><span className="sub regf-h">المتبقي <span className="num">{nf.format(Math.max(0, max))}</span></span></FormField>
+        <FormField label="رقم العملية على المنصة"><FieldBox><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="رقم العملية على منصة إحسان" /></FieldBox></FormField>
+        <FormField label="تاريخ التنفيذ"><DateField value={paidAt} onChange={setPaidAt} label="تاريخ التنفيذ" /></FormField>
+        <FormField label="ملاحظة"><FieldBox><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظة على الدفعة" /></FieldBox></FormField>
       </div>
       <div className="apv-row mt-2">
         <span className="sub">{docs.length ? docs.join(' · ') : 'إشعار التحويل أو مستند المنصة · إلزامي'}</span>
         <UploadButton label="مستند الدفعة" onPick={(f) => { setDocs((d) => [...d, f.name]); read('pay', f, 'transfer', { amount, ref }) }} />
-        <button type="button" className="btn btn-p btn-sm" onClick={send}>سجّل الدفعة</button>
+        <Button type="button" variant="p" size="sm" onClick={send}>سجّل الدفعة</Button>
       </div>
       {docs.length > 0 && <DocReadNote r={reads.pay} />}
       <Said said={said} />
@@ -149,20 +149,20 @@ export function SlotsEditor({ slots, total, onSave, locked, terms, upTo }: { slo
     <div className="ptn-form">
       {rows.map((r, i) => (
         <div key={i} className="regfields">
-          <label className="regf"><span className="lb">الدفعة {i + 1}</span><MoneyField value={r.amount} onChange={(v) => put(i, 'amount', v)} label={`قيمة الدفعة ${i + 1}`} /></label>
-          <label className="regf"><span className="lb">الاستحقاق</span><DateField value={r.dueAt} onChange={(v) => put(i, 'dueAt', v)} label={`استحقاق الدفعة ${i + 1}`} /></label>
-          {terms && <label className="regf"><span className="lb">المتطلبات</span><span className="fld"><input value={r.needs} onChange={(e) => put(i, 'needs', e.target.value)} aria-label={`متطلبات الدفعة ${i + 1}`} placeholder="ما يُرفع قبل الصرف" /></span></label>}
-          {terms && <label className="regf"><span className="lb">الشروط</span><span className="fld"><input value={r.cond} onChange={(e) => put(i, 'cond', e.target.value)} aria-label={`شروط الدفعة ${i + 1}`} placeholder="اختياري" /></span></label>}
+          <FormField label={<>الدفعة {i + 1}</>}><MoneyField value={r.amount} onChange={(v) => put(i, 'amount', v)} label={`قيمة الدفعة ${i + 1}`} /></FormField>
+          <FormField label="الاستحقاق"><DateField value={r.dueAt} onChange={(v) => put(i, 'dueAt', v)} label={`استحقاق الدفعة ${i + 1}`} /></FormField>
+          {terms && <FormField label="المتطلبات"><FieldBox><input value={r.needs} onChange={(e) => put(i, 'needs', e.target.value)} aria-label={`متطلبات الدفعة ${i + 1}`} placeholder="ما يُرفع قبل الصرف" /></FieldBox></FormField>}
+          {terms && <FormField label="الشروط"><FieldBox><input value={r.cond} onChange={(e) => put(i, 'cond', e.target.value)} aria-label={`شروط الدفعة ${i + 1}`} placeholder="اختياري" /></FieldBox></FormField>}
         </div>
       ))}
       <div className="apv-row mt-2">
         <span className={`sub${off ? ' bad' : ''}`}>المجموع <span className="num">{nf.format(sum)}</span> {upTo ? 'لا يتجاوز' : 'من'} <span className="num">{nf.format(total)}</span></span>
-        <button type="button" className="btn btn-2 btn-sm" onClick={() => setRows((x) => [...x, { amount: '', dueAt: '', needs: '', cond: '' }])}>دفعة أخرى</button>
-        {rows.length > 1 && <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRows((x) => x.slice(0, -1))}>احذف الأخيرة</button>}
-        <button type="button" className="btn btn-p btn-sm" onClick={() => {
+        <Button type="button" variant="2" size="sm" onClick={() => setRows((x) => [...x, { amount: '', dueAt: '', needs: '', cond: '' }])}>دفعة أخرى</Button>
+        {rows.length > 1 && <Button type="button" variant="ghost" size="sm" onClick={() => setRows((x) => x.slice(0, -1))}>احذف الأخيرة</Button>}
+        <Button type="button" variant="p" size="sm" onClick={() => {
           const out = onSave(rows.map((r, i) => ({ no: i + 1, amount: Number(r.amount) || 0, dueAt: r.dueAt, ...(terms ? { needs: r.needs, cond: r.cond } : {}) })))
           setSaid(out.length ? { bad: out } : { ok: 'جدول الدفعات' })
-        }}>احفظ الجدول</button>
+        }}>احفظ الجدول</Button>
       </div>
       <Said said={said} />
     </div>
@@ -222,10 +222,10 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
       )}
       {mine ? (
         <div className="apv-row mt-3">
-          {sup && <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="مبرّر الاقتراح" placeholder="مبرّر الاقتراح · اختياري" /></span>}
+          {sup && <FieldBox><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="مبرّر الاقتراح" placeholder="مبرّر الاقتراح · اختياري" /></FieldBox>}
           {!row.platform && <FieldSelect value={party} onChange={setParty} label="الجهة الخارجية" options={parties.map((e) => ({ value: e.id, label: e.name }))} />}
-          <button type="button" className="btn btn-2 btn-sm" disabled={Boolean(row.platform) || !party} onClick={() => set(true, 'independent')}>توجيه عبر الجهة الخارجية</button>
-          {row.platform && <button type="button" className="btn btn-2 btn-sm" onClick={() => set(false, 'independent')}>دعم مباشر</button>}
+          <Button type="button" variant="2" size="sm" disabled={Boolean(row.platform) || !party} onClick={() => set(true, 'independent')}>توجيه عبر الجهة الخارجية</Button>
+          {row.platform && <Button type="button" variant="2" size="sm" onClick={() => set(false, 'independent')}>دعم مباشر</Button>}
         </div>
       ) : study && prop ? (
         <p className="sub cnote">الاقتراح عند المدير التنفيذي</p>
@@ -233,7 +233,7 @@ export function RoutingCard({ row }: { row: ProjectRow }) {
       {/* v3 · 3.2.17 · an approved project classified a portfolio · the supervisor opens its path */}
       {portfolioNext && (
         <div className="apv-row mt-3">
-          <button type="button" className="btn btn-p btn-sm" onClick={() => set(false, 'portfolio')}>فعّل مسار المحفظة</button>
+          <Button type="button" variant="p" size="sm" onClick={() => set(false, 'portfolio')}>فعّل مسار المحفظة</Button>
         </div>
       )}
       <Said said={said} />
@@ -308,7 +308,7 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
           ? <SlotsEditor slots={sched} total={m.value} terms upTo locked={!auth || closed || started} onSave={(s) => saveEhSchedule(row.id, s, user.name)} />
           : <p className="sub cnote">{g.why}</p>}
         <div className="apv-row mt-2">
-          <Link className="btn btn-2 btn-sm" to={ROUTES.paymentNew(row.id)}>ارفع متطلبات الدفعة نيابةً عن الجهة</Link>
+          <ButtonLink variant="2" size="sm" to={ROUTES.paymentNew(row.id)}>ارفع متطلبات الدفعة نيابةً عن الجهة</ButtonLink>
         </div>
       </Glass>
 
@@ -326,13 +326,13 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
         )}
         {auth && !closed && (
           <div className="regfields mt-3">
-            <label className="regf"><span className="lb">الحالة</span><FieldSelect value={ex.status} onChange={(v) => setEx((x) => ({ ...x, status: v }))} label="حالة التنفيذ" options={[...EXEC_STATES]} /></label>
-            <label className="regf"><span className="lb">نسبة الإنجاز</span><span className="fld"><input inputMode="numeric" value={ex.progress} onChange={(e) => setEx((x) => ({ ...x, progress: e.target.value.replace(/[^\d]/g, '') }))} aria-label="نسبة الإنجاز" /></span></label>
-            <label className="regf ptn-wide"><span className="lb">ما ورد من الجهة</span><span className="fld"><input value={ex.note} onChange={(e) => setEx((x) => ({ ...x, note: e.target.value }))} aria-label="ملاحظة التنفيذ" /></span></label>
+            <FormField label="الحالة"><FieldSelect value={ex.status} onChange={(v) => setEx((x) => ({ ...x, status: v }))} label="حالة التنفيذ" options={[...EXEC_STATES]} /></FormField>
+            <FormField label="نسبة الإنجاز"><FieldBox><input inputMode="numeric" value={ex.progress} onChange={(e) => setEx((x) => ({ ...x, progress: e.target.value.replace(/[^\d]/g, '') }))} aria-label="نسبة الإنجاز" /></FieldBox></FormField>
+            <FormField label="ما ورد من الجهة" className="ptn-wide"><FieldBox><input value={ex.note} onChange={(e) => setEx((x) => ({ ...x, note: e.target.value }))} aria-label="ملاحظة التنفيذ" /></FieldBox></FormField>
             <span className="rowf gp-2">
               <span className="sub">{ex.files.length ? ex.files.join(' · ') : 'إثبات التنفيذ'}</span>
               <UploadButton label="إثبات" onPick={(f) => setEx((x) => ({ ...x, files: [...x.files, f.name] }))} />
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = recordExec(row.id, { status: ex.status as ExecState, progress: Number(ex.progress) || 0, note: ex.note, files: ex.files }, user.name, role.key); r(out, 'حالة التنفيذ'); if (!out.length) setEx((x) => ({ ...x, note: '', files: [] })) }}>حدّث الحالة</button>
+              <Button type="button" variant="2" size="sm" onClick={() => { const out = recordExec(row.id, { status: ex.status as ExecState, progress: Number(ex.progress) || 0, note: ex.note, files: ex.files }, user.name, role.key); r(out, 'حالة التنفيذ'); if (!out.length) setEx((x) => ({ ...x, note: '', files: [] })) }}>حدّث الحالة</Button>
             </span>
           </div>
         )}
@@ -359,10 +359,10 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
         </ul>
         {sup && !closed && (
           <div className="regfields mt-3">
-            <label className="regf"><span className="lb">النوع</span><FieldSelect value={kind} onChange={setKind} label="نوع المتابعة" options={['زيارة ميدانية', 'عملية على المنصة', 'ملاحظة']} /></label>
-            <label className="regf"><span className="lb">المرجع</span><span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="مرجع المتابعة" /></span></label>
-            <label className="regf ptn-wide"><span className="lb">ما جرى</span><span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ما جرى" /></span></label>
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = addEhOp(row.id, kind, note, user.name, ref || undefined); r(out, 'المتابعة'); if (!out.length) { setNote(''); setRef('') } }}>سجّل</button>
+            <FormField label="النوع"><FieldSelect value={kind} onChange={setKind} label="نوع المتابعة" options={['زيارة ميدانية', 'عملية على المنصة', 'ملاحظة']} /></FormField>
+            <FormField label="المرجع"><FieldBox><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="مرجع المتابعة" /></FieldBox></FormField>
+            <FormField label="ما جرى" className="ptn-wide"><FieldBox><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="ما جرى" /></FieldBox></FormField>
+            <Button type="button" variant="2" size="sm" onClick={() => { const out = addEhOp(row.id, kind, note, user.name, ref || undefined); r(out, 'المتابعة'); if (!out.length) { setNote(''); setRef('') } }}>سجّل</Button>
           </div>
         )}
       </Glass>
@@ -373,12 +373,12 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
         {cl?.note && cl.state === 'returned' && <p className="bad cnote">ملاحظة مدير المنح: {cl.note}</p>}
         {sup && !closed && cl?.state !== 'manager' && (
           <>
-            <label className="regf mt-3"><span className="lb">ملخص الإغلاق</span><span className="fld"><textarea rows={3} value={report} onChange={(e) => setReport(e.target.value)} aria-label="ملخص الإغلاق" placeholder="ما نُفّذ وما صُرف · دون تقرير ختامي اعتيادي" /></span></label>
+            <FormField label="ملخص الإغلاق" className="mt-3"><FieldBox><textarea rows={3} value={report} onChange={(e) => setReport(e.target.value)} aria-label="ملخص الإغلاق" placeholder="ما نُفّذ وما صُرف · دون تقرير ختامي اعتيادي" /></FieldBox></FormField>
             <div className="apv-row mt-2">
               <span className="sub">{evidence.length ? evidence.join(' · ') : 'إثباتات التحويل والتنفيذ'}</span>
               <UploadButton label="إثبات" onPick={(f) => setEvidence((x) => [...x, f.name])} />
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => r(saveEhReport(row.id, report, evidence, user.name), 'ملخص الإغلاق')}>احفظ</button>
-              <button type="button" className="btn btn-p btn-sm" onClick={() => r(closeEhsanProject(row.id, user.name, report, evidence), 'إحالة الإغلاق إلى مدير المنح')}>ارفع الإغلاق لمدير المنح</button>
+              <Button type="button" variant="2" size="sm" onClick={() => r(saveEhReport(row.id, report, evidence, user.name), 'ملخص الإغلاق')}>احفظ</Button>
+              <Button type="button" variant="p" size="sm" onClick={() => r(closeEhsanProject(row.id, user.name, report, evidence), 'إحالة الإغلاق إلى مدير المنح')}>ارفع الإغلاق لمدير المنح</Button>
             </div>
           </>
         )}
@@ -387,20 +387,20 @@ export function EhsanCard({ row }: { row: ProjectRow }) {
             {/* v3 · 11.2.14 · the outcome at the approval · complete (or with savings) · cancelled · redirected */}
             <div className="cfgchips mt-3" role="radiogroup" aria-label="نتيجة الإغلاق">
               {(Object.keys(EXT_CLOSE_OUTCOME_SAY) as ExtCloseOutcome[]).map((k) => (
-                <button key={k} type="button" role="radio" aria-checked={outcome === k} className={`cfgchip${outcome === k ? ' on' : ''}`} onClick={() => setOutcome(k)}>{EXT_CLOSE_OUTCOME_SAY[k]}</button>
+                <Button plain key={k} type="button" role="radio" aria-checked={outcome === k} className={`cfgchip${outcome === k ? ' on' : ''}`} onClick={() => setOutcome(k)}>{EXT_CLOSE_OUTCOME_SAY[k]}</Button>
               ))}
             </div>
             {outcome === 'redirect' && (
               <div className="apv-row mt-2">
-                <span className="fld"><input value={rdPurpose} onChange={(e) => setRdPurpose(e.target.value)} aria-label="الغرض الجديد للدعم" placeholder="الغرض الجديد" /></span>
-                <span className="fld"><input value={rdDecision} onChange={(e) => setRdDecision(e.target.value)} aria-label="رقم قرار إعادة التوجيه" placeholder="رقم القرار" /></span>
+                <FieldBox><input value={rdPurpose} onChange={(e) => setRdPurpose(e.target.value)} aria-label="الغرض الجديد للدعم" placeholder="الغرض الجديد" /></FieldBox>
+                <FieldBox><input value={rdDecision} onChange={(e) => setRdDecision(e.target.value)} aria-label="رقم قرار إعادة التوجيه" placeholder="رقم القرار" /></FieldBox>
                 <UploadButton label={rdFile || 'مستند القرار'} onPick={(f) => setRdFile(f.name)} />
               </div>
             )}
             <div className="apv-row mt-2">
-              <span className="fld"><input value={back} onChange={(e) => setBack(e.target.value)} aria-label="ملاحظة الإعادة" placeholder={outcome === 'cancel' ? 'سبب الإلغاء · أو ما ينقص عند الإعادة' : 'ما ينقص · عند الإعادة'} /></span>
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => r(decideExternalClosing(row.id, 'return', back, user.name, role.key), 'إعادة الإغلاق للمشرف')}>أعده للمشرف</button>
-              <button type="button" className="btn btn-p btn-sm" onClick={() => r(decideExternalClosing(row.id, 'approve', outcome === 'complete' ? '' : back, user.name, role.key, outcome, outcome === 'redirect' ? { purpose: rdPurpose, decision: rdDecision, file: rdFile } : undefined), 'اعتماد الإغلاق')}>اعتمد الإغلاق</button>
+              <FieldBox><input value={back} onChange={(e) => setBack(e.target.value)} aria-label="ملاحظة الإعادة" placeholder={outcome === 'cancel' ? 'سبب الإلغاء · أو ما ينقص عند الإعادة' : 'ما ينقص · عند الإعادة'} /></FieldBox>
+              <Button type="button" variant="2" size="sm" onClick={() => r(decideExternalClosing(row.id, 'return', back, user.name, role.key), 'إعادة الإغلاق للمشرف')}>أعده للمشرف</Button>
+              <Button type="button" variant="p" size="sm" onClick={() => r(decideExternalClosing(row.id, 'approve', outcome === 'complete' ? '' : back, user.name, role.key, outcome, outcome === 'redirect' ? { purpose: rdPurpose, decision: rdDecision, file: rdFile } : undefined), 'اعتماد الإغلاق')}>اعتمد الإغلاق</Button>
             </div>
           </>
         )}
@@ -446,12 +446,12 @@ export function PartnerCard({ entityId }: { entityId: string }) {
       )}
       {mgr && p.state === 'review' && (
         <div className="apv-row mt-3">
-          <button type="button" className="btn btn-p btn-sm" onClick={() => { decidePartner(entityId, 'approve', '', user.name); setSaid({ ok: 'اعتماد الشريك' }) }}>اعتمد الشريك</button>
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => { decidePartner(entityId, 'reject', 'لا تنطبق شروط الشراكة', user.name); setSaid({ ok: 'رفض الشريك' }) }}>ارفض</button>
+          <Button type="button" variant="p" size="sm" onClick={() => { decidePartner(entityId, 'approve', '', user.name); setSaid({ ok: 'اعتماد الشريك' }) }}>اعتمد الشريك</Button>
+          <Button type="button" variant="2" size="sm" onClick={() => { decidePartner(entityId, 'reject', 'لا تنطبق شروط الشراكة', user.name); setSaid({ ok: 'رفض الشريك' }) }}>ارفض</Button>
         </div>
       )}
       {p.state === 'approved' && p.allowed.includes('portfolio') && role.key === 'supervisor' && (
-        <div className="apv-row mt-3"><Link className="btn btn-2 btn-sm" to={`${ROUTES.portfolioNew}?entity=${entityId}`}>محفظة جديدة</Link></div>
+        <div className="apv-row mt-3"><ButtonLink variant="2" size="sm" to={`${ROUTES.portfolioNew}?entity=${entityId}`}>محفظة جديدة</ButtonLink></div>
       )}
       <Said said={said} />
     </Glass>

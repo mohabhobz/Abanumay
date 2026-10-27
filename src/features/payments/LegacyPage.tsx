@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DockActions, BackTo, DateText, Glass, Head, Money, Num, Tag } from '@/components/ui'
+import { Button, DockActions, BackTo, DateText, Glass, Head, Money, Num, Tag } from '@/components/ui'
 import { UploadButton } from '@/components/docs/UploadButton'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -52,8 +52,8 @@ export default function LegacyPage() {
             <Head title="استيراد ملف" meta={<span className="sub">CSV أو Excel</span>} />
             <div className="rowf gp-2 mt-2">
               {can ? <UploadButton label="ملف سندات النظام السابق" accept=".csv,.xlsx" onPick={(f) => { void take(f) }} /> : <Tag tone="mute">الاستيراد للإدارة المالية</Tag>}
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => downloadCsv('قالب-سندات-النظام-السابق.csv', [['رقم المشروع', 'رقم السند', 'المبلغ', 'تاريخ الصرف', 'رقم الدفعة']])}>نزّل القالب</button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => downloadCsv('مثال-سندات-النظام-السابق.csv', legacySample())}>نزّل ملف مثال</button>
+              <Button type="button" variant="2" size="sm" onClick={() => downloadCsv('قالب-سندات-النظام-السابق.csv', [['رقم المشروع', 'رقم السند', 'المبلغ', 'تاريخ الصرف', 'رقم الدفعة']])}>نزّل القالب</Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => downloadCsv('مثال-سندات-النظام-السابق.csv', legacySample())}>نزّل ملف مثال</Button>
             </div>
             {errs.map((e) => <p key={e} className="bad" role="alert">{e}</p>)}
             {said && <p className="sub cnote">{said}</p>}
@@ -84,13 +84,13 @@ export default function LegacyPage() {
                 </table>
               </div>
               <div className="rowf gp-2 mt-2">
-                <button type="button" className="btn btn-p btn-sm" disabled={!good.length} onClick={() => {
+                <Button type="button" variant="p" size="sm" disabled={!good.length} onClick={() => {
                   const out = importBatch(file, rows, user.name)
                   if (out.errors.length) { setErrs(out.errors); return }
                   setSaid(`استُورد ${nf.format(good.length)} سندًا في الدفعة ${out.id}${good.length < rows.length ? ` · تُرك ${nf.format(rows.length - good.length)} صف فيه ملاحظة` : ''}`)
                   setRows([]); setErrs([])
-                }}>استورد <Num>{good.length}</Num> سندًا سليمًا</button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setRows([]); setErrs([]) }}>إلغاء</button>
+                }}>استورد <Num>{good.length}</Num> سندًا سليمًا</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setRows([]); setErrs([]) }}>إلغاء</Button>
               </div>
             </Glass>
           )}

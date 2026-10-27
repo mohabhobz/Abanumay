@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent as RKeyboardEv
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
-import { DateText, EntityMark, Face, Icon, icons } from '@/components/ui'
+import { Button, DateText, EntityMark, Face, Icon, icons } from '@/components/ui'
 import { buildNotes, entityNotes, isRead, markRead, NOTE_GROUPS, useReadSet, type Note, type NoteFrom } from '@/data/notifications'
 import { readRole } from '@/data/roles'
 import { todayFor } from '@/features/home/today'
@@ -90,7 +90,7 @@ export function NotificationBell({ user, place = 'rail', entity }: { user: { nam
 
   return (
     <>
-      <button
+      <Button plain
         ref={bell}
         type="button"
         className={`${place === 'rail' ? 'railitem ' : 'nbell-top '}nbell${open ? ' on' : ''}`}
@@ -105,7 +105,7 @@ export function NotificationBell({ user, place = 'rail', entity }: { user: { nam
         </span>
         {place === 'rail' && <span className="rail-l">الإشعارات</span>}
         {place === 'rail' && <span className="rail-tip">{label}</span>}
-      </button>
+      </Button>
 
       {open && createPortal(
         <div className="nscrim" role="presentation" onClick={close}>
@@ -123,25 +123,25 @@ export function NotificationBell({ user, place = 'rail', entity }: { user: { nam
                 <h2 id="ndrawer-t">الإشعارات</h2>
                 <span className="sub">{unread ? `${unread} غير مقروء` : 'كلها مقروءة'}</span>
               </div>
-              <button
+              <Button
                 type="button"
-                className="btn btn-ghost btn-sm"
+                variant="ghost" size="sm"
                 disabled={!unread}
                 onClick={() => markRead(notes.map((n) => n.id))}
               >
                 <Icon name={icons.checks} size="sm" />
                 علّم الكل كمقروء
-              </button>
-              <button type="button" className="aclose" onClick={close} aria-label="إغلاق الإشعارات" title="إغلاق">
+              </Button>
+              <Button plain type="button" className="aclose" onClick={close} aria-label="إغلاق الإشعارات" title="إغلاق">
                 <Icon name={icons.close} size="sm" />
-              </button>
+              </Button>
             </header>
 
             <div className="nfilter" role="group" aria-label="تصفية الإشعارات">
               {([['all', 'الكل'], ['important', 'المهم'], ['late', 'المتأخر']] as const).map(([k, l]) => (
-                <button key={k} type="button" className={`fchip${filter === k ? ' on' : ''}`} aria-pressed={filter === k} onClick={() => setFilter(k)}>
+                <Button plain key={k} type="button" className={`fchip${filter === k ? ' on' : ''}`} aria-pressed={filter === k} onClick={() => setFilter(k)}>
                   {l} <span className="num">{counts[k]}</span>
-                </button>
+                </Button>
               ))}
             </div>
 

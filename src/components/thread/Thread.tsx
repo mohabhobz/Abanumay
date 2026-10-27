@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { DateText, Icon, icons } from '@/components/ui'
+import { Button, DateText, Icon, icons } from '@/components/ui'
 import { Composer } from '@/components/assistant'
 import type { ThreadMessage } from '@/data/mock/detail'
 import { DocPreview } from '@/components/docs/DocPreview'
@@ -82,11 +82,11 @@ async function openKept(f: ThreadFile, preview: (name: string) => void) {
 /** A file on a message · its name, size, and what opens it · the sender sees what he sent */
 function FileChip({ f, onOpen }: { f: ThreadFile; onOpen: (f: ThreadFile) => void }) {
   return (
-    <button type="button" className="msg-file" onClick={() => onOpen(f)} aria-label={`افتح ${f.name}`} title={f.data ? 'يفتح في تبويب جديد' : 'معاينة في مكانها'}>
+    <Button plain type="button" className="msg-file" onClick={() => onOpen(f)} aria-label={`افتح ${f.name}`} title={f.data ? 'يفتح في تبويب جديد' : 'معاينة في مكانها'}>
       <Icon name={icons.file} size="sm" />
       <span className="msg-file-n">{f.name}</span>
       <span className="sub">{kb(f.size)}</span>
-    </button>
+    </Button>
   )
 }
 
@@ -165,9 +165,9 @@ export function Thread({
               <Icon name={icons.file} size="sm" />
               <span className="msg-file-n">{f.name}</span>
               <span className="sub">{kb(f.size)}</span>
-              <button type="button" className="iact" aria-label={`أزل ${f.name}`} onClick={() => setFiles((xs) => xs.filter((_, k) => k !== j))}>
+              <Button plain type="button" className="iact" aria-label={`أزل ${f.name}`} onClick={() => setFiles((xs) => xs.filter((_, k) => k !== j))}>
                 <Icon name={icons.close} size="sm" />
-              </button>
+              </Button>
             </span>
           ))}
         </div>

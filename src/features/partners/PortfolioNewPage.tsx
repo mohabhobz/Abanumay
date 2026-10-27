@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { BackTo, FieldSelect, Glass, Head, KV, MoneyField, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, BackTo, FieldSelect, Glass, Head, KV, MoneyField, Tag } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -69,29 +69,27 @@ export default function PortfolioNewPage() {
               <Glass>
                 <Head title="الشريك ونوع المشروع" meta={<Tag tone="teal">محفظة</Tag>} />
                 <div className="regfields">
-                  <label className="regf">
-                    <span className="lb">الشريك الاستراتيجي</span>
-                    {fixed ? <span className="fld"><input value={prof?.name ?? ''} readOnly aria-label="الشريك الاستراتيجي" /></span> : (
+                  <FormField label="الشريك الاستراتيجي">
+                    {fixed ? <FieldBox><input value={prof?.name ?? ''} readOnly aria-label="الشريك الاستراتيجي" /></FieldBox> : (
                       <FieldSelect value={entityId} onChange={setEntity} label="الشريك الاستراتيجي" options={options.map((p) => ({ value: p.entityId, label: p.name }))} />
                     )}
-                  </label>
-                  <label className="regf">
-                    <span className="lb">منصة الشريك</span>
-                    <span className="fld"><input value="على مستوى المحفظة" readOnly aria-label="الدفعات" /></span>
-                  </label>
+                  </FormField>
+                  <FormField label="منصة الشريك">
+                    <FieldBox><input value="على مستوى المحفظة" readOnly aria-label="الدفعات" /></FieldBox>
+                  </FormField>
                 </div>
               </Glass>
 
               <Glass>
                 <Head title="بيانات المحفظة" />
                 <div className="regfields">
-                  <label className="regf"><span className="lb">اسم المحفظة</span><span className="fld"><input value={name} onChange={(e) => setName(e.target.value)} aria-label="اسم المحفظة" /></span></label>
-                  <label className="regf"><span className="lb">القيمة الإجمالية</span><MoneyField value={total} onChange={setTotal} label="قيمة المحفظة" /></label>
-                  <label className="regf"><span className="lb">المسار</span><FieldSelect value={track} onChange={(v) => { setTrack(v); setField('') }} label="المسار" options={[...TRACKS]} /></label>
-                  <label className="regf"><span className="lb">المجال</span><FieldSelect value={field} onChange={setField} label="المجال" options={FIELDS_BY_TRACK[track] ?? []} /></label>
+                  <FormField label="اسم المحفظة"><FieldBox><input value={name} onChange={(e) => setName(e.target.value)} aria-label="اسم المحفظة" /></FieldBox></FormField>
+                  <FormField label="القيمة الإجمالية"><MoneyField value={total} onChange={setTotal} label="قيمة المحفظة" /></FormField>
+                  <FormField label="المسار"><FieldSelect value={track} onChange={(v) => { setTrack(v); setField('') }} label="المسار" options={[...TRACKS]} /></FormField>
+                  <FormField label="المجال"><FieldSelect value={field} onChange={setField} label="المجال" options={FIELDS_BY_TRACK[track] ?? []} /></FormField>
                 </div>
-                <label className="regf mt-3"><span className="lb">أهداف المحفظة</span><span className="fld"><textarea rows={2} value={goals} onChange={(e) => setGoals(e.target.value)} aria-label="أهداف المحفظة" /></span></label>
-                <label className="regf mt-3"><span className="lb">وصف مختصر</span><span className="fld"><textarea rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} aria-label="وصف المحفظة" /></span></label>
+                <FormField label="أهداف المحفظة" className="mt-3"><FieldBox><textarea rows={2} value={goals} onChange={(e) => setGoals(e.target.value)} aria-label="أهداف المحفظة" /></FieldBox></FormField>
+                <FormField label="وصف مختصر" className="mt-3"><FieldBox><textarea rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} aria-label="وصف المحفظة" /></FieldBox></FormField>
                 <div className="apv-row mt-3">
                   <span className="sub">{files.length ? files.join(' · ') : 'وثيقة المحفظة ومرفقاتها'}</span>
                   <UploadButton label="مرفق" onPick={(f) => setFiles((x) => [...x, f.name])} />
@@ -101,8 +99,8 @@ export default function PortfolioNewPage() {
               <Glass>
                 <KV rows={[{ k: 'القيمة', v: `${nf.format(Number(total) || 0)} ريال` }, { k: 'ينقص', v: missing.length ? missing.join('، ') : 'لا شيء' }]} />
                 <div className="apv-row mt-3">
-                  <button type="button" className="btn btn-2" onClick={() => save(false)}>احفظ مسودة</button>
-                  <button type="button" className="btn btn-p" disabled={missing.length > 0} onClick={() => save(true)}>{asPartner ? 'أرسل الطلب' : 'أرسل للدراسة'}</button>
+                  <Button type="button" variant="2" onClick={() => save(false)}>احفظ مسودة</Button>
+                  <Button type="button" variant="p" disabled={missing.length > 0} onClick={() => save(true)}>{asPartner ? 'أرسل الطلب' : 'أرسل للدراسة'}</Button>
                 </div>
                 <Said said={said} />
               </Glass>

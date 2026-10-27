@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMenu } from '@/hooks/useMenu'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { readViews, writeViews, type SavedView } from './views'
 
 /* "Views" is a name that doesn't land.
@@ -50,7 +50,7 @@ export function SavedViews({
 
   return (
     <div className="fviews" ref={box}>
-      <button
+      <Button plain
         className={`fchip${active ? ' on' : ''}`}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -61,7 +61,7 @@ export function SavedViews({
         <Icon name={icons.pin} size="sm" />
         <span className="tb-l">{active ? active.name : 'الوضع المحفوظ'}</span>
         {!active && views.length > 0 && <b className="num">{views.length}</b>}
-      </button>
+      </Button>
 
       {open && (
         <div className="fmenu fviews-m">
@@ -73,14 +73,14 @@ export function SavedViews({
               "where to go." */}
           <div className="fmenu-l" role="menu">
             <div className={`fopt fview fview-0${active ? '' : ' on'}`}>
-              <button
+              <Button plain
                 type="button"
                 className="fview-t"
                 onClick={() => { setOpen(false); onApply('') }}
               >
                 <Icon name={icons.redo} size="sm" />
                 العرض الأصلي
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -92,16 +92,16 @@ export function SavedViews({
             <div className="fmenu-l" role="menu">
               {views.map((v) => (
                 <div key={v.id} className={`fopt fview${v.query === current ? ' on' : ''}`}>
-                  <button
+                  <Button plain
                     type="button"
                     className="fview-t"
                     onClick={() => { setOpen(false); onApply(v.query) }}
                   >
                     {v.name}
-                  </button>
+                  </Button>
                   {/* A trash icon, not an X — X means "close" everywhere else in the system, and
                       this row gets removed, not closed. Same icon set as everywhere else. */}
-                  <button
+                  <Button plain
                     type="button"
                     className="fview-x"
                     aria-label={`حذف ${v.name}`}
@@ -109,7 +109,7 @@ export function SavedViews({
                     onClick={() => remove(v.id)}
                   >
                     <Icon name={icons.trash} size="sm" />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -123,9 +123,9 @@ export function SavedViews({
               placeholder="سمِّ الوضع الحالي…"
               aria-label="اسم الوضع المحفوظ"
             />
-            <button className="btn btn-p btn-sm" disabled={!trimmed} onClick={save}>
+            <Button variant="p" size="sm" disabled={!trimmed} onClick={save}>
               {existing ? 'حدّث' : 'احفظ'}
-            </button>
+            </Button>
           </div>
           {existing && (
             <div className="fviews-n sub">يوجد وضع بالاسم نفسه، وسيُحدَّث عند الحفظ.</div>

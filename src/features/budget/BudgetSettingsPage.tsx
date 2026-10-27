@@ -1,7 +1,7 @@
 import { TaxonomyTab } from './TaxonomyTab'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FieldMultiSelect,
+import { FormField, FieldBox, Button, FieldMultiSelect,
   DateField, BackTo, DateText, Glass, Head, Icon, icons, Mono, Num, Switch, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
@@ -112,31 +112,28 @@ function YearsTab() {
       <Glass>
         <Head title="سنة مالية جديدة" />
         <div className="cfgrow">
-          <label className="regf">
-            <span className="lb">اسم السنة<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld">
+          <FormField label="اسم السنة" required>
+            <FieldBox>
               <input value={yName} onChange={(e) => setYName(e.target.value)} placeholder="مثال: 2028" aria-label="اسم السنة" />
-            </span>
-          </label>
-          <label className="regf">
-            <span className="lb">من تاريخ<b className="regf-r" aria-label="إلزامي">*</b></span>
+            </FieldBox>
+          </FormField>
+          <FormField label="من تاريخ" required>
             {/* Note: `DateField` wraps `.fld` itself - the wrapper used to be a field inside a
                 field: a 52px box around a 36px box. */}
             <DateField value={yFrom} onChange={setYFrom} label="من تاريخ" />
-          </label>
-          <label className="regf">
-            <span className="lb">إلى تاريخ<b className="regf-r" aria-label="إلزامي">*</b></span>
+          </FormField>
+          <FormField label="إلى تاريخ" required>
             <DateField value={yTo} onChange={setYTo} label="إلى تاريخ" min={yFrom || undefined} />
-          </label>
-          <button
-            className="btn btn-p cfgadd"
+          </FormField>
+          <Button
+            variant="p" className="cfgadd"
             disabled={!canAddYear}
             title={yearTaken ? 'هذه السنة معرَّفة من قبل' : overlap ? 'المدة تتداخل مع سنة معرَّفة' : 'أضف السنة'}
             onClick={add}
           >
             <Icon name={icons.plus} size="sm" />
             أضف السنة
-          </button>
+          </Button>
         </div>
         {yearTaken && (
           <p className="bad cnote">السنة <b>{yName}</b> معرَّفة من قبل.</p>
@@ -186,27 +183,25 @@ function SourcesTab() {
       <Glass>
         <Head title="مصدر تمويل جديد" />
         <div className="cfgrow">
-          <label className="regf">
-            <span className="lb">رمز المصدر<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld">
+          <FormField label="رمز المصدر" required>
+            <FieldBox>
               <input value={sCode} onChange={(e) => setSCode(e.target.value)} placeholder="مثال: SA" aria-label="رمز المصدر" />
-            </span>
-          </label>
-          <label className="regf cfgwide">
-            <span className="lb">اسم المصدر<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld">
+            </FieldBox>
+          </FormField>
+          <FormField label="اسم المصدر" required className="cfgwide">
+            <FieldBox>
               <input value={sName} onChange={(e) => setSName(e.target.value)} placeholder="مثال: وقف …" aria-label="اسم المصدر" />
-            </span>
-          </label>
-          <button
-            className="btn btn-p cfgadd"
+            </FieldBox>
+          </FormField>
+          <Button
+            variant="p" className="cfgadd"
             disabled={!canAddSource}
             title={codeTaken ? 'الرمز مستعمل من قبل' : 'أضف المصدر'}
             onClick={() => { addSource({ code: sCode.trim().toUpperCase(), name: sName.trim() }, me()); setSCode(''); setSName('') }}
           >
             <Icon name={icons.plus} size="sm" />
             أضف المصدر
-          </button>
+          </Button>
         </div>
         {codeTaken && <p className="bad cnote">الرمز <Mono>{sCode.trim().toUpperCase()}</Mono> مستعمل لمصدر آخر.</p>}
 
@@ -222,9 +217,9 @@ function SourcesTab() {
               <li key={s.code}>
                 <b><Mono>{s.code}</Mono></b>
                 {editing ? (
-                  <span className="fld bgs-ren">
+                  <FieldBox className="bgs-ren">
                     <input autoFocus value={edit.name} onChange={(e) => setEdit({ code: s.code, name: e.target.value })} aria-label={`اسم ${s.code}`} />
-                  </span>
+                  </FieldBox>
                 ) : <span>{s.name}</span>}
                 <span className="pc-sp" />
                 {used > 0
@@ -232,13 +227,13 @@ function SourcesTab() {
                   : <Tag tone="ok">بلا متعلقات</Tag>}
                 {editing ? (
                   <>
-                    <button className="btn btn-p btn-sm" disabled={!edit.name.trim()} onClick={() => { renameSource(s.code, edit.name.trim(), me()); setEdit(null) }}>احفظ</button>
-                    <button className="btn btn-2 btn-sm" onClick={() => setEdit(null)}>تراجع</button>
+                    <Button variant="p" size="sm" disabled={!edit.name.trim()} onClick={() => { renameSource(s.code, edit.name.trim(), me()); setEdit(null) }}>احفظ</Button>
+                    <Button variant="2" size="sm" onClick={() => setEdit(null)}>تراجع</Button>
                   </>
                 ) : (
-                  <button className="btn btn-ghost btn-sm" aria-label={`عدّل اسم ${s.name}`} title="عدّل الاسم" onClick={() => setEdit({ code: s.code, name: s.name })}>
+                  <Button variant="ghost" size="sm" aria-label={`عدّل اسم ${s.name}`} title="عدّل الاسم" onClick={() => setEdit({ code: s.code, name: s.name })}>
                     <Icon name={icons.edit} size="sm" />
-                  </button>
+                  </Button>
                 )}
               </li>
             )
@@ -261,22 +256,20 @@ function DirectionsTab() {
       <Glass>
         <Head title="توجه استراتيجي جديد" meta={<span className="sub"><bdi>{/* doc 1.1.input-1 */}</bdi></span>} />
         <div className="cfgrow">
-          <label className="regf">
-            <span className="lb">اسم التوجه<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld"><input value={name} onChange={(e) => setName(e.target.value)} aria-label="اسم التوجه" /></span>
-          </label>
-          <label className="regf cfgwide">
-            <span className="lb">التعريف</span>
-            <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="تعريف التوجه" /></span>
-          </label>
-          <button
-            className="btn btn-p cfgadd"
+          <FormField label="اسم التوجه" required>
+            <FieldBox><input value={name} onChange={(e) => setName(e.target.value)} aria-label="اسم التوجه" /></FieldBox>
+          </FormField>
+          <FormField label="التعريف" className="cfgwide">
+            <FieldBox><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="تعريف التوجه" /></FieldBox>
+          </FormField>
+          <Button
+            variant="p" className="cfgadd"
             disabled={!name.trim() || taken}
             onClick={() => { saveDirection({ id: `dir-${Date.now()}`, name: name.trim(), note: note.trim(), active: true }, me()); setName(''); setNote('') }}
           >
             <Icon name={icons.plus} size="sm" />
             أضف التوجه
-          </button>
+          </Button>
         </div>
         {taken && <p className="bad cnote">التوجه معرَّف من قبل.</p>}
 
@@ -432,9 +425,9 @@ function RulesTab() {
             <span className="pc-sp" />
             <div className="cfgchips" role="radiogroup" aria-label="مرحلة الحجز">
               {(['recommend', 'approval'] as const).map((v) => (
-                <button key={v} type="button" role="radio" aria-checked={d.holdAt === v} className={`cfgchip${d.holdAt === v ? ' on' : ''}`} onClick={() => put('holdAt', v)}>
+                <Button plain key={v} type="button" role="radio" aria-checked={d.holdAt === v} className={`cfgchip${d.holdAt === v ? ' on' : ''}`} onClick={() => put('holdAt', v)}>
                   {v === 'recommend' ? 'مبدئي عند توصية مدير المنح بالموافقة' : 'عند الاعتماد النهائي'}
-                </button>
+                </Button>
               ))}
             </div>
           </li>
@@ -481,7 +474,7 @@ function RulesTab() {
       <Glass>
         <Head title="بيانات العرض التجريبي" />
 
-        <button type="button" className="btn btn-2" onClick={resetBudget}>أعد ضبط بيانات الميزانية</button>
+        <Button type="button" variant="2" onClick={resetBudget}>أعد ضبط بيانات الميزانية</Button>
       </Glass>
 
       {dirty && (
@@ -506,15 +499,15 @@ function ReasonList({ title, list, onChange }: { title: string; list: string[]; 
       <ul className="cfglist">
         {list.map((r, i) => (
           <li key={i}>
-            <span className="fld"><input value={r} aria-label={`${title} ${i + 1}`} onChange={(e) => onChange(list.map((y, j) => (j === i ? e.target.value : y)))} /></span>
+            <FieldBox><input value={r} aria-label={`${title} ${i + 1}`} onChange={(e) => onChange(list.map((y, j) => (j === i ? e.target.value : y)))} /></FieldBox>
             <span className="pc-sp" />
-            <button type="button" className="btn btn-2 btn-sm" disabled={list.length <= 1} onClick={() => onChange(list.filter((_, j) => j !== i))}>احذف</button>
+            <Button type="button" variant="2" size="sm" disabled={list.length <= 1} onClick={() => onChange(list.filter((_, j) => j !== i))}>احذف</Button>
           </li>
         ))}
         <li>
-          <span className="fld"><input value={add} aria-label={`${title} · سبب جديد`} placeholder="سبب جديد" onChange={(e) => setAdd(e.target.value)} /></span>
+          <FieldBox><input value={add} aria-label={`${title} · سبب جديد`} placeholder="سبب جديد" onChange={(e) => setAdd(e.target.value)} /></FieldBox>
           <span className="pc-sp" />
-          <button type="button" className="btn btn-2 btn-sm" disabled={!add.trim() || list.includes(add.trim())} onClick={() => { onChange([...list, add.trim()]); setAdd('') }}>أضف</button>
+          <Button type="button" variant="2" size="sm" disabled={!add.trim() || list.includes(add.trim())} onClick={() => { onChange([...list, add.trim()]); setAdd('') }}>أضف</Button>
         </li>
       </ul>
     </div>

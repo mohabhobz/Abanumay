@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui'
 import { useEffect, useRef, useState } from 'react'
 import { Glass } from '@/components/ui/primitives'
 import { Icon } from '@/components/ui/Icon'
@@ -91,11 +92,11 @@ export function QuickRead({
   if (variant === 'bar') {
     return (
       <Glass className={`qread strip${open ? ' open' : ''}`} ref={box}>
-        <button className="qr-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <Button plain className="qr-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
           {head}
           <span className="qr-sp" />
           <Icon name={open ? icons.chevronUp : icons.chevronDown} size="sm" />
-        </button>
+        </Button>
 
         {!open && list[0] && <ReadingPeek reading={list[0]} />}
 
@@ -125,18 +126,18 @@ export function QuickRead({
         {head}
         <span className="qr-sp" />
         {onAsk && (
-          <button className="btn btn-2 btn-sm" onClick={onAsk} disabled={!done}>
+          <Button variant="2" size="sm" onClick={onAsk} disabled={!done}>
             اسأل
-          </button>
+          </Button>
         )}
-        <button
+        <Button plain
           className="qr-fold"
           aria-expanded={open}
           aria-label={open ? 'إخفاء القراءة' : 'إظهار القراءة'}
           onClick={() => setOpen((x) => !x)}
         >
           <Icon name={open ? icons.chevronUp : icons.chevronDown} size="sm" />
-        </button>
+        </Button>
       </div>
 
       {open && onScreen && !thought && (

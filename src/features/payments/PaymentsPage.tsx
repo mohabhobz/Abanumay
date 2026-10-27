@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePayments } from '@/data/payments/store'
 import { useRole } from '@/hooks/useRole'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { StatRow,
+import { Button, StatRow,
   Empty, Glass, Icon, icons, MultiSelect, GroupPicker, Num, SearchBox, Segments, Select, Stat,
   Toggle, ViewToggle,
   Riyal,
@@ -383,7 +383,7 @@ export default function PaymentsPage() {
                 {/* The rest collapses behind a counter - same rule as projects and entities:
                     whatever gets filtered daily stays visible, the rest sits behind a button. A row
                     wrapping to two lines means a filter dropped below and broke its own order. */}
-                <button
+                <Button plain
                   className={`fchip${advOpen ? ' on' : ''}`}
                   onClick={() => set({ adv: advOpen ? undefined : '1' })}
                   aria-expanded={advOpen}
@@ -393,7 +393,7 @@ export default function PaymentsPage() {
                   {activeCount(NOT_FILTERS) > 0 && (
                     <b className="num">{activeCount(NOT_FILTERS)}</b>
                   )}
-                </button>
+                </Button>
                 
               </div>
 
@@ -467,7 +467,7 @@ export default function PaymentsPage() {
             {(chips.length > 0 || v.heat || v.hold === '1') && (
               <div className="factive">
                 {chips.map((c) => (
-                  <button
+                  <Button plain
                     key={`${c.key as string}:${c.value}`}
                     className="fpill"
                     onClick={() =>
@@ -478,22 +478,22 @@ export default function PaymentsPage() {
                   >
                     <span className="sub">{c.label}:</span> {c.text}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 ))}
                 {v.heat && (
-                  <button className="fpill" onClick={() => set({ heat: undefined })}>
+                  <Button plain className="fpill" onClick={() => set({ heat: undefined })}>
                     <span className="sub">المدة:</span>{' '}
                     {HEATS.find((h) => h.value === v.heat)?.label}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
                 {v.hold === '1' && (
-                  <button className="fpill" onClick={() => set({ hold: undefined })}>
+                  <Button plain className="fpill" onClick={() => set({ hold: undefined })}>
                     الموقوف بشرط
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
-                <button className="fclear" onClick={clear}>مسح الكل</button>
+                <Button plain className="fclear" onClick={clear}>مسح الكل</Button>
               </div>
             )}
           </Glass>
@@ -502,7 +502,7 @@ export default function PaymentsPage() {
             <Glass id={STAGE_ANCHORS.includes(hashId) ? hashId : undefined}>
               <Empty
                 title="لا توجد طلبات بهذه الفلاتر."
-                actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
+                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
               />
             </Glass>
           ) : view === 'table' ? (
@@ -528,9 +528,9 @@ export default function PaymentsPage() {
               {grouped && (
                 <p className="sub tcen">
                   <span className="num">{countLeaves(groupTree(sorted, group))}</span> مجموعات ·{' '}
-                  <button className="lnk" onClick={() => set({ group: undefined })}>
+                  <Button plain className="lnk" onClick={() => set({ group: undefined })}>
                     إلغاء التجميع
-                  </button>
+                  </Button>
                 </p>
               )}
             </>

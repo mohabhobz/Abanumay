@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateField, DateText, Empty, FieldSelect, Glass, Head, Icon, Num, Person, icons } from '@/components/ui'
+import { FormField, FieldBox, Button, DateField, DateText, Empty, FieldSelect, Glass, Head, Icon, Num, Person, icons } from '@/components/ui'
 import { DocFile, DocList, UploadButton } from '@/components/docs'
 import { isolate } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
@@ -67,16 +67,16 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
   }
 
   const addBtn = (
-    <button
+    <Button
       type="button"
-      className="btn btn-p"
+      variant="p"
       aria-expanded={adding}
       onClick={() => { setAdded(null); setAdding(true) }}
       disabled={adding}
     >
       <Icon name={icons.plus} size="sm" />
       إضافة فعالية
-    </button>
+    </Button>
   )
 
   return (
@@ -86,43 +86,31 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
         <Head title="فعالية جديدة" />
 
         <div className="regfields">
-          <label className="regf regf-w">
-            <span className="lb">
-              اسم الفعالية<b className="regf-r" aria-label="إلزامي">*</b>
-            </span>
-            <span className="fld">
+          <FormField label="اسم الفعالية" required wide>
+            <FieldBox>
               <input
                 value={f.title}
                 onChange={(e) => setF({ ...f, title: e.target.value })}
                 aria-label="اسم الفعالية"
                 placeholder="زيارة ميدانية لموقع التنفيذ"
               />
-            </span>
-          </label>
+            </FieldBox>
+          </FormField>
 
-          <div className="regf">
-            <span className="lb">
-              التاريخ<b className="regf-r" aria-label="إلزامي">*</b>
-            </span>
+          <FormField label="التاريخ" required as="div">
             <DateField value={f.at} onChange={(x) => setF({ ...f, at: x })} label="تاريخ الفعالية" max={today()} />
-          </div>
+          </FormField>
 
-          <div className="regf">
-            <span className="lb">
-              النوع<b className="regf-r" aria-label="إلزامي">*</b>
-            </span>
+          <FormField label="النوع" required as="div">
             <FieldSelect
               value={f.type}
               options={ACTIVITY_TYPES}
               onChange={(x) => setF({ ...f, type: x as ActivityType })}
               label="نوع الفعالية"
             />
-          </div>
+          </FormField>
 
-          <div className="regf">
-            <span className="lb">
-              مصدر المعلومة<b className="regf-r" aria-label="إلزامي">*</b>
-            </span>
+          <FormField label="مصدر المعلومة" required as="div">
             <FieldSelect
               value={f.source}
               options={ACTIVITY_SOURCES}
@@ -130,11 +118,10 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
               label="مصدر المعلومة"
               end
             />
-          </div>
+          </FormField>
 
-          <label className="regf regf-w">
-            <span className="lb">الوصف</span>
-            <span className="fld fld-a">
+          <FormField label="الوصف" wide>
+            <FieldBox area>
               <textarea
                 rows={3}
                 value={f.description}
@@ -142,11 +129,10 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
                 aria-label="وصف الفعالية"
                 placeholder="ما الذي جرى، ومن حضر، وما الذي تقرّر"
               />
-            </span>
-          </label>
+            </FieldBox>
+          </FormField>
 
-          <div className="regf regf-w">
-            <span className="lb">المرفقات</span>
+          <FormField label="المرفقات" wide as="div">
             {files.length > 0 && (
               <DocList
                 label="مرفقات الفعالية"
@@ -154,13 +140,13 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
                   name: n,
                   uploaded: true,
                   action: (
-                    <button
+                    <Button
                       type="button"
-                      className="btn btn-2 btn-sm"
+                      variant="2" size="sm"
                       onClick={() => setFiles(files.filter((x) => x !== n))}
                     >
                       إزالة
-                    </button>
+                    </Button>
                   ),
                 }))}
               />
@@ -171,7 +157,7 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
                 onPick={(file) => setFiles((xs) => (xs.includes(file.name) ? xs : [...xs, file.name]))}
               />
             </span>
-          </div>
+          </FormField>
         </div>
 
         <div className="acts-foot">
@@ -179,13 +165,13 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
           {tried && missing.length > 0 && (
             <span className="sub">ناقص: {missing.join('، ')}</span>
           )}
-          <button type="button" className="btn btn-2" onClick={close}>
+          <Button type="button" variant="2" onClick={close}>
             إلغاء
-          </button>
-          <button type="button" className="btn btn-p" onClick={submit}>
+          </Button>
+          <Button type="button" variant="p" onClick={submit}>
             <Icon name={icons.plus} size="sm" />
             أضف إلى سجل المشروع
-          </button>
+          </Button>
         </div>
       </Glass>
       )}

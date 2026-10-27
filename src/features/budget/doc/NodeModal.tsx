@@ -1,6 +1,5 @@
-import { createPortal } from 'react-dom'
 import { useState } from 'react'
-import { FieldMultiSelect, FieldSelect, Icon, Num, Riyal, icons } from '@/components/ui'
+import { FormField, FieldBox, Modal, ModalHead, Button, FieldMultiSelect, FieldSelect, Num, Riyal, icons } from '@/components/ui'
 import { NOUN, nf, nounAfter } from '@/lib/format'
 import {
   KIND_SAY, KIND_UNDER, childrenOf, docSources, kindFits, kindUnder, pathOf, sumChildren,
@@ -122,34 +121,28 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
   }
 
   return (
-    createPortal(
-    <div className="bmask" role="presentation" onClick={onClose}>
-      <div className="chrome modal" role="dialog" aria-modal="true" aria-label={editId ? 'تعديل بند' : 'إضافة بند'} onClick={(e) => e.stopPropagation()}>
-        <div className="mh">
-          <Icon name={editId ? icons.edit : icons.plus} size="md" />
-          <b>{editId ? 'تعديل بند' : 'إضافة بند'}</b>
+    <Modal label={editId ? 'تعديل بند' : 'إضافة بند'} onClose={onClose}>
+        <ModalHead icon={editId ? icons.edit : icons.plus} title={editId ? 'تعديل بند' : 'إضافة بند'}>
           <span className="pc-sp" />
           {under && <span className="sub trim1">تحت {pathOf(nodes, under)}</span>}
-        </div>
+        </ModalHead>
 
         <div className="mb col">
-          <label className="regf">
-            <span className="lb">اسم البند<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld">
+          <FormField label="اسم البند" required>
+            <FieldBox>
               <input value={nLabel} onChange={(e) => setNLabel(e.target.value)} placeholder="مثال: مسار التعليم" aria-label="اسم البند" />
-            </span>
+            </FieldBox>
 
-          </label>
+          </FormField>
 
           {/* Public-facing name · not a translation of the name, a different name for a different
               purpose: the internal one is written for accounting, the entity reads this one. */}
-          <label className="regf">
-            <span className="lb">الاسم الظاهر للمستخدم{!nShow && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
-            <span className="fld">
+          <FormField label="الاسم الظاهر للمستخدم" required={!nShow}>
+            <FieldBox>
               <input value={nAlias} onChange={(e) => setNAlias(e.target.value)} placeholder="مثال: المنح التعليمية" aria-label="الاسم الظاهر للمستخدم" />
-            </span>
+            </FieldBox>
 
-          </label>
+          </FormField>
 
           <div className="bchk">
             <label className="bchk-i">
@@ -166,8 +159,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
             </label>
           </div>
 
-          <label className="regf">
-            <span className="lb">نوع البند</span>
+          <FormField label="نوع البند">
             {/* The order in the dropdown matches the order in the hierarchy. */}
             <FieldSelect
               value={nKind}
@@ -180,11 +172,10 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
               onChange={(v) => setNKind(v as LineKind)}
             />
 
-          </label>
+          </FormField>
 
           {/* The parent shown with its full path - "education track" alone isn't a unique label. */}
-          <label className="regf">
-            <span className="lb">تابع لبند</span>
+          <FormField label="تابع لبند">
             <FieldSelect
               value={nParent}
               label="تابع لبند"
@@ -192,11 +183,10 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
               options={parents.map((p) => ({ value: p.id, label: pathOf(nodes, p.id) }))}
               onChange={setNParent}
             />
-          </label>
+          </FormField>
 
-          <label className="regf">
-            <span className="lb">المبلغ المخصص{!base && nActive && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
-            <span className="fld">
+          <FormField label="المبلغ المخصص" required={!base && nActive}>
+            <FieldBox>
               <input
                 type="text"
                 inputMode="numeric"
@@ -206,7 +196,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
                 aria-label="المبلغ المخصص"
               />
               <Riyal />
-            </span>
+            </FieldBox>
             {!base && nParent ? (
               <span className="sub regf-h">
                 المتبقّي في «{nodes.find((k) => k.id === nParent)?.label}»{' '}
@@ -215,7 +205,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
                 </span>
               </span>
             ) : null}
-          </label>
+          </FormField>
 
           {many && !base && (
             <div className="bgsplit">
@@ -228,9 +218,8 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
               {useSplit && (
                 <div className="regfields">
                   {nSplit.map((s, i) => (
-                    <label key={s.code} className="regf">
-                      <span className="lb">{sourceName(s.code)}</span>
-                      <span className="fld">
+                    <FormField key={s.code} label={sourceName(s.code)}>
+                      <FieldBox>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -239,8 +228,8 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
                           aria-label={`مبلغ ${sourceName(s.code)}`}
                         />
                         <Riyal />
-                      </span>
-                    </label>
+                      </FieldBox>
+                    </FormField>
                   ))}
                 </div>
               )}
@@ -248,8 +237,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
           )}
 
           {domain && (
-            <label className="regf">
-              <span className="lb">مشرف المنح المسؤول</span>
+            <FormField label="مشرف المنح المسؤول">
               <FieldMultiSelect
                 label="مشرف المنح المسؤول"
                 placeholder="من دورة الاستقبال"
@@ -259,12 +247,11 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
                 onChange={setNOwners}
               />
 
-            </label>
+            </FormField>
           )}
 
           {dirs.length > 0 && !base && (
-            <label className="regf">
-              <span className="lb">التوجه الاستراتيجي</span>
+            <FormField label="التوجه الاستراتيجي">
               <FieldSelect
                 value={nDir}
                 label="التوجه الاستراتيجي"
@@ -272,7 +259,7 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
                 options={dirs.map((d) => ({ value: d.id, label: d.name }))}
                 onChange={setNDir}
               />
-            </label>
+            </FormField>
           )}
 
           {/* The rule is shown where the decision happens, not as a toast after clicking. */}
@@ -280,15 +267,15 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
         </div>
 
         <div className="mf">
-          <button
-            className="btn btn-p"
+          <Button
+            variant="p"
             disabled={!nLabel.trim() || Boolean(blocked)}
             title={blocked || (nLabel.trim() ? (editId ? 'احفظ التعديل' : 'أضف البند') : 'أدخل اسم البند')}
             onClick={save}
           >
             {editId ? 'احفظ التعديل' : 'أضف البند'}
-          </button>
-          <button className="btn btn-2" onClick={onClose}>إلغاء</button>
+          </Button>
+          <Button variant="2" onClick={onClose}>إلغاء</Button>
           <span className="pc-sp" />
           <span className="sub">
             {childrenOf(nodes, nParent || null).length > 0 && (
@@ -296,9 +283,6 @@ export function NodeModal({ doc, editId, under, onClose, onSave }: {
             )}
           </span>
         </div>
-      </div>
-    </div>,
-    document.body,
-    )
+      </Modal>
   )
 }

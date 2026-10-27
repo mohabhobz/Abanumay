@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { useMenu } from '@/hooks/useMenu'
 import { Trail } from '@/components/soul'
 
@@ -89,7 +89,7 @@ export function Crumbs({ items }: CrumbsProps) {
         {folded.length > 0 && (
           <li>
             <span className="crumb-f" ref={box}>
-              <button
+              <Button plain
                 type="button"
                 className="crumb crumb-b"
                 aria-haspopup="menu"
@@ -99,7 +99,7 @@ export function Crumbs({ items }: CrumbsProps) {
                 onClick={() => setOpen((x) => !x)}
               >
                 …
-              </button>
+              </Button>
               {open && (
                 <div className="fmenu crumb-m">
                   <div className="fmenu-l" role="menu">

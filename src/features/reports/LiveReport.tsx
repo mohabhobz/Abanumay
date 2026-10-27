@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import {
-  StepLink, BackTo, DateText, Empty, Glass, Head, Icon, icons, Mono, Money, MultiSelect, Num, Person,
+  ButtonLink, Button, StepLink, BackTo, DateText, Empty, Glass, Head, Icon, icons, Mono, Money, MultiSelect, Num, Person,
   SearchBox, Select, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -44,7 +44,7 @@ export default function LiveReport() {
           <Glass>
             <Empty
               title="هذه الشاشة غير موجودة في الكتالوج."
-              actions={<Link className="btn btn-2" to={ROUTES.reportTab('catalog')}>كتالوج التقارير</Link>}
+              actions={<ButtonLink variant="2" to={ROUTES.reportTab('catalog')}>كتالوج التقارير</ButtonLink>}
             />
           </Glass>
         </div></div>
@@ -245,7 +245,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
               />
             ))}
             {rest.length > 0 && (
-              <button
+              <Button plain
                 className={`fchip${advOpen ? ' on' : ''}`}
                 onClick={() => setAdvOpen((x) => !x)}
                 aria-expanded={advOpen}
@@ -253,7 +253,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
                 <Icon name={icons.filter} size="sm" />
                 فلاتر متقدمة
                 {advCount > 0 && <b className="num">{advCount}</b>}
-              </button>
+              </Button>
             )}
             {!hasFilters && (
               <span className="sub">
@@ -298,13 +298,13 @@ function Rows({ spec }: { spec: LiveSpec }) {
         {(chips.length > 0 || q.trim()) && (
           <div className="factive">
             {q.trim() && (
-              <button className="fpill" onClick={() => setQ('')}>
+              <Button plain className="fpill" onClick={() => setQ('')}>
                 <span className="sub">بحث:</span> {q.trim()}
                 <Icon name={icons.close} size="sm" />
-              </button>
+              </Button>
             )}
             {chips.map(({ f, v }) => (
-              <button
+              <Button plain
                 key={`${f.label}:${v}`}
                 className="fpill"
                 onClick={() => pick(f, valuesOf(f).filter((x) => x !== v))}
@@ -312,9 +312,9 @@ function Rows({ spec }: { spec: LiveSpec }) {
                 <span className="sub">{f.label}:</span>{' '}
                 {f.col?.kind === 'person' ? <Person name={v} quiet={false} /> : v}
                 <Icon name={icons.close} size="sm" />
-              </button>
+              </Button>
             ))}
-            <button className="fclear" onClick={clear}>مسح الكل</button>
+            <Button plain className="fclear" onClick={clear}>مسح الكل</Button>
           </div>
         )}
       </Glass>
@@ -430,18 +430,18 @@ function BudgetTree() {
         <div className="ftool-r">
           <div className="ftool-f">
               <div className="lrbc">
-                <button className={`lrbc-i${path.length === 0 ? ' on' : ''}`} onClick={() => setPath([])}>
+                <Button plain className={`lrbc-i${path.length === 0 ? ' on' : ''}`} onClick={() => setPath([])}>
                   كل الدورات
-                </button>
+                </Button>
                 {path.map((n, i) => (
                   <span key={n.id} className="lrbc-s">
                     <Icon name={icons.chevron} size="sm" />
-                    <button
+                    <Button plain
                       className={`lrbc-i${i === path.length - 1 ? ' on' : ''}`}
                       onClick={() => setPath(path.slice(0, i + 1))}
                     >
                       {n.label}
-                    </button>
+                    </Button>
                   </span>
                 ))}
               </div>
@@ -528,7 +528,7 @@ function Nav({ spec }: { spec: LiveSpec }) {
       {prev
         ? <StepLink to={ROUTES.liveReport(prev.key)} dir="prev" className="btn btn-2 btn-sm">{prev.title}</StepLink>
         : <span />}
-      <Link to={ROUTES.reportTab('catalog')} className="btn btn-2 btn-sm">كل الشاشات</Link>
+      <ButtonLink to={ROUTES.reportTab('catalog')} variant="2" size="sm">كل الشاشات</ButtonLink>
       {next
         ? <StepLink to={ROUTES.liveReport(next.key)} dir="next" className="btn btn-2 btn-sm">{next.title}</StepLink>
         : <span />}

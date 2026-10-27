@@ -1,7 +1,7 @@
 import { toast } from '@/data/feedback'
 import { useMemo, useState } from 'react'
 import {
-  DateText, Glass, Head, KV, Money, Mono, Num, Person, StepArc, Steps, Tag,
+  Button, DateText, Glass, Head, KV, Money, Mono, Num, Person, StepArc, Steps, Tag,
   type GateStep, type StepItem,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -200,13 +200,13 @@ export default function JourneyPage() {
             </div>
             <div className="rowf gp-2">
               {done > 0 && (
-                <button className="btn btn-ghost" onClick={() => { setDone(0); toast('بدأ المسار من جديد', 'info') }}>ابدأ من جديد</button>
+                <Button variant="ghost" onClick={() => { setDone(0); toast('بدأ المسار من جديد', 'info') }}>ابدأ من جديد</Button>
               )}
               {view !== null && !live && !finished && (
-                <button className="btn btn-2" onClick={() => setView(null)}>عُد إلى الخطوة الحالية</button>
+                <Button variant="2" onClick={() => setView(null)}>عُد إلى الخطوة الحالية</Button>
               )}
               {live && step && (
-                <button className="btn btn-p" onClick={() => { setDone(done + 1); toast(`${step.done}${done + 1 >= TOTAL_STEPS ? ' · اكتمل المسار' : ''}`) }}>{step.act}</button>
+                <Button variant="p" onClick={() => { setDone(done + 1); toast(`${step.done}${done + 1 >= TOTAL_STEPS ? ' · اكتمل المسار' : ''}`) }}>{step.act}</Button>
               )}
             </div>
           </div>

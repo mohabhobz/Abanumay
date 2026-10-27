@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent as RPointer
 import { NavLink, useLocation } from 'react-router-dom'
 import Logo from '@/assets/LogoColor'
 import LogoLockup from '@/assets/LogoLockup'
-import { Icon, icons, type IconName } from '@/components/ui'
+import { Button, Icon, icons, type IconName } from '@/components/ui'
 import { NAV, ROUTES } from '@/app/routes'
 import { AccountMenu } from './AccountMenu'
 import { NotificationBell } from './Notifications'
@@ -197,7 +197,7 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
             only visible on hover — so anyone who opened the rail by clicking finds no clear way to
             close it. The button sits here, in the row facing the identity mark, which is where it's
             expected. */}
-        <button
+        <Button plain
           type="button"
           className="railshut"
           onClick={() => setW(SHUT)}
@@ -205,7 +205,7 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
           title="طيّ القائمة"
         >
           <Icon name={icons.panel} size="md" />
-        </button>
+        </Button>
       </div>
 
       {allowed.map((item) => {

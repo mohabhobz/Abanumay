@@ -1,7 +1,7 @@
 import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FieldMultiSelect, DateField, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tabs, Tag, icons } from '@/components/ui'
+import { FormField, FieldBox, Button, FieldMultiSelect, DateField, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tabs, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ExportMenu } from '@/components/export'
 import { type Sheet } from '@/lib/export'
@@ -101,18 +101,15 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
                 <Glass>
                   <Head title="جلسة جديدة" />
                   <div className="regfields">
-                    <label className="regf regf-w">
-                      <span className="lb">عنوان الجلسة<b className="regf-r" aria-label="إلزامي">*</b></span>
-                      <span className="fld"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={body === 'committee' ? 'الاجتماع الدوري للجنة التنفيذية' : 'اجتماع مجلس الأمناء'} aria-label="عنوان الجلسة" /></span>
-                    </label>
-                    <label className="regf">
-                      <span className="lb">الموعد<b className="regf-r" aria-label="إلزامي">*</b></span>
+                    <FormField label="عنوان الجلسة" required wide>
+                      <FieldBox><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={body === 'committee' ? 'الاجتماع الدوري للجنة التنفيذية' : 'اجتماع مجلس الأمناء'} aria-label="عنوان الجلسة" /></FieldBox>
+                    </FormField>
+                    <FormField label="الموعد" required>
                       <DateField value={date} onChange={setDate} label="موعد الجلسة" />
-                    </label>
-                    <label className="regf">
-                      <span className="lb">الأعضاء</span>
+                    </FormField>
+                    <FormField label="الأعضاء">
                       <FieldMultiSelect label="الأعضاء" placeholder="اختر الأعضاء" people values={members} options={(body === 'committee' ? APPROVAL_RULES.committeeMembers : APPROVAL_RULES.boardMembers).map((m) => ({ value: m, label: m }))} onChange={setMembers} />
-                    </label>
+                    </FormField>
                   </div>
                   <h3 className="stdy-h mt-3">جدول الأعمال</h3>
                   <ul className="apv-list">
@@ -129,9 +126,9 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
                   <div className="regfoot">
                     <span className="decsent">{members.length < APPROVAL_RULES.quorum ? `النصاب ${nf.format(APPROVAL_RULES.quorum)} أعضاء` : `${nf.format(members.length)} عضو · ${nf.format(pick.length)} مشروع`}</span>
                     <span className="pc-sp" />
-                    <button className="btn btn-p" disabled={!title.trim() || !date || members.length < APPROVAL_RULES.quorum} onClick={create}>
+                    <Button variant="p" disabled={!title.trim() || !date || members.length < APPROVAL_RULES.quorum} onClick={create}>
                       <Icon name={icons.plus} size="sm" />أنشئ الجلسة
-                    </button>
+                    </Button>
                   </div>
                 </Glass>
               )}

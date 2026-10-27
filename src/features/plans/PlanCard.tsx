@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { rowGo } from '@/lib/rowGo'
-import { DateText, Icon, Mono, Num, Tag, icons } from '@/components/ui'
+import { ButtonLink, DateText, Icon, Mono, Num, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, NOUN, nounAfter, pct, units, ver } from '@/lib/format'
 import {
@@ -160,10 +160,10 @@ export function PlanCard({ p }: { p: PlanRow }) {
           فُتحت <DateText>{p.openedAt}</DateText>
           {p.baselineAt && <> · اعتُمدت <DateText>{p.baselineAt}</DateText></>}
         </span>
-        <Link to={ROUTES.plan(p.id)} className="btn btn-2 btn-sm">
+        <ButtonLink to={ROUTES.plan(p.id)} variant="2" size="sm">
           افتح الخطة
           <Icon name={icons.chevron} size="sm" />
-        </Link>
+        </ButtonLink>
       </footer>
     </article>
   )

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BackTo, Glass, Head, Icon, icons, Num, Tabs, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, BackTo, Glass, Head, Icon, icons, Num, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, useDockSlot } from '@/components/shell'
 import { EntityRulesTab } from './EntityRulesTab'
@@ -109,14 +109,14 @@ export default function EntitySettingsPage() {
               <ul className="cfgchips">
                 {REGIONS.map((r) => (
                   <li key={r}>
-                    <button
+                    <Button plain
                       className={`cfgchip${r === region ? ' on' : ''}`}
                       title={`${countOf(regionUsed(r), NOUN.entity)} في ${r}`}
                       onClick={() => set({ region: r === REGIONS[0] ? undefined : r })}
                     >
                       {r}
                       <b className="num"><Num>{regionUsed(r)}</Num></b>
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -133,19 +133,18 @@ export default function EntitySettingsPage() {
             />
 
             <div className="cfgrow">
-              <label className="regf cfgwide">
-                <span className="lb">إضافة {addLabel}</span>
-                <span className="fld">
+              <FormField label={<>إضافة {addLabel}</>} className="cfgwide">
+                <FieldBox>
                   <input
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder={addLabel}
                     aria-label={`إضافة ${addLabel}`}
                   />
-                </span>
-              </label>
-              <button
-                className="btn btn-p cfgadd"
+                </FieldBox>
+              </FormField>
+              <Button
+                variant="p" className="cfgadd"
                 disabled={!draft.trim() || rows.some((r) => r.k === draft.trim())}
                 title={
                   rows.some((r) => r.k === draft.trim())
@@ -156,7 +155,7 @@ export default function EntitySettingsPage() {
               >
                 <Icon name={icons.plus} size="sm" />
                 أضف
-              </button>
+              </Button>
             </div>
 
             <ul className="cfglist">

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { DateText, Empty, Glass, Head, Icon, Mono, OrgName, Person, SearchBox, Select, icons } from '@/components/ui'
+import { Button, DateText, Empty, Glass, Head, Icon, Mono, OrgName, Person, SearchBox, Select, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import type { ActorKind, LogEvent } from '@/data/mock/log'
 import { HOLDER_LABEL } from '@/data/holders'
@@ -150,7 +150,7 @@ export function LogTab({ events, entityName, entityLogo }: LogTabProps) {
           slot for. The swatch is the shape that carries the color; the label stays neutral text. */}
       <div className="tabs lgtabs" role="tablist" aria-label="تصنيف الأحداث">
         {tabs.map((t) => (
-          <button
+          <Button plain
             key={t.key}
             role="tab"
             aria-selected={t.key === view}
@@ -160,7 +160,7 @@ export function LogTab({ events, entityName, entityLogo }: LogTabProps) {
             {t.key !== 'all' && <span className={`lgsw c-${t.key}`} aria-hidden="true" />}
             <span>{t.label}</span>
             <b className="num">{t.count}</b>
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -216,14 +216,14 @@ export function LogTab({ events, entityName, entityLogo }: LogTabProps) {
 
                   {has && (
                     <>
-                      <button className="lgmore" onClick={() => toggle(e.id)} aria-expanded={isOpen}>
+                      <Button plain className="lgmore" onClick={() => toggle(e.id)} aria-expanded={isOpen}>
                         <Icon name={isOpen ? icons.chevronUp : icons.chevronDown} size="sm" />
                         {isOpen
                           ? 'إخفاء التفاصيل'
                           : fieldCount(e) > 0
                             ? `تفاصيل الإجراء · ${fieldCount(e)} حقل`
                             : `المرفقات · ${e.files?.length ?? 0}`}
-                      </button>
+                      </Button>
 
                       {isOpen && (
                         <div className="lgfields">

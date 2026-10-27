@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { StatRow,
+import { Button, StatRow,
   Empty, Glass, GroupPicker, Icon, MultiSelect, Num, SearchBox, Segments, Stat,
   Toggle, ViewToggle, icons,
 } from '@/components/ui'
@@ -268,7 +268,7 @@ export default function PlansPage() {
                   on={v.stuck === '1'}
                   onChange={(on) => set({ stuck: on ? '1' : undefined })}
                 />
-                <button
+                <Button plain
                   className={`fchip${advOpen ? ' on' : ''}`}
                   onClick={() => set({ adv: advOpen ? undefined : '1' })}
                   aria-expanded={advOpen}
@@ -278,7 +278,7 @@ export default function PlansPage() {
                   {activeCount(NOT_FILTERS) > 0 && (
                     <b className="num">{activeCount(NOT_FILTERS)}</b>
                   )}
-                </button>
+                </Button>
               </div>
 
               <div className="ftool-a">
@@ -334,7 +334,7 @@ export default function PlansPage() {
             {(chips.length > 0 || v.wait === '1' || v.late === '1' || v.stuck === '1') && (
               <div className="factive">
                 {chips.map((c) => (
-                  <button
+                  <Button plain
                     key={`${c.key as string}:${c.value}`}
                     className="fpill"
                     onClick={() =>
@@ -345,27 +345,27 @@ export default function PlansPage() {
                   >
                     <span className="sub">{c.label}:</span> {c.text}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 ))}
                 {v.wait === '1' && (
-                  <button className="fpill" onClick={() => set({ wait: undefined })}>
+                  <Button plain className="fpill" onClick={() => set({ wait: undefined })}>
                     بانتظار مراجعتي
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
                 {v.late === '1' && (
-                  <button className="fpill" onClick={() => set({ late: undefined })}>
+                  <Button plain className="fpill" onClick={() => set({ late: undefined })}>
                     بها نشاط متأخّر
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
                 {v.stuck === '1' && (
-                  <button className="fpill" onClick={() => set({ stuck: undefined })}>
+                  <Button plain className="fpill" onClick={() => set({ stuck: undefined })}>
                     بها نشاط متعثّر
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
-                <button className="fclear" onClick={clear}>مسح الكل</button>
+                <Button plain className="fclear" onClick={clear}>مسح الكل</Button>
               </div>
             )}
           </Glass>
@@ -374,7 +374,7 @@ export default function PlansPage() {
             <Glass>
               <Empty
                 title="لا توجد خطط بهذه الفلاتر."
-                actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
+                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
               />
             </Glass>
           ) : view === 'table' ? (
@@ -400,9 +400,9 @@ export default function PlansPage() {
               {grouped && (
                 <p className="sub tcen">
                   <span className="num">{countLeaves(groupTree(sorted, group))}</span> مجموعات ·{' '}
-                  <button className="lnk" onClick={() => set({ group: undefined })}>
+                  <Button plain className="lnk" onClick={() => set({ group: undefined })}>
                     إلغاء التجميع
-                  </button>
+                  </Button>
                 </p>
               )}
             </>

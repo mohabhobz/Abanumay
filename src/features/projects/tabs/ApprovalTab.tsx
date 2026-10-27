@@ -1,7 +1,7 @@
 import { KIND_SAY, LEVEL_RANK, LEVEL_SAY, floorOf, kindOf } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DockActions, DateText, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
+import { FieldBox, Button, DockActions, DateText, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, pct } from '@/lib/format'
 import type { ProjectRow } from '@/types/domain'
@@ -199,7 +199,7 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           consOpts.length ? (
             <div className="cfgrow">
               <FieldSelect value={cons} label="مستشار مختص" options={consOpts.map((c) => ({ value: c.key, label: `${c.name} · ${c.accessDays} أيام` }))} onChange={setCons} />
-              <button type="button" className="btn btn-2 cfgadd" disabled={!cons} onClick={() => { referConsultant(row.id, cons, me); setCons('') }}>اطلب رأي المستشار</button>
+              <Button type="button" variant="2" className="cfgadd" disabled={!cons} onClick={() => { referConsultant(row.id, cons, me); setCons('') }}>اطلب رأي المستشار</Button>
             </div>
           ) : <p className="sub cnote">لا مستشار مرتبط بمجال «{row.field}».</p>
         )}
@@ -213,9 +213,9 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
             {r.note && <p className="sub cnote">{r.note}</p>}
             {r.needsPlan !== undefined && <p className="sub cnote">الخطة: {r.needsPlan ? 'يتطلب خطة' : 'لا يتطلب خطة'}</p>}
             {canDecide && r.note && (
-              <button className="btn btn-ghost btn-sm" onClick={() => makeOfficial(row.id, r.note, me)}>
+              <Button variant="ghost" size="sm" onClick={() => makeOfficial(row.id, r.note, me)}>
                 <Icon name={icons.send} size="sm" />اعتمدها ملاحظة رسمية للجهة
-              </button>
+              </Button>
             )}
           </div>
         ))}
@@ -288,22 +288,22 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
               <span className="apv-t"><b>{c.text}</b><span className="sub">قبل {c.when === 'agreement' ? 'توقيع الاتفاقية' : 'صرف الدفعة الأولى'} · <Person name={c.by} />{c.by === study?.by ? ' · من دراسة مشرف المنح' : ''}</span></span>
               <span className="pc-sp" />
               {c.met ? <Tag tone="ok">مستوفى · <DateText>{c.met.at}</DateText></Tag>
-                : role === 'supervisor' ? <button className="btn btn-2 btn-sm" onClick={() => meetCondition(row.id, c.id, me)}>علّمه مستوفى</button>
+                : role === 'supervisor' ? <Button variant="2" size="sm" onClick={() => meetCondition(row.id, c.id, me)}>علّمه مستوفى</Button>
                   : <Tag tone="warn">لم يُستوفَ</Tag>}
             </li>
           ))}
         </ul>
         {canDecide && holder !== 'manager' && (
           <div className="apv-row">
-            <span className="fld"><input value={cond} onChange={(e) => setCond(e.target.value)} placeholder="شرط يُستوفى قبل التعاقد أو الصرف" aria-label="نص الشرط" /></span>
+            <FieldBox><input value={cond} onChange={(e) => setCond(e.target.value)} placeholder="شرط يُستوفى قبل التعاقد أو الصرف" aria-label="نص الشرط" /></FieldBox>
             <div className="cfgchips" role="radiogroup" aria-label="موعد الشرط">
               {(['agreement', 'firstPay'] as const).map((w) => (
-                <button key={w} type="button" role="radio" aria-checked={when === w} className={`cfgchip${when === w ? ' on' : ''}`} onClick={() => setWhen(w)}>
+                <Button plain key={w} type="button" role="radio" aria-checked={when === w} className={`cfgchip${when === w ? ' on' : ''}`} onClick={() => setWhen(w)}>
                   {w === 'agreement' ? 'قبل الاتفاقية' : 'قبل الدفعة الأولى'}
-                </button>
+                </Button>
               ))}
             </div>
-            <button className="btn btn-2 btn-sm" disabled={!cond.trim()} onClick={() => { addCondition(row.id, cond.trim(), when, me); setCond('') }}>أضف الشرط</button>
+            <Button variant="2" size="sm" disabled={!cond.trim()} onClick={() => { addCondition(row.id, cond.trim(), when, me); setCond('') }}>أضف الشرط</Button>
           </div>
         )}
       </Glass>
@@ -321,8 +321,8 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
               <span className="pc-sp" />
               {n.resolved ? <Tag tone="ok">عولجت</Tag> : holder && holder !== n.level ? (
                 <span className="apv-row">
-                  <span className="fld"><input value={reply[n.id] ?? ''} onChange={(e) => setReply((x) => ({ ...x, [n.id]: e.target.value }))} placeholder="كيف عولجت" aria-label="المعالجة" /></span>
-                  <button className="btn btn-2 btn-sm" disabled={!(reply[n.id] ?? '').trim()} onClick={() => resolveNote(row.id, n.id, (reply[n.id] ?? '').trim(), me)}>عولجت</button>
+                  <FieldBox><input value={reply[n.id] ?? ''} onChange={(e) => setReply((x) => ({ ...x, [n.id]: e.target.value }))} placeholder="كيف عولجت" aria-label="المعالجة" /></FieldBox>
+                  <Button variant="2" size="sm" disabled={!(reply[n.id] ?? '').trim()} onClick={() => resolveNote(row.id, n.id, (reply[n.id] ?? '').trim(), me)}>عولجت</Button>
                 </span>
               ) : <Tag tone="warn">مفتوحة</Tag>}
             </li>
@@ -330,8 +330,8 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
         </ul>
         {canDecide && (
           <div className="apv-row">
-            <span className="fld"><input value={mand} onChange={(e) => setMand(e.target.value)} placeholder="ملاحظة يجب معالجتها قبل الإحالة" aria-label="الملاحظة الإلزامية" /></span>
-            <button className="btn btn-2 btn-sm" disabled={!mand.trim()} onClick={() => { addMandNote(row.id, mand.trim(), holder as Holder, me); setMand('') }}>أضف ملاحظة إلزامية</button>
+            <FieldBox><input value={mand} onChange={(e) => setMand(e.target.value)} placeholder="ملاحظة يجب معالجتها قبل الإحالة" aria-label="الملاحظة الإلزامية" /></FieldBox>
+            <Button variant="2" size="sm" disabled={!mand.trim()} onClick={() => { addMandNote(row.id, mand.trim(), holder as Holder, me); setMand('') }}>أضف ملاحظة إلزامية</Button>
           </div>
         )}
       </Glass>
@@ -349,8 +349,8 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
               <span className="pc-sp" />
               {o.answer ? <Tag tone="ok">ورد الرأي</Tag> : (
                 <span className="apv-row">
-                  <span className="fld"><input value={ans[o.id] ?? ''} onChange={(e) => setAns((x) => ({ ...x, [o.id]: e.target.value }))} placeholder={`رأي ${DEPT_SAY[o.dept]}`} aria-label="الرأي" /></span>
-                  <button className="btn btn-2 btn-sm" disabled={!(ans[o.id] ?? '').trim()} onClick={() => answerOpinion(row.id, o.id, (ans[o.id] ?? '').trim(), me)}>سجّل الرأي</button>
+                  <FieldBox><input value={ans[o.id] ?? ''} onChange={(e) => setAns((x) => ({ ...x, [o.id]: e.target.value }))} placeholder={`رأي ${DEPT_SAY[o.dept]}`} aria-label="الرأي" /></FieldBox>
+                  <Button variant="2" size="sm" disabled={!(ans[o.id] ?? '').trim()} onClick={() => answerOpinion(row.id, o.id, (ans[o.id] ?? '').trim(), me)}>سجّل الرأي</Button>
                 </span>
               )}
             </li>
@@ -360,11 +360,11 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
           <div className="apv-row">
             <div className="cfgchips" role="radiogroup" aria-label="الإدارة">
               {(['finance', 'legal', 'other'] as const).map((d) => (
-                <button key={d} type="button" role="radio" aria-checked={dept === d} className={`cfgchip${dept === d ? ' on' : ''}`} onClick={() => setDept(d)}>{DEPT_SAY[d]}</button>
+                <Button plain key={d} type="button" role="radio" aria-checked={dept === d} className={`cfgchip${dept === d ? ' on' : ''}`} onClick={() => setDept(d)}>{DEPT_SAY[d]}</Button>
               ))}
             </div>
-            <span className="fld"><input value={ask} onChange={(e) => setAsk(e.target.value)} placeholder="السؤال المطلوب الرأي فيه" aria-label="السؤال" /></span>
-            <button className="btn btn-2 btn-sm" disabled={!ask.trim()} onClick={() => { askOpinion(row.id, dept, ask.trim(), me); setAsk('') }}>اطلب الرأي</button>
+            <FieldBox><input value={ask} onChange={(e) => setAsk(e.target.value)} placeholder="السؤال المطلوب الرأي فيه" aria-label="السؤال" /></FieldBox>
+            <Button variant="2" size="sm" disabled={!ask.trim()} onClick={() => { askOpinion(row.id, dept, ask.trim(), me); setAsk('') }}>اطلب الرأي</Button>
           </div>
         )}
       </Glass>

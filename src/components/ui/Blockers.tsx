@@ -1,5 +1,6 @@
+import { Modal, ModalHead } from './Modal'
+import { Button } from './Button'
 import { useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
 import { Glass, Head, Num, Tag } from './primitives'
 import { Icon } from './Icon'
 import { icons } from './icons'
@@ -95,7 +96,7 @@ export function DockWhy({ n, noun = MISSING_ITEM, items, title = 'ما يمنع 
       {/* "13 missing items missing" used to say "missing" twice — this phrasing works with any
           count (items, notes) and uses the same word as the card's own tag. */}
       {items?.length
-        ? <button type="button" className="lnk" onClick={() => setOpen(true)}>{title} · <Num>{n}</Num> {nounAfter(n, noun)}</button>
+        ? <Button plain type="button" className="lnk" onClick={() => setOpen(true)}>{title} · <Num>{n}</Num> {nounAfter(n, noun)}</Button>
         : <span className="sub">{label}: <Num>{n}</Num> {nounAfter(n, noun)}</span>}
       {open && items && <StopsPopup title={title} items={items} noun={noun} onClose={() => setOpen(false)} />}
     </>
@@ -111,10 +112,8 @@ export function StopsPopup({ title, items, noun = MISSING_ITEM, onClose, foot }:
   foot?: ReactNode
 }) {
   const n = blockerCount(items)
-  return createPortal(
-    <div className="bmask" role="presentation" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
-      <div className="chrome modal modal-w" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <div className="mh"><Icon name={icons.alert} size="md" /><b>{title}</b>{n > 0 && <Tag tone="warn"><Num>{n}</Num> {nounAfter(n, noun)}</Tag>}</div>
+  return <Modal label={title} onClose={onClose} className="modal-w" escape>
+        <ModalHead icon={icons.alert} title={title}>{n > 0 && <Tag tone="warn"><Num>{n}</Num> {nounAfter(n, noun)}</Tag>}</ModalHead>
         <div className="mb col">
           <ul className="blockers" onClick={(e) => { if ((e.target as HTMLElement).closest('a,button')) onClose() }}>
             {items.map((b, k) => (
@@ -126,9 +125,6 @@ export function StopsPopup({ title, items, noun = MISSING_ITEM, onClose, foot }:
             ))}
           </ul>
         </div>
-        <div className="mf">{foot}<button type="button" className="btn btn-2" onClick={onClose}>إغلاق</button></div>
-      </div>
-    </div>,
-    document.body,
-  )
+        <div className="mf">{foot}<Button type="button" variant="2" onClick={onClose}>إغلاق</Button></div>
+      </Modal>
 }

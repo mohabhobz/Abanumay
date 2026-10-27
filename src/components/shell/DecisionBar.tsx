@@ -1,6 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
-import { Icon, MenuOpt, MenuPanel, Money, icons } from '@/components/ui'
+import { FormField, FieldBox, Modal, ModalHead, Button, Icon, MenuOpt, MenuPanel, Money, icons } from '@/components/ui'
 import { useMenu } from '@/hooks/useMenu'
 import { useProximity } from '@/hooks/useProximity'
 import { Avatar } from './Avatar'
@@ -103,23 +102,23 @@ export function DecisionBar({ user, project, compact, atEnd, lead, hold, onDecid
         <div className="rowf gp-2">
           {!done && lead}
           {!done && shown.map((a) => (
-            <button key={a.label} className={`btn ${a.kind}`} disabled={Boolean(a.blocked)} title={a.blocked || undefined} onClick={() => open(a)}>
+            <Button plain key={a.label} className={`btn ${a.kind}`} disabled={Boolean(a.blocked)} title={a.blocked || undefined} onClick={() => open(a)}>
               {a.label}
-            </button>
+            </Button>
           ))}
           {!done && rest.length > 0 && (
             <div className="fsel" ref={more.box}>
-              <button
+              <Button
                 ref={moreBtn}
                 type="button"
-                className="btn btn-2"
+                variant="2"
                 aria-haspopup="menu"
                 aria-expanded={more.open}
                 aria-label="إجراءات أخرى"
                 onClick={() => more.setOpen((x) => !x)}
               >
                 <Icon name={icons.dots} size="sm" />
-              </button>
+              </Button>
               {more.open && (
                 <MenuPanel one up end float={{ anchor: moreBtn, pop: more.pop }}>
                   {rest.map((a) => (
@@ -135,18 +134,8 @@ export function DecisionBar({ user, project, compact, atEnd, lead, hold, onDecid
       </div>
 
       {/* Portalled: the dock is its own stacking context (z 20), under the phone's tab bar (35) */}
-      {pick && createPortal(
-        <div className="bmask decsheet" role="presentation" onClick={() => setPick(null)}>
-          <div
-            className="chrome modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label={pick.label}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mh">
-              <b>{pick.label}</b>
-            </div>
+      {pick && <Modal label={pick.label} onClose={() => setPick(null)} mask="decsheet">
+            <ModalHead title={pick.label} />
             <div className="mb col">
               <p className="sub cnote">
                 <b>{project.name}</b>
@@ -165,23 +154,20 @@ export function DecisionBar({ user, project, compact, atEnd, lead, hold, onDecid
                 </ul>
               )}
               {pick.choose && (
-                <div className="regf">
-                  <span className="lb">{pick.choose.label}<b className="regf-r" aria-label="إلزامي">*</b></span>
+                <FormField label={pick.choose.label} required as="div">
                   <div className="cfgchips" role="radiogroup" aria-label={pick.choose.label}>
                     {pick.choose.options.map((o) => (
-                      <button key={o.value} type="button" role="radio" aria-checked={choice === o.value} className={`cfgchip${choice === o.value ? ' on' : ''}`} onClick={() => setChoice(o.value)}>
+                      <Button plain key={o.value} type="button" role="radio" aria-checked={choice === o.value} className={`cfgchip${choice === o.value ? ' on' : ''}`} onClick={() => setChoice(o.value)}>
                         {o.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
-                </div>
+                </FormField>
               )}
               {needsNote(pick) && (
-                <label className="regf">
-                  <span className="lb">
-                    {/موافقة|اعتماد|إحالة|إرسال/.test(pick.label) ? 'المبررات' : 'السبب'}<b className="regf-r" aria-label="إلزامي">*</b>
-                  </span>
-                  <span className="fld">
+                <FormField label={<>
+                    {/موافقة|اعتماد|إحالة|إرسال/.test(pick.label) ? 'المبررات' : 'السبب'}</>} required>
+                  <FieldBox>
                     <input
                       autoFocus
                       value={note}
@@ -189,24 +175,21 @@ export function DecisionBar({ user, project, compact, atEnd, lead, hold, onDecid
                       aria-label={/موافقة|اعتماد|إحالة|إرسال/.test(pick.label) ? 'المبررات' : 'السبب'}
                       placeholder={/استكمال/.test(pick.label) ? 'ما المطلوب من الجهة · يصلها كما هو' : /موافقة|اعتماد|إحالة|إرسال/.test(pick.label) ? 'تُوثَّق مع القرار في ملف المشروع' : 'يصل مع القرار إلى صاحب الخطوة السابقة'}
                     />
-                  </span>
-                </label>
+                  </FieldBox>
+                </FormField>
               )}
             </div>
             <div className="mf">
-              <button
-                className={`btn ${pick.kind === 'btn-d' ? 'btn-d' : 'btn-p'}`}
+              <Button
+                variant={pick.kind === 'btn-d' ? 'd' : 'p'}
                 disabled={(needsNote(pick) && !note.trim()) || (Boolean(pick.choose) && !choice)}
                 onClick={() => confirm(pick)}
               >
                 تأكيد: {pick.label}
-              </button>
-              <button className="btn btn-2" onClick={() => setPick(null)}>تراجع</button>
+              </Button>
+              <Button variant="2" onClick={() => setPick(null)}>تراجع</Button>
             </div>
-          </div>
-        </div>,
-        document.body,
-      )}
+          </Modal>}
     </div>
   )
 }

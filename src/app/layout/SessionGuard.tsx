@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/app/routes'
@@ -35,7 +36,7 @@ export function SessionGuard() {
   return (
     <div className="sessbar" role="alert">
       <span>ستنتهي جلستك لعدم النشاط خلال <b className="num">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</b></span>
-      <button type="button" className="btn btn-p btn-sm" onClick={() => { last.current = Date.now(); setLeft(null) }}>ابقَ متصلًا</button>
+      <Button type="button" variant="p" size="sm" onClick={() => { last.current = Date.now(); setLeft(null) }}>ابقَ متصلًا</Button>
     </div>
   )
 }

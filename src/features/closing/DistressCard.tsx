@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, Icon, Money, Tag, icons } from '@/components/ui'
+import { ButtonLink, DateText, Glass, Head, Icon, Money, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import {
@@ -40,9 +40,9 @@ export function DistressCard({ projectId }: { projectId: string }) {
       )}
       {role.key === 'supervisor' && !open && (
         <div className="rowf gp-2 mt-3">
-          <Link className="btn btn-2 btn-sm" to={ROUTES.distressNew(projectId, 'stop')}><Icon name={icons.alert} size="sm" />إيقاف المشروع</Link>
-          <Link className="btn btn-2 btn-sm" to={ROUTES.distressNew(projectId, 'reduce')}>تخفيض القيمة</Link>
-          <Link className="btn btn-2 btn-sm" to={ROUTES.distressNew(projectId, 'increase')}>زيادة القيمة</Link>
+          <ButtonLink variant="2" size="sm" to={ROUTES.distressNew(projectId, 'stop')}><Icon name={icons.alert} size="sm" />إيقاف المشروع</ButtonLink>
+          <ButtonLink variant="2" size="sm" to={ROUTES.distressNew(projectId, 'reduce')}>تخفيض القيمة</ButtonLink>
+          <ButtonLink variant="2" size="sm" to={ROUTES.distressNew(projectId, 'increase')}>زيادة القيمة</ButtonLink>
         </div>
       )}
     </Glass>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Empty, Glass, Icon, icons, MultiSelect, Num, SearchBox, Tag } from '@/components/ui'
+import { Button, Empty, Glass, Icon, icons, MultiSelect, Num, SearchBox, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { nf, NOUN, nounAfter } from '@/lib/format'
 import { LIVE_SPECS, catalogTotals, type LiveSpec } from '@/data/liveReports'
@@ -81,18 +81,18 @@ export function Catalog() {
         {active && (
           <div className="factive">
             {q.trim() && (
-              <button className="fpill" onClick={() => setQ('')}>
+              <Button plain className="fpill" onClick={() => setQ('')}>
                 <span className="sub">بحث:</span> {q.trim()}
                 <Icon name={icons.close} size="sm" />
-              </button>
+              </Button>
             )}
             {states.map((st) => (
-              <button key={st} className="fpill" onClick={() => setStates(states.filter((x) => x !== st))}>
+              <Button plain key={st} className="fpill" onClick={() => setStates(states.filter((x) => x !== st))}>
                 <span className="sub">الحالة:</span> {STATE_TAG[st as State].label}
                 <Icon name={icons.close} size="sm" />
-              </button>
+              </Button>
             ))}
-            <button className="fclear" onClick={() => { setQ(''); setStates([]) }}>مسح الكل</button>
+            <Button plain className="fclear" onClick={() => { setQ(''); setStates([]) }}>مسح الكل</Button>
           </div>
         )}
       </Glass>

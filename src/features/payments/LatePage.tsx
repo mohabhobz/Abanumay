@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { HEAT_TONE } from '@/lib/tone'
 import {
-  BackTo, DateText, Empty, Glass, Head, Icon, icons, Num, Person, Segments, Tag,
+  Button, BackTo, DateText, Empty, Glass, Head, Icon, icons, Num, Person, Segments, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -117,13 +117,13 @@ export default function LatePage() {
               </p>
             </div>
             <div className="rowf gp-2">
-              <button className="btn btn-2 btn-sm" onClick={() => exportXlsx(sheet)}>
+              <Button variant="2" size="sm" onClick={() => exportXlsx(sheet)}>
                 <Icon name={icons.export} size="sm" />
                 صدّر إلى إكسل
-              </button>
-              <button className="btn btn-2 btn-sm" onClick={() => setTimeout(printArea, 60)}>
+              </Button>
+              <Button variant="2" size="sm" onClick={() => setTimeout(printArea, 60)}>
                 اطبع
-              </button>
+              </Button>
             </div>
           </header>
 
@@ -153,9 +153,9 @@ export default function LatePage() {
               <Empty
                 title="لا يوجد طلب متأخر أو متعثر."
                 actions={
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.payments)}>
                     العودة إلى صندوق الصرف
-                  </button>
+                  </Button>
                 }
               />
             </Glass>

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { signIn } from '@/data/session'
 import { useNavigate } from 'react-router-dom'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from '@/features/auth/AuthShell'
 import { ROUTES } from '@/app/routes'
 import { regRows, setRegAccount } from '@/data/mock/registration'
@@ -88,7 +88,7 @@ export default function RegisterAccountPage() {
   }
 
   const eye = (
-    <button
+    <Button plain
       type="button"
       className="leye"
       onClick={() => setShow((v) => !v)}
@@ -96,7 +96,7 @@ export default function RegisterAccountPage() {
       title={show ? 'إخفاء' : 'إظهار'}
     >
       <Icon name={show ? icons.eyeOff : icons.eye} size="md" />
-    </button>
+    </Button>
   )
 
   return (
@@ -143,23 +143,23 @@ export default function RegisterAccountPage() {
             : undefined}
         />}
 
-        <button className="btn btn-p btn-full" type="submit" disabled={busy}>
+        <Button variant="p" full type="submit" disabled={busy}>
           {back ? 'افتح طلبي' : busy ? 'جارٍ إنشاء الحساب…' : 'أنشئ الحساب وتابع التسجيل'}
-        </button>
+        </Button>
       </form>
 
       {/* Other paths - styled as a ghost so they don't compete with the primary button. */}
       <div className="lalt">
-        <button
-          className="btn btn-2 btn-full"
+        <Button
+          variant="2" full
           type="button"
           onClick={() => { setBack((x) => !x); setErr('') }}
         >
           {back ? 'ليس لديك حساب؟ أنشئ حسابًا' : 'لديك حساب بالفعل؟ عُد إلى طلبك'}
-        </button>
+        </Button>
         {back && (
           <p className="lnote sub">
-            نسيت كلمة المرور؟ <button type="button" className="llink" onClick={() => navigate(ROUTES.forgot)}>استعدها</button>
+            نسيت كلمة المرور؟ <Button plain type="button" className="llink" onClick={() => navigate(ROUTES.forgot)}>استعدها</Button>
           </p>
         )}
       </div>

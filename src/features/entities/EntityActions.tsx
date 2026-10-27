@@ -1,7 +1,7 @@
 import { accountWhy } from '@/data/shared/decisions'
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Mono, Num, Person, Switch, Tag, icons } from '@/components/ui'
+import { ButtonLabel, FormField, FieldBox, Button, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Mono, Num, Person, Switch, Tag, icons } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import { ibanValid } from '@/lib/iban'
 import { ibanOwner } from '@/data/entities/validate'
@@ -11,7 +11,7 @@ import { ReasonDialog } from './ReasonDialog'
 import { isTest, markTest } from '@/data/shared/testData'
 import {
   ACT_SAY, REQ_SAY, actState, archiveBlocks, bankLinks, impactOf, lastRequestOf, reasonOf, reasonText, type ActKey } from '@/data/entities/actions'
-import { Modal, ReasonField } from './SelectionActions'
+import { SheetModal, ReasonField } from './SelectionActions'
 import { units } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
 import type { EntityRow } from '@/types/domain'
@@ -101,16 +101,16 @@ function SensModal({ e, sens, me, onClose }: { e: EntityRow; sens: Sens; me: str
     onClose()
   }
   return (
-    <Modal wide title={`${SENS_SAY[sens]} · ${e.name}`} onClose={onClose}
+    <SheetModal wide title={`${SENS_SAY[sens]} · ${e.name}`} onClose={onClose}
       foot={step === 1 ? (
         <>
-          <button className={`btn ${SENS_TONE[sens]}`} disabled={!step1} onClick={() => (double ? setStep(2) : run())}>{double ? 'التالي · التأكيد' : SENS_SAY[sens]}</button>
-          <button className="btn btn-2" onClick={onClose}>تراجع</button>
+          <Button plain className={`btn ${SENS_TONE[sens]}`} disabled={!step1} onClick={() => (double ? setStep(2) : run())}>{double ? 'التالي · التأكيد' : SENS_SAY[sens]}</Button>
+          <Button variant="2" onClick={onClose}>تراجع</Button>
         </>
       ) : (
         <>
-          <button className={`btn ${SENS_TONE[sens]}`} disabled={typed.trim() !== e.licenseNo} onClick={run}>{SENS_SAY[sens]}</button>
-          <button className="btn btn-2" onClick={() => setStep(1)}>رجوع</button>
+          <Button plain className={`btn ${SENS_TONE[sens]}`} disabled={typed.trim() !== e.licenseNo} onClick={run}>{SENS_SAY[sens]}</Button>
+          <Button variant="2" onClick={() => setStep(1)}>رجوع</Button>
         </>
       )}>
       {step === 1 ? (
@@ -124,21 +124,19 @@ function SensModal({ e, sens, me, onClose }: { e: EntityRow; sens: Sens; me: str
           )}
           <ReasonField kind={kind} code={code} text={text} onCode={setCode} onText={setText} />
           {needsDecision && (
-            <label className="regf">
-              <span className="lb">رقم القرار<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <span className="fld"><input value={decision} onChange={(x) => setDecision(x.target.value)} aria-label="رقم القرار" /></span>
-            </label>
+            <FormField label="رقم القرار" required>
+              <FieldBox><input value={decision} onChange={(x) => setDecision(x.target.value)} aria-label="رقم القرار" /></FieldBox>
+            </FormField>
           )}
-          <div className="regf">
-            <span className="lb">{needsProof ? 'الإثبات' : 'مرفق'}{needsProof && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
+          <FormField label={needsProof ? 'الإثبات' : 'مرفق'} required={needsProof} as="div">
             <span className="apv-row">
-              <label className="btn btn-2 btn-sm">
+              <ButtonLabel variant="2" size="sm">
                 <Icon name={icons.upload} size="sm" />{proof ? 'استبدل الملف' : 'ارفع الملف'}
                 <input className="vis-h" type="file" aria-label="الإثبات" onChange={(x) => { const f = x.target.files?.[0]; if (f) setProof(f.name); x.target.value = '' }} />
-              </label>
+              </ButtonLabel>
               {proof ? <Tag tone="ok">{proof}</Tag> : <span className="sub">لا ملف بعد</span>}
             </span>
-          </div>
+          </FormField>
           {stops > 0 && (
             <label className="rowf gp-2">
               <input type="checkbox" checked={aware} onChange={(x) => setAware(x.target.checked)} />
@@ -149,13 +147,12 @@ function SensModal({ e, sens, me, onClose }: { e: EntityRow; sens: Sens; me: str
       ) : (
         <>
           <p className="cnote">للتأكيد اكتب رقم ترخيص الجهة <Mono>{e.licenseNo}</Mono></p>
-          <label className="regf">
-            <span className="lb">رقم الترخيص</span>
-            <span className="fld"><input autoFocus dir="ltr" inputMode="numeric" value={typed} onChange={(x) => setTyped(x.target.value)} aria-label="رقم الترخيص للتأكيد" /></span>
-          </label>
+          <FormField label="رقم الترخيص">
+            <FieldBox><input autoFocus dir="ltr" inputMode="numeric" value={typed} onChange={(x) => setTyped(x.target.value)} aria-label="رقم الترخيص للتأكيد" /></FieldBox>
+          </FormField>
         </>
       )}
-    </Modal>
+    </SheetModal>
   )
 }
 
@@ -233,19 +230,19 @@ export function EntityActionDock({ e }: { e: EntityRow }) {
         <div className="payact-g">
           <div className="rowf gp-2">
             {doable.map(({ k, s }) => (
-              <button key={k} type="button" className={`btn ${SENS_TONE[k]}`}
+              <Button plain key={k} type="button" className={`btn ${SENS_TONE[k]}`}
                 disabled={!s.on && !(k === 'archive' && blocks.length > 0)}
                 title={k === 'archive' && !s.on && blocks.length ? 'ما يمنع الأرشفة' : s.why}
                 onClick={() => pick(k, s.on)}>
                 {SENS_SAY[k]}
-              </button>
+              </Button>
             ))}
             {status.map(({ k, s }) => (
-              <button key={k} type="button" className={`btn ${k === 'activate' ? 'btn-p' : 'btn-2'}`} disabled={!s.on} title={s.why} onClick={() => setFlip(k)}>
+              <Button key={k} type="button" variant={k === 'activate' ? 'p' : '2'} disabled={!s.on} title={s.why} onClick={() => setFlip(k)}>
                 {ACT_SAY[k]}
-              </button>
+              </Button>
             ))}
-            {restore && <button type="button" className="btn btn-p" onClick={() => setAct('restore')}>{SENS_SAY.restore}</button>}
+            {restore && <Button type="button" variant="p" onClick={() => setAct('restore')}>{SENS_SAY.restore}</Button>}
           </div>
         </div>
       </div>
@@ -270,8 +267,8 @@ export function EntityActionDock({ e }: { e: EntityRow }) {
         )
       })()}
       {blocked && (
-        <Modal title={`ما يمنع أرشفة ${e.name}`} icon={icons.folder} onClose={() => setBlocked(false)}
-          foot={<button type="button" className="btn btn-2" onClick={() => setBlocked(false)}>حسنًا</button>}>
+        <SheetModal title={`ما يمنع أرشفة ${e.name}`} icon={icons.folder} onClose={() => setBlocked(false)}
+          foot={<Button type="button" variant="2" onClick={() => setBlocked(false)}>حسنًا</Button>}>
           <ul className="payq-ck">
             {blocks.map((b) => (
               <li key={b.label}>
@@ -280,7 +277,7 @@ export function EntityActionDock({ e }: { e: EntityRow }) {
               </li>
             ))}
           </ul>
-        </Modal>
+        </SheetModal>
       )}
     </div>
   )
@@ -341,15 +338,15 @@ export function BankActions({ entityId, b }: { entityId: string; b: BankAccount 
     <>
       <div className="rowf gp-2 mt-3">
         {b.status === 'مفعل' ? (
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => setAsk('disable')}>عطّل الحساب</button>
+          <Button type="button" variant="2" size="sm" onClick={() => setAsk('disable')}>عطّل الحساب</Button>
         ) : (
-          <button type="button" className="btn btn-p btn-sm" disabled={Boolean(taken)} title={taken ? `الآيبان مفعّل لجهة أخرى · ${taken} · لا يُفعَّل لجهتين` : undefined} onClick={() => setBankStatus(entityId, b.id, 'مفعل', me)}>
+          <Button type="button" variant="p" size="sm" disabled={Boolean(taken)} title={taken ? `الآيبان مفعّل لجهة أخرى · ${taken} · لا يُفعَّل لجهتين` : undefined} onClick={() => setBankStatus(entityId, b.id, 'مفعل', me)}>
             <Icon name={icons.check} size="sm" /> فعّل الحساب
-          </button>
+          </Button>
         )}
-        <button type="button" className="btn btn-2 btn-sm" disabled={linked} title={linked ? `مسجَّل في مشروع أو له تاريخ مالي · ${links.slice(0, 3).join('، ')}${links.length > 3 ? ` +${links.length - 3}` : ''} · عطّل الحساب بدلًا من حذفه` : 'غير مسجَّل في أي مشروع ولا تاريخ مالي عليه'} onClick={() => setAsk('delete')}>
+        <Button type="button" variant="2" size="sm" disabled={linked} title={linked ? `مسجَّل في مشروع أو له تاريخ مالي · ${links.slice(0, 3).join('، ')}${links.length > 3 ? ` +${links.length - 3}` : ''} · عطّل الحساب بدلًا من حذفه` : 'غير مسجَّل في أي مشروع ولا تاريخ مالي عليه'} onClick={() => setAsk('delete')}>
           <Icon name={icons.trash} size="sm" /> احذف
-        </button>
+        </Button>
       </div>
       {ask === 'disable' && (
         <ReasonDialog kind="bankDisable" title={`تعطيل الحساب · ${b.bank}`} subject={`${b.accountName} · ${tail}`}
@@ -404,37 +401,33 @@ export function AddBank({ entityId }: { entityId: string }) {
   }
   return (
     <>
-      <div className="act-a"><button type="button" className="btn btn-p" onClick={() => setOpen(true)}><Icon name={icons.plus} size="sm" /> إضافة حساب بنكي</button></div>
+      <div className="act-a"><Button type="button" variant="p" onClick={() => setOpen(true)}><Icon name={icons.plus} size="sm" /> إضافة حساب بنكي</Button></div>
       {open && (
-        <Modal title={`إضافة حساب بنكي · ${e.name}`} icon={icons.pay} onClose={close}
+        <SheetModal title={`إضافة حساب بنكي · ${e.name}`} icon={icons.pay} onClose={close}
           foot={<>
-            <button type="button" className="btn btn-p" onClick={save}>احفظ الحساب</button>
-            <button type="button" className="btn btn-2" onClick={close}>تراجع</button>
+            <Button type="button" variant="p" onClick={save}>احفظ الحساب</Button>
+            <Button type="button" variant="2" onClick={close}>تراجع</Button>
           </>}>
-          <div className="regf">
-            <span className="lb">اسم البنك<b className="regf-r" aria-label="إلزامي">*</b></span>
+          <FormField label="اسم البنك" required as="div">
             <FieldSelect value={bank} options={BANKS} onChange={setBank} label="اسم البنك" placeholder="اختر البنك" />
-          </div>
-          <label className="regf">
-            <span className="lb">اسم الحساب<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld"><input value={name} onChange={(x) => setName(x.target.value)} aria-label="اسم الحساب" placeholder="كما في شهادة الآيبان" /></span>
-          </label>
-          <label className="regf">
-            <span className="lb">الآيبان<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld"><input dir="ltr" value={iban} onChange={(x) => setIban(x.target.value)} aria-label="الآيبان" placeholder="SA00 0000 0000 0000 0000 0000" /></span>
-          </label>
-          <div className="regf">
-            <span className="lb">شهادة الآيبان<b className="regf-r" aria-label="إلزامي">*</b></span>
+          </FormField>
+          <FormField label="اسم الحساب" required>
+            <FieldBox><input value={name} onChange={(x) => setName(x.target.value)} aria-label="اسم الحساب" placeholder="كما في شهادة الآيبان" /></FieldBox>
+          </FormField>
+          <FormField label="الآيبان" required>
+            <FieldBox><input dir="ltr" value={iban} onChange={(x) => setIban(x.target.value)} aria-label="الآيبان" placeholder="SA00 0000 0000 0000 0000 0000" /></FieldBox>
+          </FormField>
+          <FormField label="شهادة الآيبان" required as="div">
             <span className="apv-row">
-              <label className="btn btn-2 btn-sm">
+              <ButtonLabel variant="2" size="sm">
                 <Icon name={icons.upload} size="sm" />{file ? 'استبدل الملف' : 'ارفع الملف'}
                 <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label="شهادة الآيبان" onChange={(x) => { const f = x.target.files?.[0]; if (f) setFile(f.name); x.target.value = '' }} />
-              </label>
+              </ButtonLabel>
               {file ? <Tag tone="ok">{file}</Tag> : <span className="sub">لا ملف بعد</span>}
             </span>
-          </div>
+          </FormField>
           {tried && issues.length > 0 && <p className="bad cnote">{issues.join(' · ')}</p>}
-        </Modal>
+        </SheetModal>
       )}
     </>
   )

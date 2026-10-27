@@ -3,10 +3,9 @@ import { suggestNext } from '@/data/shared/agent'
 import { Related } from '@/components/related/Related'
 import { useState } from 'react'
 import { readClauses } from '@/data/shared/ai'
-import { createPortal } from 'react-dom'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { HEAT_TONE } from '@/lib/tone'
-import { EditButton, type TabItem, Tabs, DockActions,
+import { FormField, FieldBox, Modal, ModalHead, Button, EditButton, type TabItem, Tabs, DockActions,
   BackTo, CheckMark, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person,
   StepArc, Tag, type GateStep,
 } from '@/components/ui'
@@ -109,7 +108,7 @@ export default function AgreementPage() {
             <Glass>
               <Empty
                 title="الاتفاقية غير موجودة."
-                actions={<button className="btn btn-2" onClick={() => navigate(ROUTES.agreements)}>ارجع إلى الصندوق</button>}
+                actions={<Button variant="2" onClick={() => navigate(ROUTES.agreements)}>ارجع إلى الصندوق</Button>}
               />
             </Glass>
           </div>
@@ -259,7 +258,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
                   })
                 }}
               />
-              <button type="button" className="btn btn-ghost btn-sm mt-2" onClick={() => setSigning(false)}>إلغاء</button>
+              <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={() => setSigning(false)}>إلغاء</Button>
             </Glass>
           )}
 
@@ -311,7 +310,7 @@ function AgreementView({ a }: { a: AgreementRow }) {
                 <Glass className="tblcard">
                   <Head title="جدول صرف الدفعات" meta={<span className="rowf gp-2">
                     {balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن{/* doc 8.2.12 */}</Tag>}
-                    {edit && <button type="button" className="btn btn-2 btn-sm" onClick={() => setPop('pay')}><Icon name={icons.edit} size="sm" />عدّل الجدول</button>}
+                    {edit && <Button type="button" variant="2" size="sm" onClick={() => setPop('pay')}><Icon name={icons.edit} size="sm" />عدّل الجدول</Button>}
                   </span>} />
                   <ScheduleEditor rows={edit ? rows : asDraft(a.payments)} amount={a.amount} readOnly projectId={a.projectId} />
                 </Glass>
@@ -378,24 +377,22 @@ function AgreementView({ a }: { a: AgreementRow }) {
           </div>
         </div>
 
-        {pop && createPortal(
-          <div className="bmask" role="presentation" onClick={() => setPop(null)}>
-            <div className={`chrome modal ${pop === 'pay' ? 'modal-xl' : 'modal-w'}`} role="dialog" aria-modal="true" aria-label={pop === 'pay' ? 'تعديل جدول صرف الدفعات' : 'تعديل بيانات الاتفاقية'} onClick={(e) => e.stopPropagation()}>
-              <div className="mh"><Icon name={icons.edit} size="md" /><b>{pop === 'pay' ? 'تعديل جدول صرف الدفعات' : 'تعديل بيانات الاتفاقية'}</b>
+        {pop && <Modal label={pop === 'pay' ? 'تعديل جدول صرف الدفعات' : 'تعديل بيانات الاتفاقية'} onClose={() => setPop(null)} className={pop === 'pay' ? 'modal-xl' : 'modal-w'}>
+              <ModalHead icon={icons.edit} title={pop === 'pay' ? 'تعديل جدول صرف الدفعات' : 'تعديل بيانات الاتفاقية'}>
                 {pop === 'pay' && <span className="pc-sp" />}
                 {pop === 'pay' && (balance.balanced ? <Tag tone="ok">متوازن</Tag> : <Tag tone="no">غير متوازن</Tag>)}
-              </div>
+              </ModalHead>
               <div className="mb col">
                 {pop === 'pay'
                   ? <ScheduleEditor rows={rows} amount={a.amount} onChange={setRows} projectId={a.projectId} />
                   : <>
               <div className="regfields">
-                      <label className="regf"><span className="lb">اسم الموقّع</span><span className="fld"><input value={signer.name} onChange={(e) => setSigner({ ...signer, name: e.target.value })} aria-label="اسم الموقّع" /></span></label>
-                      <label className="regf"><span className="lb">صفة الموقّع</span><span className="fld"><input value={signer.title} onChange={(e) => setSigner({ ...signer, title: e.target.value })} aria-label="صفة الموقّع" /></span></label>
+                      <FormField label="اسم الموقّع"><FieldBox><input value={signer.name} onChange={(e) => setSigner({ ...signer, name: e.target.value })} aria-label="اسم الموقّع" /></FieldBox></FormField>
+                      <FormField label="صفة الموقّع"><FieldBox><input value={signer.title} onChange={(e) => setSigner({ ...signer, title: e.target.value })} aria-label="صفة الموقّع" /></FieldBox></FormField>
                       {kind === 'إلكترونية' && (
-                        <label className="regf regf-w"><span className="lb">النموذج المعتمد</span>
+                        <FormField label="النموذج المعتمد" wide>
                           <FieldSelect value={template} options={TEMPLATES.includes(template as (typeof TEMPLATES)[number]) || !template ? [...TEMPLATES] : [template, ...TEMPLATES]} onChange={setTemplate} label="النموذج المعتمد" placeholder="اختر النموذج" />
-                        </label>
+                        </FormField>
                       )}
                     </div>
                     {!f.submitted ? (
@@ -414,17 +411,14 @@ function AgreementView({ a }: { a: AgreementRow }) {
                   </>}
               </div>
               <div className="mf">
-                <button type="button" className="btn btn-p" disabled={!dirty} onClick={() => { saveDraft(); setPop(null) }}>احفظ التعديلات</button>
-                <button type="button" className="btn btn-2" onClick={() => {
+                <Button type="button" variant="p" disabled={!dirty} onClick={() => { saveDraft(); setPop(null) }}>احفظ التعديلات</Button>
+                <Button type="button" variant="2" onClick={() => {
                   if (pop === 'pay') setRows(asDraft(a.payments))
                   else { setSigner({ ...a.signer }); setTemplate(a.template); setKind(a.kind) }
                   setPop(null)
-                }}>تراجع</button>
+                }}>تراجع</Button>
               </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+            </Modal>}
         {actions.length > 0 && (
           <AgrActionDock
             who={asEntity ? a.signer.name : user.name}

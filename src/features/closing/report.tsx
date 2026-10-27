@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Glass, Head, Icon, Money, MoneyField, Num, Tag, icons } from '@/components/ui'
+import { ButtonLabel, FieldBox, Button, Glass, Head, Icon, Money, MoneyField, Num, Tag, icons } from '@/components/ui'
 import { DocList } from '@/components/docs'
 import { isolate, nf, unitAfter } from '@/lib/format'
 import { addReportFiles, dropReportFile, reportFileUrl, useClosing } from '@/data/closing/store'
@@ -59,7 +59,7 @@ export function TargetActual({
                   {edit
                     ? r.money
                       ? <MoneyField value={v} onChange={(x) => onValue?.(r.key, x)} label={`${r.label} · الفعلي`} />
-                      : <span className="fld"><input inputMode="numeric" value={v} onChange={(e) => onValue?.(r.key, e.target.value.replace(/\D/g, ''))} aria-label={`${r.label} · الفعلي`} placeholder="0" /></span>
+                      : <FieldBox><input inputMode="numeric" value={v} onChange={(e) => onValue?.(r.key, e.target.value.replace(/\D/g, ''))} aria-label={`${r.label} · الفعلي`} placeholder="0" /></FieldBox>
                     : actual === null ? <span className="sub">لم يُدخل</span> : r.money ? <Money sm>{actual}</Money> : <><Num>{actual}</Num> <span className="sub unit">{unitAfter(actual, r.unit ?? '')}</span></>}
                 </td>
                 {!edit && (
@@ -76,7 +76,7 @@ export function TargetActual({
               <td className="tva-w">{isolate(o.text)}</td>
               <td className="tva-w" colSpan={edit ? 1 : 2}>
                 {edit
-                  ? <span className="fld"><input value={o.achieved} onChange={(e) => onOutput?.(i, e.target.value)} aria-label={`المتحقق · ${o.text}`} placeholder="المتحقق فعلًا" /></span>
+                  ? <FieldBox><input value={o.achieved} onChange={(e) => onOutput?.(i, e.target.value)} aria-label={`المتحقق · ${o.text}`} placeholder="المتحقق فعلًا" /></FieldBox>
                   : o.achieved ? isolate(o.achieved) : <span className="sub">لم يُذكر المتحقق</span>}
               </td>
             </tr>
@@ -104,7 +104,7 @@ export function ReportFiles({ c, edit, by }: { c: CloseRow; edit: boolean; by: s
         meta={<span className="sub"><Num>{list.length}</Num> ملف</span>}
       />
       {edit && (
-        <label className="btn btn-2 upbtn rptup">
+        <ButtonLabel variant="2" className="upbtn rptup">
           <input
             type="file"
             multiple
@@ -118,14 +118,14 @@ export function ReportFiles({ c, edit, by }: { c: CloseRow; edit: boolean; by: s
           />
           <Icon name={icons.upload} size="sm" />
           ارفع ملفات
-        </label>
+        </ButtonLabel>
       )}
       {list.length > 0
         ? <DocList
             label="ملفات التنفيذ المرفوعة"
             rows={list.map((f) => ({
               name: f.name, meta: `${sizeSay(f.size)} · ${f.by}`, uploaded: true, src: reportFileUrl(f.id) || undefined, mime: f.type,
-              action: edit ? <button type="button" className="btn btn-ghost btn-sm" onClick={() => dropReportFile(c.id, f.id, by)}>احذف</button> : undefined,
+              action: edit ? <Button type="button" variant="ghost" size="sm" onClick={() => dropReportFile(c.id, f.id, by)}>احذف</Button> : undefined,
             }))}
           />
         : <p className="sub cnote">لا ملفات مرفوعة بعد.</p>}

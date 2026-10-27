@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { FieldSelect, Icon, icons, KV, Money } from '@/components/ui'
+import { ButtonLink, FormField, FieldBox, Modal, ModalHead, Button, FieldSelect, Icon, icons, KV, Money } from '@/components/ui'
 import { CfgNum } from '@/features/settings/CfgEdit'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf } from '@/lib/format'
@@ -132,30 +131,20 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
 
   return (
     <>
-      <button
-        className="btn btn-2"
+      <Button
+        variant="2"
         onClick={start}
         title={held ? `${HOLD_STAGE_SAY[held.stage]} على ${nf.format(held.shares.length)} ${held.shares.length > 1 ? 'بنود' : 'بند'}` : 'اربط المشروع ببند في الميزانية'}
       >
         {held && !after && <Icon name={icons.check} size="sm" />}
         {button}
-      </button>
+      </Button>
 
-      {open && createPortal(
-        <div className="bmask" role="presentation" onClick={() => setOpen(false)}>
-          <div
-            className="chrome modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label={after ? 'تعديل الارتباط المالي' : 'ربط المشروع بالميزانية'}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mh">
-              <Icon name={icons.budget} size="md" />
-              <b>{after ? 'تعديل الارتباط المالي بعد الاعتماد' : 'ربط المشروع بالميزانية'}</b>
+      {open && <Modal label={after ? 'تعديل الارتباط المالي' : 'ربط المشروع بالميزانية'} onClose={() => setOpen(false)}>
+            <ModalHead icon={icons.budget} title={after ? 'تعديل الارتباط المالي بعد الاعتماد' : 'ربط المشروع بالميزانية'}>
               <span className="pc-sp" />
               <span className="sub trim1">{project.name}</span>
-            </div>
+            </ModalHead>
 
             <div className="mb col bglink">
               {plan?.kind === 'multi' && (
@@ -169,8 +158,7 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
               )}
 
 
-              <div className="regf">
-                <span className="lb">{rows.length > 1 ? 'توزيع التمويل على الميزانيات' : 'بند الميزانية'}<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <FormField label={rows.length > 1 ? 'توزيع التمويل على الميزانيات' : 'بند الميزانية'} required as="div">
                 <ul className="bgsrc">
                   {rows.map((r, i) => (
                     <li key={i}>
@@ -195,32 +183,31 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                         ? <CfgNum value={r.amount} label={`مبلغ البند ${i + 1}`} onChange={(n) => put(i, { amount: n })} />
                         : <span className="sub"><Money sm>{project.amount}</Money></span>}
                       {rows.length > 1 ? (
-                        <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف السطر ${i + 1}`} onClick={() => dropRow(i)}>
+                        <Button type="button" variant="ghost" size="sm" aria-label={`احذف السطر ${i + 1}`} onClick={() => dropRow(i)}>
                           <Icon name={icons.close} size="sm" />
-                        </button>
+                        </Button>
                       ) : <span />}
                     </li>
                   ))}
                 </ul>
-                <button type="button" className="btn btn-2 btn-sm bglink-go" onClick={addRow} disabled={rows.length >= lines.length}>
+                <Button type="button" variant="2" size="sm" className="bglink-go" onClick={addRow} disabled={rows.length >= lines.length}>
                   <Icon name={icons.plus} size="sm" />أضف ميزانية أخرى
-                </button>
+                </Button>
 
-              </div>
+              </FormField>
 
               {/* 4.6.3 · the best split · one click fills the rows */}
               {sg.rows.length > 0 && !sameAsSg && (
-                <div className="regf">
-                  <span className="lb">التوزيع المقترح</span>
+                <FormField label="التوزيع المقترح" as="div">
                   <span className="sub">
                     {isolate(sg.rows.map((x) => { const o = optOf(x.key); return o ? `${docTitle(o.doc)} · ${sourceName(docSources(o.doc)[0]?.code ?? '')} · ${o.node.label} ${nf.format(x.amount)}` : '' }).filter(Boolean).join(' · '))}
                     {sg.short > 0 ? isolate(` · لا يغطيه أي بند: ${nf.format(sg.short)}`) : ''}
                   </span>
 
-                  <button type="button" className="btn btn-2 btn-sm bglink-go" onClick={() => setRows(sg.rows.length ? sg.rows.map((x) => ({ ...x })) : rows)}>
+                  <Button type="button" variant="2" size="sm" className="bglink-go" onClick={() => setRows(sg.rows.length ? sg.rows.map((x) => ({ ...x })) : rows)}>
                     طبّق الاقتراح
-                  </button>
-                </div>
+                  </Button>
+                </FormField>
               )}
 
               {one && m ? (
@@ -261,10 +248,10 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                     ]}
                   />
                   {/* Going back to the document · opens the tree on this line. */}
-                  <Link className="btn btn-2 btn-sm bglink-go" to={docHref(one)}>
+                  <ButtonLink variant="2" size="sm" className="bglink-go" to={docHref(one)}>
                     عرض وثيقة الميزانية
                     <Icon name={icons.chevron} size="sm" />
-                  </Link>
+                  </ButtonLink>
                 </>
               ) : rows.length > 1 && (
                 <KV
@@ -282,10 +269,9 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
               )}
 
               {after && (
-                <label className="regf">
-                  <span className="lb">سبب التعديل<b className="regf-r" aria-label="إلزامي">*</b></span>
-                  <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب تعديل الارتباط" placeholder="مثال: نقل التمويل إلى بند الهدف الصحيح" /></span>
-                </label>
+                <FormField label="سبب التعديل" required>
+                  <FieldBox><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب تعديل الارتباط" placeholder="مثال: نقل التمويل إلى بند الهدف الصحيح" /></FieldBox>
+                </FormField>
               )}
 
               {(said.length > 0 || (issues.length > 0 && rows.every((r) => r.key))) && (
@@ -296,8 +282,8 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
             </div>
 
             <div className="mf">
-              <button
-                className="btn btn-p"
+              <Button
+                variant="p"
                 disabled={Boolean(stop)}
                 title={stop || go}
                 onClick={() => {
@@ -307,16 +293,13 @@ export function BudgetLinkAction({ project, label }: { project: BudgetLinkProjec
                 }}
               >
                 {go}
-              </button>
+              </Button>
               {held && !after && unpaid && (
-                <button className="btn btn-2" onClick={() => { unlinkProject(project.id, me, 'فكّ الربط يدويًّا'); setOpen(false) }}>فكّ الربط</button>
+                <Button variant="2" onClick={() => { unlinkProject(project.id, me, 'فكّ الربط يدويًّا'); setOpen(false) }}>فكّ الربط</Button>
               )}
-              <button className="btn btn-2" onClick={() => setOpen(false)}>إلغاء</button>
+              <Button variant="2" onClick={() => setOpen(false)}>إلغاء</Button>
             </div>
-          </div>
-        </div>,
-        document.body,
-      )}
+          </Modal>}
     </>
   )
 }

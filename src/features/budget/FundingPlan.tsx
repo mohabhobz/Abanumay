@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DateText, FieldSelect, Glass, Head, Icon, Money, Riyal, Tag, icons } from '@/components/ui'
+import { FieldBox, Button, DateText, FieldSelect, Glass, Head, Icon, Money, Riyal, Tag, icons } from '@/components/ui'
 import { isolate, nf } from '@/lib/format'
 import type { ProjectRow } from '@/types/domain'
 import { docTitle, fiscalYears, yearById } from '@/data/mock/budgetTree'
@@ -83,7 +83,7 @@ export function FundingPlanCard({ row, amount, editable, me }: {
       />
       <div className="cfgchips" role="radiogroup" aria-label="نوع المشروع من حيث المدة المالية">
         {(['single', 'multi'] as const).map((k) => (
-          <button
+          <Button plain
             key={k}
             type="button"
             role="radio"
@@ -95,13 +95,13 @@ export function FundingPlanCard({ row, amount, editable, me }: {
               : { ...x, kind: k }))}
           >
             {k === 'single' ? 'لسنة مالية واحدة' : 'متعدد السنوات'}
-          </button>
+          </Button>
         ))}
       </div>
       <p className="sub cnote">
         قيمة التمويل المعتمد <b><Money sm>{p.total}</Money></b>
         {amount !== p.total && editable && (
-          <> · المبلغ الموصى به في الدراسة <Money sm>{amount}</Money> <button className="btn btn-2 btn-sm" onClick={() => setP((x) => ({ ...x, total: amount }))}>اعتمده</button></>
+          <> · المبلغ الموصى به في الدراسة <Money sm>{amount}</Money> <Button variant="2" size="sm" onClick={() => setP((x) => ({ ...x, total: amount }))}>اعتمده</Button></>
         )}
       </p>
 
@@ -125,14 +125,14 @@ export function FundingPlanCard({ row, amount, editable, me }: {
                   />
                   {statusOf(y)}
                 </span>
-                <span className="fld">
+                <FieldBox>
                   <input type="text" inputMode="numeric" disabled={!editable || p.kind === 'single'} value={y.amount ? nf.format(y.amount) : ''} onChange={(e) => setYear(i, { amount: digits(e.target.value) })} aria-label={`مبلغ سنة ${yn}`} />
                   <Riyal />
-                </span>
+                </FieldBox>
                 {editable && p.kind === 'multi' && p.years.length > 1 && (
-                  <button className="btn btn-ghost btn-sm" aria-label={`احذف سنة ${yn}`} onClick={() => setP((x) => ({ ...x, years: x.years.filter((_, j) => j !== i) }))}>
+                  <Button variant="ghost" size="sm" aria-label={`احذف سنة ${yn}`} onClick={() => setP((x) => ({ ...x, years: x.years.filter((_, j) => j !== i) }))}>
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
               </div>
               {opts.length === 0 ? (
@@ -149,23 +149,23 @@ export function FundingPlanCard({ row, amount, editable, me }: {
                         options={opts}
                         onChange={(v) => { const [docId, nodeId] = v.split('/'); setYear(i, { shares: y.shares.map((x, j) => (j === k ? { ...x, docId, nodeId } : x)) }) }}
                       />
-                      <span className="fld">
+                      <FieldBox>
                         <input type="text" inputMode="numeric" disabled={!editable || (p.kind === 'single' && y.shares.length === 1)} value={(p.kind === 'single' && y.shares.length === 1 ? p.total : s.amount) ? nf.format(p.kind === 'single' && y.shares.length === 1 ? p.total : s.amount) : ''} onChange={(e) => setYear(i, { shares: y.shares.map((x, j) => (j === k ? { ...x, amount: digits(e.target.value) } : x)) })} aria-label={`حصة البند من سنة ${yn}`} />
                         <Riyal />
-                      </span>
+                      </FieldBox>
                       {editable && y.shares.length > 1 && (
-                        <button className="btn btn-ghost btn-sm" aria-label="احذف الحصة" onClick={() => setYear(i, { shares: y.shares.filter((_, j) => j !== k) })}>
+                        <Button variant="ghost" size="sm" aria-label="احذف الحصة" onClick={() => setYear(i, { shares: y.shares.filter((_, j) => j !== k) })}>
                           <Icon name={icons.close} size="sm" />
-                        </button>
+                        </Button>
                       )}
                     </li>
                   ))}
                   {editable && (
                     <li>
-                      <button className="btn btn-2 btn-sm" onClick={() => setYear(i, { shares: [...y.shares, { docId: '', nodeId: '', amount: 0 }] })}>
+                      <Button variant="2" size="sm" onClick={() => setYear(i, { shares: [...y.shares, { docId: '', nodeId: '', amount: 0 }] })}>
                         <Icon name={icons.plus} size="sm" />
                         {y.shares.length ? 'موّل الحصة من ميزانية أخرى' : 'اختر بند التمويل'}
-                      </button>
+                      </Button>
                     </li>
                   )}
                 </ul>
@@ -179,10 +179,10 @@ export function FundingPlanCard({ row, amount, editable, me }: {
         })}
       </ul>
       {editable && p.kind === 'multi' && (
-        <button className="btn btn-2 btn-sm" onClick={addYear}>
+        <Button variant="2" size="sm" onClick={addYear}>
           <Icon name={icons.plus} size="sm" />
           أضف سنة مالية
-        </button>
+        </Button>
       )}
 
       {/* Payments against their year's share (1.4.52) */}
@@ -217,14 +217,14 @@ export function FundingPlanCard({ row, amount, editable, me }: {
         <div className="regfoot">
           <span className="decsent">{msg || (issues.length ? `${issues.length} ملاحظة قبل الحفظ` : dirty ? 'الخطة جاهزة' : 'محفوظة')}</span>
           <span className="pc-sp" />
-          <button
+          <Button
             type="button"
-            className="btn btn-p"
+            variant="p"
             disabled={issues.length > 0 || !dirty}
             onClick={() => { savePlan({ ...norm, by: me }); setMsg('حُفظت الخطة المالية') }}
           >
             احفظ الخطة المالية
-          </button>
+          </Button>
         </div>
       )}
       {!editable && !saved && <p className="sub cnote">لم يحدّد مشرف المنح الخطة المالية بعد.</p>}

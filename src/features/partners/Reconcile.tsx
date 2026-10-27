@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DateText, Glass, Head, Money, Num, Tag } from '@/components/ui'
+import { FieldBox, Button, DateText, Glass, Head, Money, Num, Tag } from '@/components/ui'
 import { UploadButton } from '@/components/docs/UploadButton'
 import { nf } from '@/lib/format'
 import { downloadCsv, readTable } from '@/lib/sheetRead'
@@ -44,8 +44,8 @@ export function ReconcileTab({ me, canAct }: { me: string; canAct: boolean }) {
         <Head title="مطابقة دفعات إحسان مع المنصة" hint="الأعمدة المطلوبة: «رقم العملية» و«المبلغ» · واختياري: «التاريخ» و«المشروع»" />
         <div className="rowf gp-2">
           {canAct && <UploadButton label="ملف عمليات المنصة" accept=".csv,.xlsx" onPick={(f) => { void take(f) }} />}
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => downloadCsv('قالب-مطابقة-إحسان.csv', [['رقم العملية', 'المبلغ', 'التاريخ', 'المشروع']])}>نزّل القالب</button>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => downloadCsv('مثال-عمليات-إحسان.csv', sampleTable())}>نزّل ملف مثال</button>
+          <Button type="button" variant="2" size="sm" onClick={() => downloadCsv('قالب-مطابقة-إحسان.csv', [['رقم العملية', 'المبلغ', 'التاريخ', 'المشروع']])}>نزّل القالب</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => downloadCsv('مثال-عمليات-إحسان.csv', sampleTable())}>نزّل ملف مثال</Button>
           {busy && <span className="sub">جارٍ القراءة…</span>}
         </div>
         <Said said={said} />
@@ -58,9 +58,9 @@ export function ReconcileTab({ me, canAct }: { me: string; canAct: boolean }) {
             <ul className="ptn-slots">
               {(['matched', 'amount', 'date', 'platform', 'system'] as ReconKind[]).map((k) => (
                 <li key={k}>
-                  <button type="button" className="lnk" aria-pressed={kind === k} onClick={() => setKind(kind === k ? '' : k)}>
+                  <Button plain type="button" className="lnk" aria-pressed={kind === k} onClick={() => setKind(kind === k ? '' : k)}>
                     <Tag tone={RECON_TONE[k]}>{RECON_SAY[k]}</Tag> <b className="num"><Num>{t[k]}</Num></b>
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -71,7 +71,7 @@ export function ReconcileTab({ me, canAct }: { me: string; canAct: boolean }) {
             {runs.length > 1 && (
               <div className="rowf gp-2 mt-2">
                 <span className="sub">مطابقات سابقة:</span>
-                {runs.map((r) => <button key={r.id} type="button" className={`btn btn-sm ${r.id === run.id ? 'btn-2' : 'btn-ghost'}`} onClick={() => setPick(r.id)}>{r.id}</button>)}
+                {runs.map((r) => <Button key={r.id} type="button" variant={r.id === run.id ? '2' : 'ghost'} size="sm" onClick={() => setPick(r.id)}>{r.id}</Button>)}
               </div>
             )}
           </Glass>
@@ -115,8 +115,8 @@ function Row({ x, runId, me, canAct }: { x: ReconItem; runId: string; me: string
           : x.resolved ? <span className="sub">روجع · {x.resolved.note} · {x.resolved.by}</span>
           : canAct ? (
             <span className="rowf gp-2">
-              <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label={`مراجعة ${x.ref}`} placeholder="ما تبيّن" /></span>
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = resolveItem(runId, x.key, note, me); setBad(out[0] ?? '') }}>علّم مراجَعًا</button>
+              <FieldBox><input value={note} onChange={(e) => setNote(e.target.value)} aria-label={`مراجعة ${x.ref}`} placeholder="ما تبيّن" /></FieldBox>
+              <Button type="button" variant="2" size="sm" onClick={() => { const out = resolveItem(runId, x.key, note, me); setBad(out[0] ?? '') }}>علّم مراجَعًا</Button>
               {bad && <span className="bad" role="alert">{bad}</span>}
             </span>
           ) : <span className="sub">بانتظار المالية</span>}

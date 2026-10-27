@@ -2,7 +2,7 @@ import { useFloat } from '@/hooks/useFloat'
 import { useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { FieldMultiSelect, DateField, FieldSelect, Icon, icons, Mono, Num, Select, Tag } from '@/components/ui'
+import { FormField, FieldBox, Modal, ModalHead, Button, FieldMultiSelect, DateField, FieldSelect, Icon, icons, Mono, Num, Select, Tag } from '@/components/ui'
 import { useMenu } from '@/hooks/useMenu'
 import { ROUTES } from '@/app/routes'
 import { OWNERS } from '@/data/mock/taxonomy'
@@ -27,19 +27,14 @@ import { units } from '@/lib/format'
 
 /* ── Shell ── */
 
-export function Modal({ title, icon = icons.alert, children, foot, onClose, wide }: {
+export function SheetModal({ title, icon = icons.alert, children, foot, onClose, wide }: {
   title: string; icon?: (typeof icons)[keyof typeof icons]; children: ReactNode; foot: ReactNode; onClose: () => void; wide?: boolean
 }) {
-  return createPortal(
-    <div className="bmask" role="presentation" onClick={onClose}>
-      <div className={`chrome modal${wide ? ' modal-w' : ''}`} role="dialog" aria-modal="true" aria-label={title} onClick={(x) => x.stopPropagation()}>
-        <div className="mh"><Icon name={icon} size="md" /><b>{title}</b></div>
+  return <Modal label={title} onClose={onClose} className={wide ? 'modal-w' : undefined}>
+        <ModalHead icon={icon} title={title} />
         <div className="mb col">{children}</div>
         <div className="mf">{foot}</div>
-      </div>
-    </div>,
-    document.body,
-  )
+      </Modal>
 }
 
 /** Who it runs on and who's left out · shown before sending */
@@ -65,15 +60,13 @@ export function ReasonField({ kind, code, text, onCode, onText, label = 'الس�
   const opts = REASONS[kind].map((r) => ({ value: r.code, label: `${r.label}${r.shown ? '' : ' · داخلي'}` }))
   return (
     <>
-      <div className="regf">
-        <span className="lb">{label}<b className="regf-r" aria-label="إلزامي">*</b></span>
+      <FormField label={label} required as="div">
         <FieldSelect value={code} options={opts} onChange={onCode} label={label} placeholder="اختر من القالب" />
-      </div>
+      </FormField>
       {code === 'OTH' && (
-        <label className="regf">
-          <span className="lb">نص السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
-          <span className="fld"><input value={text} onChange={(x) => onText(x.target.value)} aria-label="نص السبب" /></span>
-        </label>
+        <FormField label="نص السبب" required>
+          <FieldBox><input value={text} onChange={(x) => onText(x.target.value)} aria-label="نص السبب" /></FieldBox>
+        </FormField>
       )}
     </>
   )
@@ -104,25 +97,22 @@ export function AskModal({ rows, me, onClose, onDone }: {
     onClose()
   }
   return (
-    <Modal wide title={bulk ? `طلب تحديث البيانات · ${units.entity(rows.length)}` : `طلب تحديث البيانات · ${rows[0]?.name}`} icon={icons.edit} onClose={onClose}
+    <SheetModal wide title={bulk ? `طلب تحديث البيانات · ${units.entity(rows.length)}` : `طلب تحديث البيانات · ${rows[0]?.name}`} icon={icons.edit} onClose={onClose}
       foot={<>
-        <button className="btn btn-p" disabled={!ready} onClick={send}>أرسل الطلب</button>
-        <button className="btn btn-2" onClick={onClose}>تراجع</button>
+        <Button variant="p" disabled={!ready} onClick={send}>أرسل الطلب</Button>
+        <Button variant="2" onClick={onClose}>تراجع</Button>
       </>}>
       {bulk && <Scope split={split} cap={ENTITY_RULES.bulkMax} />}
-      <div className="regf">
-        <span className="lb">البنود المطلوبة<b className="regf-r" aria-label="إلزامي">*</b></span>
+      <FormField label="البنود المطلوبة" required as="div">
         <FieldMultiSelect placeholder="اختر البنود" values={items} options={ASK_ITEMS} onChange={setItems} />
-      </div>
-      <div className="regf">
-        <span className="lb">تاريخ الاستحقاق<b className="regf-r" aria-label="إلزامي">*</b></span>
+      </FormField>
+      <FormField label="تاريخ الاستحقاق" required as="div">
         <DateField value={due} min={todayIso()} onChange={setDue} label="تاريخ الاستحقاق" />
-      </div>
+      </FormField>
       <ReasonField kind="ask" code={code} text={text} onCode={setCode} onText={setText} />
-      <label className="regf">
-        <span className="lb">ملاحظة للجهة</span>
-        <span className="fld"><input value={note} onChange={(x) => setNote(x.target.value)} aria-label="ملاحظة للجهة" /></span>
-      </label>
+      <FormField label="ملاحظة للجهة">
+        <FieldBox><input value={note} onChange={(x) => setNote(x.target.value)} aria-label="ملاحظة للجهة" /></FieldBox>
+      </FormField>
       {ready && (
         <div className="selprev">
           <span className="sub">معاينة ما يصل للجهة</span>
@@ -130,7 +120,7 @@ export function AskModal({ rows, me, onClose, onDone }: {
           <span>{items.join('، ')} · قبل {due} · {reason}{note.trim() ? ` · ${note.trim()}` : ''}</span>
         </div>
       )}
-    </Modal>
+    </SheetModal>
   )
 }
 
@@ -159,29 +149,25 @@ export function NotifyModal({ rows, me, onClose, onDone }: {
     onClose()
   }
   return (
-    <Modal wide title={bulk ? `إرسال إشعار · ${units.entity(rows.length)}` : `إرسال إشعار · ${rows[0]?.name}`} icon={icons.bell} onClose={onClose}
+    <SheetModal wide title={bulk ? `إرسال إشعار · ${units.entity(rows.length)}` : `إرسال إشعار · ${rows[0]?.name}`} icon={icons.bell} onClose={onClose}
       foot={<>
-        <button className="btn btn-p" disabled={!ready} onClick={send}>أرسل</button>
-        <button className="btn btn-2" onClick={onClose}>تراجع</button>
+        <Button variant="p" disabled={!ready} onClick={send}>أرسل</Button>
+        <Button variant="2" onClick={onClose}>تراجع</Button>
       </>}>
       {bulk && <Scope split={split} cap={ENTITY_RULES.bulkMax} />}
-      <div className="regf">
-        <span className="lb">القالب<b className="regf-r" aria-label="إلزامي">*</b></span>
+      <FormField label="القالب" required as="div">
         <FieldSelect value={tpl} options={NOTICE_TPLS.map((t) => ({ value: t.key, label: t.label }))} onChange={pick} label="القالب" placeholder="اختر قالبًا أو نصًا حرًا" />
-      </div>
-      <label className="regf">
-        <span className="lb">العنوان<b className="regf-r" aria-label="إلزامي">*</b></span>
-        <span className="fld"><input value={title} onChange={(x) => setTitle(x.target.value)} aria-label="عنوان الإشعار" /></span>
-      </label>
-      <label className="regf">
-        <span className="lb">النص<b className="regf-r" aria-label="إلزامي">*</b></span>
-        <span className="fld fld-a"><textarea rows={3} value={text} onChange={(x) => setText(x.target.value)} aria-label="نص الإشعار" /></span>
-      </label>
-      <div className="regf">
-        <span className="lb">القناة</span>
+      </FormField>
+      <FormField label="العنوان" required>
+        <FieldBox><input value={title} onChange={(x) => setTitle(x.target.value)} aria-label="عنوان الإشعار" /></FieldBox>
+      </FormField>
+      <FormField label="النص" required>
+        <FieldBox area><textarea rows={3} value={text} onChange={(x) => setText(x.target.value)} aria-label="نص الإشعار" /></FieldBox>
+      </FormField>
+      <FormField label="القناة" as="div">
         <FieldSelect value={channel} options={CHANNELS} onChange={setChannel} label="القناة" />
-      </div>
-    </Modal>
+      </FormField>
+    </SheetModal>
   )
 }
 
@@ -201,20 +187,19 @@ export function AssignModal({ rows, me, onClose, onDone }: {
     onClose()
   }
   return (
-    <Modal title={bulk ? `إسناد المراجعة · ${units.entity(rows.length)}` : `إسناد المراجعة · ${rows[0]?.name}`} icon={icons.users} onClose={onClose}
+    <SheetModal title={bulk ? `إسناد المراجعة · ${units.entity(rows.length)}` : `إسناد المراجعة · ${rows[0]?.name}`} icon={icons.users} onClose={onClose}
       foot={<>
-        <button className="btn btn-p" disabled={!to || split.ok.length === 0} onClick={send}>أسند</button>
-        <button className="btn btn-2" onClick={onClose}>تراجع</button>
+        <Button variant="p" disabled={!to || split.ok.length === 0} onClick={send}>أسند</Button>
+        <Button variant="2" onClick={onClose}>تراجع</Button>
       </>}>
       {bulk ? <Scope split={split} /> : (() => {
         const r = lastRequestOf(rows[0])
         return r ? <p className="sub cnote">الطلب <Mono>{r.id}</Mono> · المُسند إليه حاليًا: {r.assignee ?? 'غير مُسنَد'}</p> : null
       })()}
-      <div className="regf">
-        <span className="lb">المشرف<b className="regf-r" aria-label="إلزامي">*</b></span>
+      <FormField label="المشرف" required as="div">
         <Select value={to} all="اختر المشرف…" people allowEmpty={false} options={[...OWNERS]} onChange={(v) => setTo(v ?? '')} />
-      </div>
-    </Modal>
+      </FormField>
+    </SheetModal>
   )
 }
 
@@ -236,10 +221,10 @@ export function BatchResult({ batch, byId, onClose }: { batch: Batch; byId: (id:
   }
   const skipped = batch.skipped.reduce((n, s) => n + s.ids.length, 0)
   return (
-    <Modal wide title={`اكتمل الإجراء: ${BATCH_SAY[batch.act as BatchAct]}`} icon={icons.check} onClose={onClose}
+    <SheetModal wide title={`اكتمل الإجراء: ${BATCH_SAY[batch.act as BatchAct]}`} icon={icons.check} onClose={onClose}
       foot={<>
-        <button className="btn btn-p" onClick={onClose}>تم</button>
-        <button className="btn btn-2" onClick={download}><Icon name={icons.export} size="sm" /> تنزيل النتيجة · CSV</button>
+        <Button variant="p" onClick={onClose}>تم</Button>
+        <Button variant="2" onClick={download}><Icon name={icons.export} size="sm" /> تنزيل النتيجة · CSV</Button>
         <span className="pc-sp" />
         <Link className="lnk" to={`${ROUTES.audit}?q=${batch.id}`}>الدفعة في سجل التدقيق</Link>
       </>}>
@@ -259,7 +244,7 @@ export function BatchResult({ batch, byId, onClose }: { batch: Batch; byId: (id:
           <li><Tag tone="no">تعذّر التنفيذ</Tag><b className="num">{batch.failed.length}</b></li>
         )}
       </ul>
-    </Modal>
+    </SheetModal>
   )
 }
 
@@ -275,17 +260,17 @@ export function MoreMenu({ items }: { items: MoreItem[] }) {
   if (!items.length) return null
   return (
     <div className="fexp" ref={box}>
-      <button className={`btn btn-2 btn-sm${open ? ' on' : ''}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((x) => !x)}>
+      <Button plain className={`btn btn-2 btn-sm${open ? ' on' : ''}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((x) => !x)}>
         المزيد <Icon name={icons.dots} size="sm" />
-      </button>
+      </Button>
       {open && createPortal(
         <div ref={pop} className="fmenu float selmore" role="menu">
           {items.map((it) => (
-            <button key={it.label} className="fopt" role="menuitem" disabled={Boolean(it.why)} title={it.why}
+            <Button plain key={it.label} className="fopt" role="menuitem" disabled={Boolean(it.why)} title={it.why}
               onClick={() => { setOpen(false); it.onClick() }}>
               <span className="fopt-t">{it.label}</span>
               {it.why && <span className="fopt-n sub">{it.why}</span>}
-            </button>
+            </Button>
           ))}
         </div>,
         document.body,

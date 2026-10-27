@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from 'react'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 
 export interface BulkBarProps {
@@ -39,7 +39,7 @@ export function BulkBar({ count, sentence, children, onClear, clearLabel = 'إل
 
         <div className="rowf bulkacts gp-2">
           {children}
-          <button
+          <Button plain
             type="button"
             className="bulkx"
             onClick={onClear}
@@ -47,7 +47,7 @@ export function BulkBar({ count, sentence, children, onClear, clearLabel = 'إل
             title={clearLabel}
           >
             <Icon name={icons.close} size="sm" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

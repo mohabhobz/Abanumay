@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
+import { Button, DateText, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import type { ProjectRow } from '@/types/domain'
 import { HOLDER_LABEL } from '@/data/holders'
@@ -89,7 +89,7 @@ export function AmountCard({ row }: { row: ProjectRow }) {
           <p className="sub cnote">{/* doc 6.4.3 · 7.4.5 */}حُفظ القرار كما صدر بمبلغ <Money sm>{cov.amount}</Money> · {cov.short}</p>
           {mayCover && (
             <div className="apv-row">
-              <button className="btn btn-p btn-sm" onClick={() => setSaid(completeCoverage(row, me))}>تحقّق من التغطية ونفّذ القرار</button>
+              <Button variant="p" size="sm" onClick={() => setSaid(completeCoverage(row, me))}>تحقّق من التغطية ونفّذ القرار</Button>
               <Link className="lnk" to={ROUTES.budget}>عمليات الميزانية</Link>
             </div>
           )}

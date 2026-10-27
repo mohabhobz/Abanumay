@@ -1,3 +1,4 @@
+import { Button } from './Button'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
@@ -23,7 +24,7 @@ export function WeekdayPicker({ days, value, onChange, label, min = 1 }: {
       {days.map((d, i) => {
         const on = set.has(i)
         return (
-          <button
+          <Button plain
             key={d}
             type="button"
             className={`wdpick-d${on ? ' on' : ''}`}
@@ -33,7 +34,7 @@ export function WeekdayPicker({ days, value, onChange, label, min = 1 }: {
           >
             {on && <Icon name={icons.check} size="sm" />}
             {d}
-          </button>
+          </Button>
         )
       })}
     </div>

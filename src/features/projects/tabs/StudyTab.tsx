@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  DateText, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Money, MoneyField, Num, Person, Switch, Tag,
+  FormField, FieldBox, Button, DateText, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Money, MoneyField, Num, Person, Switch, Tag,
 } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { NOUN, isolate, nounAfter, pct, projectCode } from '@/lib/format'
@@ -103,7 +103,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
               <span className="pc-sp" />
               <span className="stdy-yn" role="radiogroup" aria-label={x.label}>
                 {[true, false].map((v) => (
-                  <button
+                  <Button plain
                     key={String(v)}
                     type="button"
                     role="radio"
@@ -113,7 +113,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
                     onClick={() => set('exclusions', (d.exclusions ?? []).map((y, j) => (j === i ? { ...y, yes: v } : y)))}
                   >
                     {v ? 'نعم' : 'لا'}
-                  </button>
+                  </Button>
                 ))}
               </span>
             </li>
@@ -142,7 +142,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
                   <span className="pc-sp" />
                   <span className="stdy-scale" role="radiogroup" aria-label={c.label}>
                     {SCALE.map((n) => (
-                      <button
+                      <Button plain
                         key={n}
                         type="button"
                         role="radio"
@@ -152,7 +152,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
                         onClick={() => set('scores', { ...d.scores, [c.key]: n })}
                       >
                         <span className="num">{n}</span>
-                      </button>
+                      </Button>
                     ))}
                   </span>
                 </li>
@@ -161,9 +161,8 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
           </div>
         ))}
         {/* #21 · the study's notes in one place */}
-        <label className="regf regf-w">
-          <span className="lb">ملاحظات الدراسة</span>
-          <span className="fld fld-a">
+        <FormField label="ملاحظات الدراسة" wide>
+          <FieldBox area>
             <textarea
               rows={3}
               value={d.notes ?? ''}
@@ -172,8 +171,8 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
               aria-label="ملاحظات الدراسة"
               placeholder="الملاحظات الفنية والمالية والإدارية · في مكان واحد"
             />
-          </span>
-        </label>
+          </FieldBox>
+        </FormField>
       </Glass>
 
       {/* 3.2.14 · 3.2.15 · the supervisor decides the project's financial term in the study */}
@@ -192,7 +191,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
         <BudgetStrip row={row} asked={asked} />
         <div className="cfgchips mt-3" role="radiogroup" aria-label="التوصية">
           {(['approve', 'reject'] as Recommendation[]).map((r) => (
-            <button
+            <Button plain
               key={r}
               type="button"
               role="radio"
@@ -203,47 +202,42 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
               onClick={() => set('recommendation', r)}
             >
               {r === 'approve' ? 'توصية بالموافقة' : 'توصية بالرفض'}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="regfields mt-3">
           {d.recommendation === 'approve' && (
-            <label className="regf">
-              <span className="lb">المبلغ الموصى به</span>
+            <FormField label="المبلغ الموصى به">
               <MoneyField
                 value={d.amount}
                 label="المبلغ الموصى به"
                 disabled={!editable}
                 onChange={(v) => set('amount', Math.min(row.amountRequested, Number(v) || 0))}
               />
-            </label>
+            </FormField>
           )}
           {/* v3 · 3.2.19 · 3.4.25 · the reason from the settings list, or «أخرى» with its text */}
           {d.recommendation === 'reject' && (
-            <label className="regf">
-              <span className="lb">سبب التوصية بالرفض<b className="regf-r" aria-label="إلزامي">*</b></span>
+            <FormField label="سبب التوصية بالرفض" required>
               <FieldSelect value={d.rejectReason ?? ''} label="سبب التوصية بالرفض" placeholder="اختر السبب" disabled={!editable}
                 options={[...REJECT_REASONS, OTHER].map((x) => ({ value: x, label: x }))} onChange={(v) => set('rejectReason', v)} />
-            </label>
+            </FormField>
           )}
           {d.recommendation === 'reject' && d.rejectReason === OTHER && (
-            <label className="regf">
-              <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <span className="fld"><input value={d.rejectOther ?? ''} disabled={!editable} aria-label="سبب آخر" onChange={(e) => set('rejectOther', e.target.value)} /></span>
-            </label>
+            <FormField label="السبب" required>
+              <FieldBox><input value={d.rejectOther ?? ''} disabled={!editable} aria-label="سبب آخر" onChange={(e) => set('rejectOther', e.target.value)} /></FieldBox>
+            </FormField>
           )}
           {/* v3 · 3.2.17 · meeting 20 Oct · the supervisor classifies the project during the study ·
               regular, for an external party, or a portfolio (a portfolio takes its path after approval) */}
-          <label className="regf">
-            <span className="lb">تصنيف المشروع</span>
+          <FormField label="تصنيف المشروع">
             <FieldSelect value={d.classification ?? 'مشروع عادي'} label="تصنيف المشروع" disabled={!editable}
               options={CLASSES.map((x) => ({ value: x.value, label: x.label }))}
               onChange={(v) => set('classification', v as NonNullable<Study['classification']>)} />
             {d.classification === 'محفظة' && !isStrategic(row.entityId) && <span className="sub regf-h">الجهة ليست شريكًا استراتيجيًا بعد</span>}
-          </label>
-          <label className="regf regf-w">
-            <span className="lb">المبررات<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld fld-a">
+          </FormField>
+          <FormField label="المبررات" required wide>
+            <FieldBox area>
               <textarea
                 rows={3}
                 value={d.justification}
@@ -252,8 +246,8 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
                 aria-label="مبررات التوصية"
                 placeholder="لماذا هذه التوصية · تظهر لمدير المنح كما هي"
               />
-            </span>
-          </label>
+            </FieldBox>
+          </FormField>
           {/* #25 · the supervisor writes the special conditions in the study · every approver reads them */}
           <ConditionsField row={row} me={me} editable={editable} />
           {/* Meeting 20 Oct · the consultant is an option of the study, not a fixed block */}
@@ -272,7 +266,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
           <div className="regfoot">
             <span className="decsent">{msg || (blockers.length ? `قبل الإحالة: ${blockers[0]}` : 'جاهزة للإحالة من شريط القرار')}</span>
             <span className="pc-sp" />
-            <button type="button" className="btn btn-p" onClick={save}>احفظ الدراسة</button>
+            <Button type="button" variant="p" onClick={save}>احفظ الدراسة</Button>
           </div>
         )}
       </Glass>
@@ -402,8 +396,7 @@ function ConditionsField({ row, me, editable }: { row: ProjectRow; me: string; e
   const [text, setText] = useState('')
   const [when, setWhen] = useState<'agreement' | 'firstPay'>('agreement')
   return (
-    <div className="regf regf-w">
-      <span className="lb">الشروط الخاصة · اختياري</span>
+    <FormField label="الشروط الخاصة · اختياري" wide as="div">
       {list.length > 0 && (
         <ul className="stdy-cond">
           {list.map((c) => (
@@ -416,14 +409,14 @@ function ConditionsField({ row, me, editable }: { row: ProjectRow; me: string; e
       )}
       {editable && (
         <div className="cfgrow">
-          <span className="fld"><input value={text} onChange={(e) => setText(e.target.value)} aria-label="شرط خاص" placeholder="مثال: تقديم خطاب التزام الشريك المنفذ" /></span>
+          <FieldBox><input value={text} onChange={(e) => setText(e.target.value)} aria-label="شرط خاص" placeholder="مثال: تقديم خطاب التزام الشريك المنفذ" /></FieldBox>
           <FieldSelect value={when} label="يُستوفى قبل" onChange={(v) => setWhen(v as 'agreement' | 'firstPay')}
             options={[{ value: 'agreement', label: 'قبل توقيع الاتفاقية' }, { value: 'firstPay', label: 'قبل صرف الدفعة الأولى' }]} />
-          <button type="button" className="btn btn-2 cfgadd" disabled={!text.trim()} onClick={() => { addCondition(row.id, text.trim(), when, me); setText('') }}>أضف الشرط</button>
+          <Button type="button" variant="2" className="cfgadd" disabled={!text.trim()} onClick={() => { addCondition(row.id, text.trim(), when, me); setText('') }}>أضف الشرط</Button>
         </div>
       )}
       {!editable && list.length === 0 && <span className="sub">لا شروط خاصة.</span>}
-    </div>
+    </FormField>
   )
 }
 
@@ -455,15 +448,15 @@ function ConsultantPick({ row, me, editable }: { row: ProjectRow; me: string; ed
           <>
             <div className="cfgrow">
               <FieldSelect value={pick} label="المستشار" options={options.map((c) => ({ value: c.key, label: `${c.name} · ${c.accessDays} أيام` }))} onChange={setPick} />
-              <button
+              <Button
                 type="button"
-                className="btn btn-2 cfgadd"
+                variant="2" className="cfgadd"
                 disabled={!pick || !f.study?.recommendation}
                 title={!f.study?.recommendation ? 'سجّل التوصية في الدراسة أولًا' : undefined}
                 onClick={() => referConsultant(row.id, pick, me)}
               >
                 أحِل إلى المستشار
-              </button>
+              </Button>
             </div>
           </>
         ) : (
@@ -491,8 +484,8 @@ function PriorityCard({ row, me, editable }: { row: ProjectRow; me: string; edit
       {pr.mode === 'manual' && editable && (
         <div className="apv-row mt-2">
           <FieldSelect label="الأولوية" value={level} options={(Object.keys(PRIORITY_SAY) as Priority[]).map((k) => ({ value: k, label: PRIORITY_SAY[k] }))} onChange={(v) => setLevel(v as Priority)} />
-          <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب الأولوية" placeholder="السبب" /></span>
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => { const out = setPriority(row.id, level, why, me); setBad(out[0] ?? ''); if (!out.length) setWhy('') }}>حدّد الأولوية</button>
+          <FieldBox><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label="سبب الأولوية" placeholder="السبب" /></FieldBox>
+          <Button type="button" variant="2" size="sm" onClick={() => { const out = setPriority(row.id, level, why, me); setBad(out[0] ?? ''); if (!out.length) setWhy('') }}>حدّد الأولوية</Button>
           {bad && <span className="bad" role="alert">{bad}</span>}
         </div>
       )}
@@ -528,15 +521,15 @@ function OrgOutputsCard({ row }: { row: ProjectRow }) {
         <>
           <OutputsEditor list={d} onChange={setD} />
           <div className="apv-row mt-3">
-            <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = saveOrgOutputs(row.id, d, user.name, role.key); setBad(out); if (!out.length) setEdit(false) }}>احفظ المخرجات</button>
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => { setD(base()); setEdit(false); setBad([]) }}>تراجع</button>
+            <Button type="button" variant="p" size="sm" onClick={() => { const out = saveOrgOutputs(row.id, d, user.name, role.key); setBad(out); if (!out.length) setEdit(false) }}>احفظ المخرجات</Button>
+            <Button type="button" variant="2" size="sm" onClick={() => { setD(base()); setEdit(false); setBad([]) }}>تراجع</Button>
           </div>
           {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
         </>
       ) : (
         <>
           {org.length ? <ul className="outs-ro">{org.map((o, i) => <li key={i}>{outputLine(o)}</li>)}</ul> : <p className="sub cnote">لا مخرجات بعد.</p>}
-          {can && <button type="button" className="btn btn-2 btn-sm mt-2" onClick={() => { setD(base()); setEdit(true) }}>عدّل المخرجات</button>}
+          {can && <Button type="button" variant="2" size="sm" className="mt-2" onClick={() => { setD(base()); setEdit(true) }}>عدّل المخرجات</Button>}
         </>
       )}
       {mine.length > 0 && (
@@ -568,9 +561,9 @@ function OwnerRow({ row }: { row: ProjectRow }) {
         <span className="lb">مالك المشروع</span>
         {row.owner ? <Person name={row.owner} /> : <Tag tone="warn">غير مُسنَد</Tag>}
         {can && (
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => setOpen(true)}>
+          <Button type="button" variant="2" size="sm" onClick={() => setOpen(true)}>
             {row.owner ? 'عدّل المشرف' : 'أسند إلى مشرف'}
-          </button>
+          </Button>
         )}
       </div>
       {open && <TransferModal row={row} me={user.name} mode="owner" onClose={() => setOpen(false)} />}

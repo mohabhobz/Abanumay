@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { FieldMultiSelect,
+import { FormField, FieldBox, Button, FieldMultiSelect,
   DateField, BackTo, DateText, Empty, Glass, Head, Icon, Money, Num, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -84,21 +84,19 @@ export default function PlanEditPage() {
   const reqFields = (
     <div className="plreq">
       {mode !== 'cancel' && (
-        <div className="regf regf-w">
-          <span className="lb">نوع التعديل<b className="regf-r" aria-label="إلزامي">*</b></span>
+        <FormField label="نوع التعديل" required wide as="div">
           <div className="cfgchips" role="radiogroup" aria-label="نوع التعديل">
             {(['operational', 'contractual'] as const).map((k) => (
-              <button key={k} type="button" role="radio" aria-checked={kind === k} className={`cfgchip${kind === k ? ' on' : ''}`} onClick={() => setKind(k)}>
+              <Button plain key={k} type="button" role="radio" aria-checked={kind === k} className={`cfgchip${kind === k ? ' on' : ''}`} onClick={() => setKind(k)}>
                 {k === 'operational' ? 'تشغيلي' : 'تعاقدي'}
-              </button>
+              </Button>
             ))}
           </div>
-        </div>
+        </FormField>
       )}
-      <label className="regf regf-w">
-        <span className="lb">المبررات<b className="regf-r" aria-label="إلزامي">*</b></span>
-        <span className="fld fld-a"><textarea rows={2} value={why} onChange={(e) => setWhy(e.target.value)} aria-label="المبررات" placeholder="لماذا يلزم الطلب · ما الذي تغيّر على أرض الواقع" /></span>
-      </label>
+      <FormField label="المبررات" required wide>
+        <FieldBox area><textarea rows={2} value={why} onChange={(e) => setWhy(e.target.value)} aria-label="المبررات" placeholder="لماذا يلزم الطلب · ما الذي تغيّر على أرض الواقع" /></FieldBox>
+      </FormField>
     </div>
   )
   const req = { mode: mode === 'cancel' ? 'cancel' as const : 'change' as const, why, kind, from }
@@ -123,21 +121,20 @@ export default function PlanEditPage() {
             <Glass>
               <Head title="بيانات الطلب" />
               <div className="regfields">
-                <label className="regf regf-w">
-                  <span className="lb">سبب الإلغاء<b className="regf-r" aria-label="إلزامي">*</b></span>
-                  <span className="fld fld-a"><textarea rows={2} value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="سبب الإلغاء" placeholder="توقّف المشروع لتعذّر الحصول على الترخيص" /></span>
-                </label>
+                <FormField label="سبب الإلغاء" required wide>
+                  <FieldBox area><textarea rows={2} value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="سبب الإلغاء" placeholder="توقّف المشروع لتعذّر الحصول على الترخيص" /></FieldBox>
+                </FormField>
               </div>
               {reqFields}
               {said && <p className="bad cnote">{said}</p>}
               <div className="regfoot">
                 <span className="decsent sub">{route}</span>
                 <div className="rowf gp-2">
-                  <button type="button" className="btn btn-2" onClick={() => navigate(back)}>تراجع</button>
-                  <button type="button" className="btn btn-p" disabled={!ask.trim() || !why.trim()}
+                  <Button type="button" variant="2" onClick={() => navigate(back)}>تراجع</Button>
+                  <Button type="button" variant="p" disabled={!ask.trim() || !why.trim()}
                     onClick={() => { const out = requestChange(p.id, ask, undefined, who, returnedChange?.id, req); setSaid(out[0] ?? ''); if (!out.length) navigate(back) }}>
                     {returnedChange ? 'أعد إرسال طلب الإلغاء' : 'أرسل طلب الإلغاء'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </Glass>
@@ -173,11 +170,8 @@ export default function PlanEditPage() {
               />
 
               <div className="regfields">
-                <label className="regf regf-w">
-                  <span className="lb">
-                    التعديل المطلوب<b className="regf-r" aria-label="إلزامي">*</b>
-                  </span>
-                  <span className="fld fld-a">
+                <FormField label="التعديل المطلوب" required wide>
+                  <FieldBox area>
                     <textarea
                       rows={3}
                       value={ask}
@@ -185,8 +179,8 @@ export default function PlanEditPage() {
                       placeholder="تمديد مدة التنفيذ شهرين لتأخّر تسليم المقر من البلدية"
                       aria-label="التعديل المطلوب"
                     />
-                  </span>
-                </label>
+                  </FieldBox>
+                </FormField>
               </div>
 
               {reqFields}
@@ -198,16 +192,16 @@ export default function PlanEditPage() {
                     : 'لا توجد طلبات معلّقة'}
                 </span>
                 <div className="rowf gp-2">
-                  <button className="btn btn-2" onClick={() => setProposing(true)}>
+                  <Button variant="2" onClick={() => setProposing(true)}>
                     اقترح هيكلًا معدّلًا
-                  </button>
-                  <button
-                    className="btn btn-p"
+                  </Button>
+                  <Button
+                    variant="p"
                     disabled={!ask.trim() || !why.trim()}
                     onClick={() => { const out = requestChange(p.id, ask, undefined, who, undefined, req); setSaid(out[0] ?? ''); if (!out.length) navigate(back) }}
                   >
                     أرسل طلب التعديل
-                  </button>
+                  </Button>
                 </div>
               </div>
             </Glass>
@@ -252,12 +246,12 @@ export default function PlanEditPage() {
                 art={{ done: 0, total: 3 }}
                 title="الخطة بلا مراحل."
                 actions={
-                  <button
-                    className="btn btn-p"
+                  <Button
+                    variant="p"
                     onClick={() => setPhases([newPhase(0)])}
                   >
                     أضف أول مرحلة
-                  </button>
+                  </Button>
                 }
               />
             </Glass>
@@ -272,54 +266,48 @@ export default function PlanEditPage() {
                         {/* Client sheet 24 Oct (#96) · completion counts accepted activities, every activity
                             weighs one · the per-activity weights and their sum rule are gone */}
                         <Tag tone="mute"><Num>{ph.activities.length}</Num> {nounAfter(ph.activities.length, NOUN.activity)}</Tag>
-                        <button
-                          className="btn btn-ghost btn-sm"
+                        <Button
+                          variant="ghost" size="sm"
                           onClick={() => setPhases((xs) => xs.filter((x) => x.id !== ph.id))}
                         >
                           <Icon name={icons.trash} size="sm" />
                           احذف المرحلة
-                        </button>
+                        </Button>
                       </div>
                     }
                   />
 
                   <div className="regfields">
-                    <label className="regf regf-w">
-                      <span className="lb">
-                        اسم المرحلة<b className="regf-r" aria-label="إلزامي">*</b>
-                      </span>
-                      <span className="fld">
+                    <FormField label="اسم المرحلة" required wide>
+                      <FieldBox>
                         <input
                           value={ph.name}
                           onChange={(e) => patch(ph.id, { name: e.target.value })}
                           placeholder="التهيئة والتعاقد"
                           aria-label={`اسم المرحلة ${i + 1}`}
                         />
-                      </span>
-                    </label>
+                      </FieldBox>
+                    </FormField>
 
-                    <label className="regf">
-                      <span className="lb">من تاريخ</span>
+                    <FormField label="من تاريخ">
                       <DateField
                         value={ph.from}
                         onChange={(x) => patch(ph.id, { from: x })}
                         label={`بداية المرحلة ${i + 1}`}
                       />
-                    </label>
+                    </FormField>
 
-                    <label className="regf">
-                      <span className="lb">إلى تاريخ</span>
+                    <FormField label="إلى تاريخ">
                       <DateField
                         value={ph.to}
                         onChange={(x) => patch(ph.id, { to: x })}
                         label={`نهاية المرحلة ${i + 1}`}
                         min={ph.from || undefined}
                       />
-                    </label>
+                    </FormField>
 
-                    <label className="regf">
-                      <span className="lb">تكلفة المرحلة</span>
-                      <span className="fld">
+                    <FormField label="تكلفة المرحلة">
+                      <FieldBox>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -329,8 +317,8 @@ export default function PlanEditPage() {
                           })}
                           aria-label={`تكلفة المرحلة ${i + 1}`}
                         />
-                      </span>
-                    </label>
+                      </FieldBox>
+                    </FormField>
                   </div>
 
                   {/* === Phase activities === */}
@@ -338,11 +326,8 @@ export default function PlanEditPage() {
                     {ph.activities.map((a, j) => (
                       <li className="act" key={a.id}>
                         <div className="regfields">
-                          <label className="regf regf-w">
-                            <span className="lb">
-                              اسم النشاط<b className="regf-r" aria-label="إلزامي">*</b>
-                            </span>
-                            <span className="fld">
+                          <FormField label="اسم النشاط" required wide>
+                            <FieldBox>
                               <input
                                 value={a.name}
                                 onChange={(e) => patch(ph.id, {
@@ -352,11 +337,10 @@ export default function PlanEditPage() {
                                 placeholder="تدريب الكوادر"
                                 aria-label={`اسم النشاط ${j + 1}`}
                               />
-                            </span>
-                          </label>
+                            </FieldBox>
+                          </FormField>
 
-                          <label className="regf">
-                            <span className="lb">من تاريخ</span>
+                          <FormField label="من تاريخ">
                             <DateField
                                 value={a.from}
                                 onChange={(v) => patch(ph.id, {
@@ -365,10 +349,9 @@ export default function PlanEditPage() {
                                 })}
                               label={`بداية النشاط ${j + 1}`}
                             />
-                          </label>
+                          </FormField>
 
-                          <label className="regf">
-                            <span className="lb">إلى تاريخ</span>
+                          <FormField label="إلى تاريخ">
                             <DateField
                                 value={a.to}
                                 onChange={(v) => patch(ph.id, {
@@ -378,17 +361,14 @@ export default function PlanEditPage() {
                               label={`نهاية النشاط ${j + 1}`}
                               min={a.from || undefined}
                             />
-                          </label>
+                          </FormField>
 
 
                           {/* Note: required evidence isn't decoration - it's what makes review
                               possible. An activity with no required evidence means the supervisor
                               would be accepting it on word alone, and that's exactly what rule 14
                               exists to prevent. */}
-                          <label className="regf regf-w">
-                            <span className="lb">
-                              الشواهد المطلوبة<b className="regf-r" aria-label="إلزامي">*</b>
-                            </span>
+                          <FormField label="الشواهد المطلوبة" required wide>
                             <FieldMultiSelect
                               values={a.needs}
                               placeholder={`اختر من ${countOf(EVIDENCE_KINDS.length, NOUN.kind)}`}
@@ -398,34 +378,34 @@ export default function PlanEditPage() {
                                   (x.id === a.id ? { ...x, needs: next } : x)),
                               })}
                             />
-                          </label>
+                          </FormField>
                         </div>
 
                         <div className="act-a">
-                          <button
-                            className="btn btn-ghost btn-sm"
+                          <Button
+                            variant="ghost" size="sm"
                             onClick={() => patch(ph.id, {
                               activities: ph.activities.filter((x) => x.id !== a.id),
                             })}
                           >
                             <Icon name={icons.trash} size="sm" />
                             احذف النشاط
-                          </button>
+                          </Button>
                         </div>
                       </li>
                     ))}
                   </ul>
 
                   <div className="rowf gp-2">
-                    <button
-                      className="btn btn-2 btn-sm"
+                    <Button
+                      variant="2" size="sm"
                       onClick={() => patch(ph.id, {
                         activities: [...ph.activities, newActivity(ph.activities.length)],
                       })}
                     >
                       <Icon name={icons.plus} size="sm" />
                       أضف نشاطًا
-                    </button>
+                    </Button>
                   </div>
                 </Glass>
               )
@@ -435,13 +415,13 @@ export default function PlanEditPage() {
           {phases.length > 0 && (
             <Glass>
               <div className="rowf gp-3">
-                <button
-                  className="btn btn-2"
+                <Button
+                  variant="2"
                   onClick={() => setPhases((xs) => [...xs, newPhase(xs.length)])}
                 >
                   <Icon name={icons.plus} size="sm" />
                   أضف مرحلة
-                </button>
+                </Button>
                 <span className="pc-sp" />
                 <span className={`decsent${cost !== grant ? ' bad' : ''}`}>
                   مجموع المراحل <Money sm>{cost}</Money>
@@ -468,20 +448,19 @@ export default function PlanEditPage() {
 
               {proposing ? (
                 <>
-                  <label className="regf regf-w">
-                    <span className="lb">التعديل المطلوب وسببه<b className="regf-r" aria-label="إلزامي">*</b></span>
-                    <span className="fld fld-a"><textarea rows={3} value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="التعديل المطلوب" placeholder="تمديد المرحلة الثانية شهرين لتأخّر تسليم المقر" /></span>
-                  </label>
+                  <FormField label="التعديل المطلوب وسببه" required wide>
+                    <FieldBox area><textarea rows={3} value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="التعديل المطلوب" placeholder="تمديد المرحلة الثانية شهرين لتأخّر تسليم المقر" /></FieldBox>
+                  </FormField>
                   {reqFields}
                   {said && <p className="bad cnote">{said}</p>}
                   <div className="regfoot">
                     <span className="decsent sub">{route} · ولا يتغيّر شيء في الخطة قبل اعتماده، وعند اعتماده تُلغى النسخة الحالية وتصبح المقترحة هي النشطة</span>
                     <div className="rowf gp-2">
-                      {!returnedChange && <button className="btn btn-2" onClick={() => { if (mode === 'change') { navigate(back); return } setProposing(false); setPhases(structuredClone(p.phases)) }}>تراجع</button>}
-                      <button className="btn btn-p" disabled={!ask.trim() || !why.trim() || issues.length > 0} title={issues[0]?.say ?? (!why.trim() ? 'المبررات إلزامية' : route)}
+                      {!returnedChange && <Button variant="2" onClick={() => { if (mode === 'change') { navigate(back); return } setProposing(false); setPhases(structuredClone(p.phases)) }}>تراجع</Button>}
+                      <Button variant="p" disabled={!ask.trim() || !why.trim() || issues.length > 0} title={issues[0]?.say ?? (!why.trim() ? 'المبررات إلزامية' : route)}
                         onClick={() => { const out = requestChange(p.id, ask, phases, who, returnedChange?.id, req); setSaid(out[0] ?? ''); if (!out.length) navigate(back) }}>
                         {returnedChange ? 'أعد إرسال طلب التعديل' : 'أرسل طلب التعديل'}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </>
@@ -491,14 +470,14 @@ export default function PlanEditPage() {
                   الحفظ يُبقي الخطة مسودة، والإرسال يرسلها إلى مشرف المنح للمراجعة
                 </span>
                 <div className="rowf gp-2">
-                  <button
-                    className="btn btn-2"
+                  <Button
+                    variant="2"
                     onClick={() => { savePlanPhases(p.id, phases, who); navigate(back) }}
                   >
                     احفظ المسودة
-                  </button>
-                  <button
-                    className="btn btn-p"
+                  </Button>
+                  <Button
+                    variant="p"
                     disabled={issues.length > 0 || (p.stage !== 'draft' && p.stage !== 'returned')}
                     title={issues.length > 0 ? issues[0].say : 'الخطة مستوفية وستُرسل إلى مشرف المنح'}
                     onClick={() => {
@@ -508,7 +487,7 @@ export default function PlanEditPage() {
                     }}
                   >
                     احفظ وأرسل للمراجعة
-                  </button>
+                  </Button>
                 </div>
               </div>
               )}

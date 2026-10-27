@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { MISSING_ITEM, nounAfter } from '@/lib/format'
-import { DecisionDialog, Icon, Num, Person, Tag, icons } from '@/components/ui'
+import { ButtonLabel, FormField, Button, DecisionDialog, Icon, Num, Person, Tag, icons } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import {
   closeCycle, closeStageLabel, evalBlockers, reportBlockers,
@@ -100,7 +100,7 @@ export function CloseActionDock({
                "something's missing" makes users hunt for it visually. */
             const why = closeStops(row, x)[0] ?? ''
             return (
-              <button
+              <Button plain
                 key={x.label}
                 className={`btn ${x.btn}`}
                 data-needs-note={x.needsNote ? '' : undefined}
@@ -109,7 +109,7 @@ export function CloseActionDock({
                 onClick={() => { setPick(x); setFile('') }}
               >
                 {x.needsFile && <Icon name={icons.upload} size="sm" />}{x.label}
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -128,16 +128,15 @@ export function CloseActionDock({
           onConfirm={(n) => onAct(pick, file || undefined, n)}
         >
           {pick.needsFile && (
-            <div className="regf">
-              <span className="lb">{pick.needsFile}<b className="regf-r" aria-label="إلزامي">*</b></span>
+            <FormField label={pick.needsFile} required as="div">
               <span className="apv-row">
-                <label className="btn btn-2 btn-sm">
+                <ButtonLabel variant="2" size="sm">
                   <Icon name={icons.upload} size="sm" />{file ? 'استبدل الملف' : 'ارفع الملف'}
                   <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label={`${pick.label} · ${pick.needsFile}`} onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f.name); e.target.value = '' }} />
-                </label>
+                </ButtonLabel>
                 {file ? <Tag tone="ok">{file}</Tag> : <span className="sub">لا ملف بعد</span>}
               </span>
-            </div>
+            </FormField>
           )}
         </DecisionDialog>
       )}

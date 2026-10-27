@@ -3,7 +3,7 @@ import { readTemplate } from '@/data/shared/ai'
 import { MISSING_ITEM, NOUN, nounAfter } from '@/lib/format'
 import { useNavigate } from 'react-router-dom'
 import {
-  CheckMark, BackTo, DateText, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem, DockWhy, blockerCount,
+  ButtonLabel, FormField, FieldBox, Button, CheckMark, BackTo, DateText, FieldSelect, Glass, Head, Icon, KV, Money, Num, Steps, Tag, icons, type StepItem, DockWhy, blockerCount,
 } from '@/components/ui'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { blockerReadings } from '@/features/shared/blockerReadings'
@@ -218,10 +218,7 @@ export default function AgreementNewPage() {
             {tab === 'project' && (
               <>
                 <div className="regfields">
-                  <label className="regf regf-w">
-                    <span className="lb">
-                      المشروع<b className="regf-r" aria-label="إلزامي">*</b>
-                    </span>
+                  <FormField label="المشروع" required wide>
                     {/* Note: an ineligible project stays in the list with its reason shown - hiding
                         it would make users search for a project they can't find and assume it was
                         deleted. */}
@@ -236,7 +233,7 @@ export default function AgreementNewPage() {
                       }))}
                     />
                     {/* doc rule 2 · one project only */}
-                  </label>
+                  </FormField>
                 </div>
 
                 {opt?.additional && (
@@ -296,24 +293,18 @@ export default function AgreementNewPage() {
                 <div className="regfields">
                   {kind === 'ورقية' ? (
                     /* 8.2.30 · a paper agreement isn't built on a template · its copy is uploaded */
-                    <div className="regf regf-w">
-                      <span className="lb">
-                        نسخة الاتفاقية الورقية<b className="regf-r" aria-label="إلزامي">*</b>
-                      </span>
+                    <FormField label="نسخة الاتفاقية الورقية" required wide as="div">
                       <span className="apv-row">
-                        <label className="btn btn-2 btn-sm">
+                        <ButtonLabel variant="2" size="sm">
                           <Icon name={icons.upload} size="sm" />{paperCopy ? 'استبدل النسخة' : 'ارفع النسخة'}
                           <input className="vis-h" type="file" accept=".pdf,.doc,.docx" aria-label="نسخة الاتفاقية الورقية" onChange={(e) => { const x = e.target.files?.[0]; if (x) setPaperCopy(x.name); e.target.value = '' }} />
-                        </label>
+                        </ButtonLabel>
                         {paperCopy ? <Tag tone="ok">{paperCopy}</Tag> : <span className="sub">لا نسخة بعد</span>}
                       </span>
 
-                    </div>
+                    </FormField>
                   ) : (
-                  <label className="regf regf-w">
-                    <span className="lb">
-                      النموذج المعتمد<b className="regf-r" aria-label="إلزامي">*</b>
-                    </span>
+                  <FormField label="النموذج المعتمد" required wide>
                     <FieldSelect
                       value={template}
                       options={TEMPLATES}
@@ -322,36 +313,30 @@ export default function AgreementNewPage() {
                       placeholder="اختر النموذج"
                     />
 
-                  </label>
+                  </FormField>
                   )}
 
-                  <label className="regf">
-                    <span className="lb">
-                      اسم الموقّع<b className="regf-r" aria-label="إلزامي">*</b>
-                    </span>
-                    <span className="fld">
+                  <FormField label="اسم الموقّع" required>
+                    <FieldBox>
                       <input
                         value={signerName}
                         onChange={(e) => setSignerName(e.target.value)}
                         aria-label="اسم الموقّع"
                       />
-                    </span>
-                  </label>
+                    </FieldBox>
+                  </FormField>
 
-                  <label className="regf">
-                    <span className="lb">
-                      صفة الموقّع<b className="regf-r" aria-label="إلزامي">*</b>
-                    </span>
-                    <span className="fld">
+                  <FormField label="صفة الموقّع" required>
+                    <FieldBox>
                       <input
                         value={signerTitle}
                         onChange={(e) => setSignerTitle(e.target.value)}
                         placeholder="المدير التنفيذي للجمعية"
                         aria-label="صفة الموقّع"
                       />
-                    </span>
+                    </FieldBox>
 
-                  </label>
+                  </FormField>
                 </div>
               </>
             )}
@@ -384,24 +369,24 @@ export default function AgreementNewPage() {
               </span>
               <span className="pc-sp" />
               <div className="rowf gp-2">
-                <button
-                  className="btn btn-2"
+                <Button
+                  variant="2"
                   disabled={first}
                   title={first ? 'هذه الخطوة الأولى' : `ارجع إلى ${STAGES[at - 1].label}`}
                   onClick={() => go(-1)}
                 >
                   <Icon name={icons.chevronBack} size="sm" />
                   السابق
-                </button>
+                </Button>
                 {!last && (
-                  <button
-                    className="btn btn-p"
+                  <Button
+                    variant="p"
                     title={`انتقل إلى ${STAGES[at + 1].label}`}
                     onClick={() => go(1)}
                   >
                     التالي
                     <Icon name={icons.chevron} size="sm" />
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -459,19 +444,19 @@ export default function AgreementNewPage() {
               </span>
             </div>
             <div className="rowf gp-2">
-              <button
-                className="btn btn-2"
+              <Button
+                variant="2"
                 disabled={!projectId || !kind || Boolean(opt?.blocked)}
                 title={!projectId ? 'اختر المشروع أولًا' : !kind ? 'حدّد نوع الاتفاقية' : opt?.blocked || 'احفظ الاتفاقية مسودةً وأكمِلها لاحقًا'}
                 onClick={() => make(false)}
               >
                 احفظ المسودة
-              </button>
+              </Button>
               {/* Note: "send to entity" is not available here - rule 13 blocks it before
                   institutional approvals are complete; the only action from this stage is
                   referral to the grants manager. */}
-              <button
-                className="btn btn-p"
+              <Button
+                variant="p"
                 disabled={!canSend}
                 title={
                   missing.length
@@ -483,7 +468,7 @@ export default function AgreementNewPage() {
                 onClick={() => make(true)}
               >
                 أرسل إلى مدير المنح
-              </button>
+              </Button>
             </div>
           </div>
         </div>

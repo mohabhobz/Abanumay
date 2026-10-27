@@ -1,7 +1,7 @@
 import { holds, holdersSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { DateField, BackTo, Empty, Glass, Head, KV, Money, MoneyField, Select, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, DateField, BackTo, Empty, Glass, Head, KV, Money, MoneyField, Select, Tag } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -124,16 +124,14 @@ export default function CaseNewPage() {
             <div className="col">
               <Glass>
                 <Head title="القرار" meta={<Tag tone="mute">مشرف المنح</Tag>} />
-                <label className="regf">
-                  <span className="lb">سبب القرار<b className="regf-r" aria-label="إلزامي">*</b></span>
-                  <span className="fld"><textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب القرار" /></span>
-                </label>
+                <FormField label="سبب القرار" required>
+                  <FieldBox><textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب القرار" /></FieldBox>
+                </FormField>
                 {kind !== 'stop' && (
-                  <label className="regf">
-                    <span className="lb">القيمة الجديدة للمشروع<b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <FormField label="القيمة الجديدة للمشروع" required>
                     <MoneyField value={amount} onChange={setAmount} label="القيمة الجديدة للمشروع" />
                     <span className="sub regf-h">القيمة الحالية <span className="num">{nf.format(granted)}</span></span>
-                  </label>
+                  </FormField>
                 )}
                 {kind === 'reduce' && (
                   <div className="apv-row mt-2">
@@ -141,27 +139,24 @@ export default function CaseNewPage() {
                     <UploadButton label="ملحق الاتفاقية" onPick={(f) => setAnnex(f.name)} />
                   </div>
                 )}
-                <label className="regf">
-                  <span className="lb">نتيجة القرار<b className="regf-r" aria-label="إلزامي">*</b></span>
+                <FormField label="نتيجة القرار" required>
                   <Select value={pick} allowEmpty={false} all="النتيجة" options={outs.map((o) => ({ value: o, label: OUTCOME_SAY[o] }))} onChange={(x) => setOutcome(x as CaseRow['outcome'])} />
-                </label>
+                </FormField>
                 {redirect && (
                   <div className="regfields">
-                    <label className="regf"><span className="lb">الغرض الجديد داخل العلاقة نفسها<b className="regf-r" aria-label="إلزامي">*</b></span><span className="fld"><input value={purpose} onChange={(e) => setPurpose(e.target.value)} aria-label="الغرض الجديد للدعم المعاد توجيهه" /></span></label>
-                    <label className="regf"><span className="lb">رقم القرار<b className="regf-r" aria-label="إلزامي">*</b></span><span className="fld"><input value={decision} onChange={(e) => setDecision(e.target.value)} aria-label="رقم قرار إعادة التوجيه" /></span></label>
+                    <FormField label="الغرض الجديد داخل العلاقة نفسها" required><FieldBox><input value={purpose} onChange={(e) => setPurpose(e.target.value)} aria-label="الغرض الجديد للدعم المعاد توجيهه" /></FieldBox></FormField>
+                    <FormField label="رقم القرار" required><FieldBox><input value={decision} onChange={(e) => setDecision(e.target.value)} aria-label="رقم قرار إعادة التوجيه" /></FieldBox></FormField>
                     <div className="apv-row"><span className="sub">{rfile || 'مستند القرار · إلزامي'}</span><UploadButton label="مستند قرار إعادة التوجيه" onPick={(f) => setRfile(f.name)} /></div>
                   </div>
                 )}
                 {kind === 'increase' && !independent && (
                   <div className="regfields">
-                    <label className="regf">
-                      <span className="lb">الدفعة الإضافية</span>
+                    <FormField label="الدفعة الإضافية">
                       <MoneyField value={extra || (raise ? String(raise) : '')} onChange={setExtra} label="الدفعة الإضافية" />
-                    </label>
-                    <label className="regf">
-                      <span className="lb">تاريخ استحقاقها</span>
+                    </FormField>
+                    <FormField label="تاريخ استحقاقها">
                       <DateField value={dueAt} onChange={setDueAt} label="تاريخ استحقاق الدفعة الإضافية" />
-                    </label>
+                    </FormField>
                   </div>
                 )}
                 {/* Client 18 Oct (sheet V2 · #4) · warned now · checked at the approval that cancels the project */}
@@ -208,7 +203,7 @@ export default function CaseNewPage() {
             <div className="rowf gp-3 payact-w">
               <span className="decsent">{mine ? <>يُرفع القرار إلى مدير المنح{approver !== APPROVER_SAY('grants-manager') ? <> ثم {approver}</> : null}</> : <>{valueAnnex ? <>يتخذ قرار ملحق القيمة {holdersSay('annexBy')}</> : `يفتح الحالةَ ${holdersSay('distressBy')}`}</>}</span>
             </div>
-            {mine && <button type="button" className="btn btn-p" disabled={!ready} onClick={submit}>افتح الحالة</button>}
+            {mine && <Button type="button" variant="p" disabled={!ready} onClick={submit}>افتح الحالة</Button>}
           </div>
         </div>
       </div>
@@ -252,10 +247,9 @@ function DirectNew({ projectId }: { projectId: string }) {
             <div className="col">
               <Glass>
                 <Head title="طلب الإغلاق" meta={<Tag tone="mute">مشرف المنح</Tag>} />
-                <label className="regf">
-                  <span className="lb">سبب الإغلاق المباشر<b className="regf-r" aria-label="إلزامي">*</b></span>
-                  <span className="fld"><textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب الإغلاق المباشر" /></span>
-                </label>
+                <FormField label="سبب الإغلاق المباشر" required>
+                  <FieldBox><textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب الإغلاق المباشر" /></FieldBox>
+                </FormField>
                 <div className="apv-row mt-2">
                   <span className="sub">مستند الإغلاق{file ? ` · ${file}` : ' · إلزامي'}</span>
                   <UploadButton label="مستند الإغلاق" onPick={(f) => setFile(f.name)} />
@@ -292,7 +286,7 @@ function DirectNew({ projectId }: { projectId: string }) {
             <div className="rowf gp-3 payact-w">
               <span className="decsent">{mine ? <>يُرفع الطلب إلى {DIRECT_PATH.slice(1).join(' ثم ')}</> : `يفتح الإغلاق المباشر ${holdersSay('distressBy')}`}</span>
             </div>
-            {mine && <button type="button" className="btn btn-p" disabled={!ready} title={!reason.trim() ? 'اكتب السبب' : !file ? 'أرفق مستند الإغلاق' : undefined} onClick={submit}>افتح الإغلاق المباشر</button>}
+            {mine && <Button type="button" variant="p" disabled={!ready} title={!reason.trim() ? 'اكتب السبب' : !file ? 'أرفق مستند الإغلاق' : undefined} onClick={submit}>افتح الإغلاق المباشر</Button>}
           </div>
         </div>
       </div>

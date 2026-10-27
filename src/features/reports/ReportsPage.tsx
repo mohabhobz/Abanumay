@@ -1,7 +1,7 @@
 import { TodayReport } from './TodayReport'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Glass, Head, Icon, icons, Tabs, Tag } from '@/components/ui'
+import { ButtonLink, Glass, Head, Icon, icons, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import {
@@ -57,8 +57,8 @@ export default function ReportsPage() {
             </div>
             <div className="rowf gp-2">
               {/* 11.4.26 · 13.2.27 · the Ehsan projects and the sub-projects, marked by their kind */}
-              <Link className="btn btn-2" to={ROUTES.partnersTab('report')}><Icon name={icons.link} />تقرير الشركاء</Link>
-              <Link className="btn btn-2" to={ROUTES.glassBoard}><Icon name={icons.insight} />لوحة المؤشرات · تجريبية</Link>
+              <ButtonLink variant="2" to={ROUTES.partnersTab('report')}><Icon name={icons.link} />تقرير الشركاء</ButtonLink>
+              <ButtonLink variant="2" to={ROUTES.glassBoard}><Icon name={icons.insight} />لوحة المؤشرات · تجريبية</ButtonLink>
             </div>
           </header>
 

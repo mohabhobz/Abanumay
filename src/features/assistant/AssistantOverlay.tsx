@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { Background } from '@/components/shell'
 import type { AssistantContext } from '@/components/assistant'
 import { assistantFor } from '@/data/mock/assistant'
@@ -103,7 +103,7 @@ export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: Assi
             onClose={onClose}
             focusOnMount
             headExtra={(
-              <button
+              <Button plain
                 className="aclose"
                 onClick={() => setWide((v) => !v)}
                 title={wide ? 'صغّر إلى نافذة وسطية' : 'وسّع إلى ملء الشاشة'}
@@ -111,7 +111,7 @@ export function AssistantOverlay({ open, onClose, ctx = FALLBACK_CONTEXT }: Assi
                 aria-pressed={wide}
               >
                 <Icon name={wide ? icons.shrink : icons.expand} size="sm" />
-              </button>
+              </Button>
             )}
           />
         )}

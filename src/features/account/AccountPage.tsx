@@ -2,7 +2,7 @@ import { signOutEverywhere } from '@/data/authGuard'
 import { keepThisSession } from '@/data/session'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  DateText, FieldSelect, Glass, Head, Icon, icons, KV, Money, Num, Person, Switch, Tabs, Tag,
+  FormField, FieldBox, Button, DateText, FieldSelect, Glass, Head, Icon, icons, KV, Money, Num, Person, Switch, Tabs, Tag,
 } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -156,18 +156,17 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
                   onPick={(f) => { setDone(false); setPhoto(URL.createObjectURL(f)) }}
                 />
                 {photo && (
-                  <button type="button" className="btn btn-2 btn-sm" onClick={() => { setDone(false); setPhoto(undefined) }}>
+                  <Button type="button" variant="2" size="sm" onClick={() => { setDone(false); setPhoto(undefined) }}>
                     إزالة
-                  </button>
+                  </Button>
                 )}
               </span>
             </div>
           </div>
 
           <div className="regfields mt-4">
-            <label className="regf">
-              <span className="lb">الجوال</span>
-              <span className="fld">
+            <FormField label="الجوال">
+              <FieldBox>
                 <input
                   value={d.mobile}
                   inputMode="numeric"
@@ -177,12 +176,11 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
                   aria-label="رقم الجوال"
                   aria-invalid={!mobileOk}
                 />
-              </span>
+              </FieldBox>
               {!mobileOk && <span className="sub">عشرة أرقام تبدأ بـ 05</span>}
-            </label>
-            <label className="regf">
-              <span className="lb">التحويلة</span>
-              <span className="fld">
+            </FormField>
+            <FormField label="التحويلة">
+              <FieldBox>
                 <input
                   value={d.ext}
                   inputMode="numeric"
@@ -191,8 +189,8 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
                   onChange={(e) => { setDone(false); setD({ ...d, ext: e.target.value.replace(/\D/g, '') }) }}
                   aria-label="رقم التحويلة"
                 />
-              </span>
-            </label>
+              </FieldBox>
+            </FormField>
           </div>
         </Glass>
 
@@ -215,9 +213,9 @@ function ProfileTab({ name, title }: { name: string; title: string }) {
               onPick={(f) => { setDone(false); setSig(URL.createObjectURL(f)); setD((x) => ({ ...x, signature: f.name })) }}
             />
             {(sig || d.signature) && (
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => { setSig(undefined); setD((x) => ({ ...x, signature: '' })) }}>
+              <Button type="button" variant="2" size="sm" onClick={() => { setSig(undefined); setD((x) => ({ ...x, signature: '' })) }}>
                 إزالة
-              </button>
+              </Button>
             )}
           </span>
         </Glass>
@@ -255,9 +253,8 @@ function PwField({ label, value, onChange, auto }: {
 }) {
   const [show, setShow] = useState(false)
   return (
-    <label className="regf">
-      <span className="lb">{label}</span>
-      <span className="fld">
+    <FormField label={label}>
+      <FieldBox>
         <input
           type={show ? 'text' : 'password'}
           value={value}
@@ -266,7 +263,7 @@ function PwField({ label, value, onChange, auto }: {
           onChange={(e) => onChange(e.target.value)}
           aria-label={label}
         />
-        <button
+        <Button plain
           type="button"
           className="iact"
           onClick={() => setShow((x) => !x)}
@@ -274,9 +271,9 @@ function PwField({ label, value, onChange, auto }: {
           aria-pressed={show}
         >
           <Icon name={show ? icons.eyeOff : icons.eye} size="sm" />
-        </button>
-      </span>
-    </label>
+        </Button>
+      </FieldBox>
+    </FormField>
   )
 }
 
@@ -335,9 +332,9 @@ function SecurityTab() {
           <div className="acc-foot">
             {ok && <span className="sub">تغيّرت كلمة المرور · وأُنهيت جلساتك على الأجهزة الأخرى</span>}
             <span className="pc-sp" />
-            <button type="button" className="btn btn-p" disabled={!ready} onClick={change}>
+            <Button type="button" variant="p" disabled={!ready} onClick={change}>
               غيّر كلمة المرور
-            </button>
+            </Button>
           </div>
         </Glass>
 
@@ -349,10 +346,10 @@ function SecurityTab() {
             {s.twoStep && (
               <div className="seg" role="radiogroup" aria-label="طريقة التحقق">
                 {([['app', 'تطبيق المصادقة'], ['sms', 'رسالة نصية']] as const).map(([k, l]) => (
-                  <button key={k} type="button" role="radio" aria-checked={s.method === k}
+                  <Button plain key={k} type="button" role="radio" aria-checked={s.method === k}
                     className={s.method === k ? 'on' : ''} onClick={() => setS((x) => ({ ...x, method: k }))}>
                     {l}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -365,9 +362,9 @@ function SecurityTab() {
           <Head
             title="الجلسات النشطة"
             meta={sessions.length > 1 ? (
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => { signOutEverywhere(); keepThisSession(); setS((x) => ({ ...x, signedOut: true })) }}>
+              <Button type="button" variant="2" size="sm" onClick={() => { signOutEverywhere(); keepThisSession(); setS((x) => ({ ...x, signedOut: true })) }}>
                 أنهِ الجلسات الأخرى
-              </button>
+              </Button>
             ) : <Tag tone="ok">هذا الجهاز فقط</Tag>}
           />
           <ul className="pf-sess">
@@ -455,22 +452,20 @@ function AccessTab({ name }: { name: string }) {
           {sent ? (
             <>
               <p className="cnote">أُرسل طلبك «{sent}» إلى مدير النظام.</p>
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => setSent(null)}>طلب آخر</button>
+              <Button type="button" variant="2" size="sm" onClick={() => setSent(null)}>طلب آخر</Button>
             </>
           ) : (
             <>
               <div className="regfields">
-                <div className="regf">
-                  <span className="lb">الوحدة</span>
+                <FormField label="الوحدة" as="div">
                   <FieldSelect
                     value={req.mod}
                     options={PERM_MODULES.map((m) => ({ value: m.key, label: m.label }))}
                     onChange={(x) => setReq({ ...req, mod: x, act: '' })}
                     label="الوحدة"
                   />
-                </div>
-                <div className="regf">
-                  <span className="lb">الصلاحية</span>
+                </FormField>
+                <FormField label="الصلاحية" as="div">
                   <FieldSelect
                     value={req.act}
                     options={(mod?.actions ?? []).map((a) => ({ value: a, label: ACT_LABEL[a] }))}
@@ -479,10 +474,9 @@ function AccessTab({ name }: { name: string }) {
                     disabled={!mod}
                     end
                   />
-                </div>
-                <label className="regf regf-w">
-                  <span className="lb">السبب</span>
-                  <span className="fld fld-a">
+                </FormField>
+                <FormField label="السبب" wide>
+                  <FieldBox area>
                     <textarea
                       rows={2}
                       value={req.why}
@@ -490,20 +484,20 @@ function AccessTab({ name }: { name: string }) {
                       aria-label="سبب الطلب"
                       placeholder="ما العمل الذي تحتاجها له"
                     />
-                  </span>
-                </label>
+                  </FieldBox>
+                </FormField>
               </div>
               <div className="acc-foot">
                 <span className="pc-sp" />
-                <button
+                <Button
                   type="button"
-                  className="btn btn-p"
+                  variant="p"
                   disabled={!req.mod || !req.act || !req.why.trim()}
                   onClick={() => { setSent(`${ACT_LABEL[req.act as ActionKey]} في ${mod?.label}`); setReq({ mod: '', act: '', why: '' }) }}
                 >
                   <Icon name={icons.send} size="sm" />
                   أرسل لمدير النظام
-                </button>
+                </Button>
               </div>
             </>
           )}

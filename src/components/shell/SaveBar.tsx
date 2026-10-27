@@ -1,7 +1,7 @@
 import { useContext, useEffect, type ReactNode } from 'react'
 import { DockSlot as Slot } from './dockSlot'
 import { createPortal } from 'react-dom'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { BulkBar } from './BulkBar'
 
 /**
@@ -36,11 +36,11 @@ export function SaveBar({ count, sentence, onSave, onDiscard, saveLabel = 'اح�
   if (!slot?.el) return null
   return createPortal(
     <BulkBar count={count} sentence={sentence} onClear={onDiscard} clearLabel="تراجع عن التغييرات">
-      <button type="button" className="btn btn-2 btn-sm" onClick={onDiscard}>تراجع</button>
-      <button type="button" className="btn btn-p btn-sm" onClick={onSave} disabled={disabled}>
+      <Button type="button" variant="2" size="sm" onClick={onDiscard}>تراجع</Button>
+      <Button type="button" variant="p" size="sm" onClick={onSave} disabled={disabled}>
         <Icon name={icons.check} size="sm" />
         {saveLabel}
-      </button>
+      </Button>
     </BulkBar>,
     slot.el,
   )

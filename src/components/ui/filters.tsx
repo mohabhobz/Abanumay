@@ -1,3 +1,4 @@
+import { Button } from './Button'
 import type { IconGlyph } from '@/components/ui/icons'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useMenu } from '@/hooks/useMenu'
@@ -33,9 +34,9 @@ export function SearchBox({
         aria-label={placeholder}
       />
       {value && (
-        <button className="srch-x" onClick={() => onChange('')} aria-label="مسح البحث">
+        <Button plain className="srch-x" onClick={() => onChange('')} aria-label="مسح البحث">
           <Icon name={icons.close} size="sm" />
-        </button>
+        </Button>
       )}
     </label>
   )
@@ -143,7 +144,7 @@ export function Select({
     <div className={`fsel${current && allowEmpty ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`} ref={box}>
       {label && <span className="fsel-l" id={`${id}-l`}>{label}</span>}
 
-      <button
+      <Button plain
         type="button"
         ref={btn}
         className="fsel-b"
@@ -171,7 +172,7 @@ export function Select({
           ))}
         </span>
         <Icon name={icons.chevronDown} size="sm" />
-      </button>
+      </Button>
 
       {open && (
         <MenuPanel
@@ -284,7 +285,7 @@ export function MultiSelect({
     <div className={`fsel fmulti${on ? ' on' : ''}${disabled ? ' off' : ''}${wide ? ' wide' : ''}`} ref={box}>
       {label && <span className="fsel-l" id={`${id}-l`}>{label}</span>}
 
-      <button
+      <Button plain
         type="button"
         className="fsel-b"
         disabled={disabled}
@@ -316,7 +317,7 @@ export function MultiSelect({
           ))}
         </span>
         <Icon name={icons.chevronDown} size="sm" />
-      </button>
+      </Button>
 
       {open && (
         <MenuPanel
@@ -325,9 +326,9 @@ export function MultiSelect({
           onNeedle={setNeedle}
           empty={shown.length === 0}
           foot={on ? (
-            <button type="button" className="fclear" onClick={() => onChange([])}>
+            <Button plain type="button" className="fclear" onClick={() => onChange([])}>
               مسح الاختيار
-            </button>
+            </Button>
           ) : undefined}
         >
           {shown.map((o) => {
@@ -362,10 +363,10 @@ export function Toggle({
   count?: number
 }) {
   return (
-    <button className={`fchip${on ? ' on' : ''}`} onClick={() => onChange(!on)} aria-pressed={on}>
+    <Button plain className={`fchip${on ? ' on' : ''}`} onClick={() => onChange(!on)} aria-pressed={on}>
       {label}
       {count !== undefined && <b className="num">{count}</b>}
-    </button>
+    </Button>
   )
 }
 
@@ -453,7 +454,7 @@ export function PageSize({
             if (e.key === 'Escape') setDraft(String(value))
           }}
         />
-        <button
+        <Button plain
           type="button"
           className="psize-x"
           aria-label="اختر من القائمة"
@@ -462,7 +463,7 @@ export function PageSize({
           onClick={() => setOpen((x) => !x)}
         >
           <Icon name={icons.chevronDown} size="sm" />
-        </button>
+        </Button>
 
         {/* Same option row as any other list: a marker for the selected one, and reserved space for
             the rest. The numbers used to be centered with no marker — a fourth shape for the same
@@ -523,7 +524,7 @@ export function Pager({
           one click and position reads off the highlighted number — the two arrows move one step at
           a time, and their direction follows reading direction: back is to the right. */}
       <nav className="pager-b" aria-label="صفحات النتائج">
-        <button
+        <Button plain
           className="pgnav"
           disabled={page <= 1}
           onClick={() => onPage(page - 1)}
@@ -531,14 +532,14 @@ export function Pager({
           title="السابق"
         >
           <Icon name={icons.chevronBack} size="sm" />
-        </button>
+        </Button>
 
         <div className="pgnums">
           {pageWindow(page, pages).map((n, i) =>
             n === '…' ? (
               <span className="pggap" key={`gap-${i}`} aria-hidden="true">…</span>
             ) : (
-              <button
+              <Button plain
                 key={n}
                 className={`pgn num${n === page ? ' on' : ''}`}
                 aria-current={n === page ? 'page' : undefined}
@@ -546,12 +547,12 @@ export function Pager({
                 onClick={() => n !== page && onPage(n)}
               >
                 {n}
-              </button>
+              </Button>
             ),
           )}
         </div>
 
-        <button
+        <Button plain
           className="pgnav"
           disabled={page >= pages}
           onClick={() => onPage(page + 1)}
@@ -559,7 +560,7 @@ export function Pager({
           title="التالي"
         >
           <Icon name={icons.chevron} size="sm" />
-        </button>
+        </Button>
       </nav>
     </div>
   )
@@ -593,22 +594,22 @@ export function ViewToggle({
 }) {
   return (
     <div className="vtog" role="group" aria-label="طريقة العرض">
-      <button
+      <Button plain
         className={view === 'cards' ? 'on' : ''}
         onClick={() => onChange('cards')}
         aria-pressed={view === 'cards'}
         title="بطاقات"
       >
         <Icon name={icons.grid} size="sm" />
-      </button>
-      <button
+      </Button>
+      <Button plain
         className={view === 'table' ? 'on' : ''}
         onClick={() => onChange('table')}
         aria-pressed={view === 'table'}
         title="جدول"
       >
         <Icon name={icons.rows} size="sm" />
-      </button>
+      </Button>
     </div>
   )
 }
@@ -657,7 +658,7 @@ export function GroupPicker({
 
   return (
     <div className={`fsel fgrp${chain.length ? ' on' : ''}`} ref={box}>
-      <button
+      <Button plain
         type="button"
         className="fsel-b"
         aria-haspopup="listbox"
@@ -679,7 +680,7 @@ export function GroupPicker({
               ))}
         </span>
         <Icon name={icons.chevronDown} size="sm" />
-      </button>
+      </Button>
 
       {open && (
         <MenuPanel
@@ -687,9 +688,9 @@ export function GroupPicker({
             <>
               {full && <span className="sub">الحد الأقصى <span className="num">{max}</span> مستويات</span>}
               {chain.length > 0 && (
-                <button type="button" className="fclear" onClick={() => onChange(undefined)}>
+                <Button plain type="button" className="fclear" onClick={() => onChange(undefined)}>
                   إلغاء التجميع
-                </button>
+                </Button>
               )}
             </>
           }

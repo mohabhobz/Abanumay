@@ -1,7 +1,7 @@
 import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { BackTo, DateText, Empty, Glass, Head, Icon, Mono, Money, MultiSelect, Num, Tag, icons } from '@/components/ui'
+import { ButtonLink, BackTo, DateText, Empty, Glass, Head, Icon, Mono, Money, MultiSelect, Num, Tag, icons } from '@/components/ui'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { budgetReqOutcome, outcomeMatches, outcomeOptions } from '@/data/shared/outcome'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
@@ -55,10 +55,10 @@ export default function BudgetOpsPage() {
 
             </div>
             {mayAct('prepare', role) && (
-              <Link className="btn btn-p" to={ROUTES.budgetOpNew}>
+              <ButtonLink variant="p" to={ROUTES.budgetOpNew}>
                 <Icon name={icons.plus} size="sm" />
                 طلب جديد
-              </Link>
+              </ButtonLink>
             )}
           </header>
 

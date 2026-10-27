@@ -1,7 +1,7 @@
 import { readDisplay } from '@/lib/prefs'
 import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from './AuthShell'
 import { useArmed } from './useArmed'
 import { AFTER_LOGIN, ROUTES } from '@/app/routes'
@@ -142,7 +142,7 @@ export default function LoginPage() {
               armed={armed}
               enterKeyHint="go"
               trailing={
-                <button
+                <Button plain
                   type="button"
                   className="leye"
                   onClick={() => setShow((v) => !v)}
@@ -150,7 +150,7 @@ export default function LoginPage() {
                   title={show ? 'إخفاء' : 'إظهار'}
                 >
                   <Icon name={show ? icons.eyeOff : icons.eye} size="md" />
-                </button>
+                </Button>
               }
             />
 
@@ -161,14 +161,14 @@ export default function LoginPage() {
               </label>
               {/* Opens the self-service reset (2.3.pw) · the entity resets its own password with a
                   one-time code; it no longer goes through the system administrator. */}
-              <button type="button" className="llink" onClick={() => navigate(ROUTES.forgot)}>
+              <Button plain type="button" className="llink" onClick={() => navigate(ROUTES.forgot)}>
                 نسيت كلمة المرور؟
-              </button>
+              </Button>
             </div>
 
-            <button className="btn btn-p btn-full" type="submit" disabled={busy}>
+            <Button variant="p" full type="submit" disabled={busy}>
               {busy ? 'جارٍ التحقق…' : 'تسجيل الدخول'}
-            </button>
+            </Button>
           </form>
 
           {/* A completely separate flow, so it's styled as a ghost - not a second option competing
@@ -178,13 +178,13 @@ export default function LoginPage() {
                 button, could be focused and clicked, and nothing happened. Now it leads to the
                 public route `/entities/register`, which sits outside the login gate because the
                 applicant has no account yet. */}
-            <button
-              className="btn btn-2 btn-full"
+            <Button
+              variant="2" full
               type="button"
               onClick={() => navigate(ROUTES.entityRegister)}
             >
               تسجيل جهة جديدة
-            </button>
+            </Button>
           </div>
     </AuthShell>
   )

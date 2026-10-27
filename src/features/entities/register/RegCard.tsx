@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { rowGo } from '@/lib/rowGo'
-import { DateText, Icon, icons, Mono, Num, Person, Tag } from '@/components/ui'
+import { ButtonLink, DateText, Icon, icons, Mono, Num, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, NOUN, nounAfter } from '@/lib/format'
 import {
@@ -94,10 +94,10 @@ export function RegCard({ r }: { r: RegRequest }) {
       <footer className="payq-f">
         <Person name={r.clerkName} />
         <span className="pc-sp" />
-        <Link className="btn btn-2 btn-sm" to={ROUTES.entityRequest(r.id)}>
+        <ButtonLink variant="2" size="sm" to={ROUTES.entityRequest(r.id)}>
           افتح الطلب
           <Icon name={icons.chevron} size="sm" />
-        </Link>
+        </ButtonLink>
       </footer>
     </article>
   )

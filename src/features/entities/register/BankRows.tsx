@@ -1,4 +1,4 @@
-import { FieldSelect, Icon, Tag, icons } from '@/components/ui'
+import { FormField, FieldBox, Button, FieldSelect, Icon, Tag, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { BANKS, BANK_DOC_LABEL, emptyBank, type RegBank } from '@/data/mock/registration'
 import { ibanValid } from '@/lib/iban'
@@ -49,21 +49,20 @@ export function BankRows({
             {b.doc
               ? <Tag tone="ok">وثيقته مرفوعة</Tag>
               : <Tag tone="warn">{BANK_DOC_LABEL} ناقصة</Tag>}
-            <button
+            <Button
               type="button"
-              className="btn btn-ghost btn-sm"
+              variant="ghost" size="sm"
               disabled={banks.length <= min}
               title={banks.length <= min ? 'يلزم حساب واحد على الأقل' : `احذف الحساب ${i + 1}`}
               aria-label={`احذف الحساب ${i + 1}`}
               onClick={() => drop(b.id)}
             >
               <Icon name={icons.close} size="sm" />
-            </button>
+            </Button>
           </div>
 
           <div className="bkrow-f">
-            <label className="regf">
-              <span className="lb">اسم البنك<b className="regf-r" aria-label="إلزامي">*</b></span>
+            <FormField label="اسم البنك" required>
               {/* A closed list - a bank name written ten different ways makes sorting impossible. */}
               <FieldSelect
                 value={b.bankName}
@@ -71,34 +70,31 @@ export function BankRows({
                 onChange={(v) => patch(b.id, { bankName: v })}
                 label={`بنك الحساب ${i + 1}`}
               />
-            </label>
+            </FormField>
 
-            <label className="regf">
-              <span className="lb">اسم صاحب الحساب<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <span className="fld">
+            <FormField label="اسم صاحب الحساب" required>
+              <FieldBox>
                 <input
                   value={b.bankHolder}
                   onChange={(e) => patch(b.id, { bankHolder: e.target.value })}
                   aria-label={`صاحب الحساب ${i + 1}`}
                 />
-              </span>
-            </label>
+              </FieldBox>
+            </FormField>
 
-            <label className="regf">
-              <span className="lb">الاسم المختصر<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <span className="fld">
+            <FormField label="الاسم المختصر" required>
+              <FieldBox>
                 <input
                   value={b.shortName}
                   onChange={(e) => patch(b.id, { shortName: e.target.value })}
                   aria-label={`الاسم المختصر للحساب ${i + 1}`}
                   placeholder="مثل: تحفيظ"
                 />
-              </span>
-            </label>
+              </FieldBox>
+            </FormField>
 
-            <label className="regf">
-              <span className="lb">رقم الآيبان<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <span className="fld">
+            <FormField label="رقم الآيبان" required>
+              <FieldBox>
                 <input
                   value={b.iban}
                   dir="ltr"
@@ -107,19 +103,19 @@ export function BankRows({
                   aria-label={`آيبان الحساب ${i + 1}`}
                   placeholder="SA00 0000 0000 0000 0000 0000"
                 />
-              </span>
+              </FieldBox>
               {/* 2.4.6 · checked as it is typed: shape first, then the check digits */}
               {b.iban.replace(/\s/g, '').length >= 24 && !ibanValid(b.iban) && <span className="bad regf-h">الآيبان غير صحيح · تحقّق من الأرقام</span>}
-            </label>
+            </FormField>
           </div>
 
           {b.doc ? (
             <div className="regdoc-up">
               <DocFile name={b.doc} meta={`${BANK_DOC_LABEL} · بانتظار الإرسال`} block download={false} />
-              <button className="btn btn-ghost btn-sm" onClick={() => patch(b.id, { doc: undefined })}>
+              <Button variant="ghost" size="sm" onClick={() => patch(b.id, { doc: undefined })}>
                 <Icon name={icons.close} size="sm" />
                 أزل الوثيقة
-              </button>
+              </Button>
             </div>
           ) : (
             <label className="regdrop">
@@ -140,10 +136,10 @@ export function BankRows({
         </div>
       ))}
 
-      <button type="button" className="btn btn-2 btn-sm bkrows-a" onClick={add}>
+      <Button type="button" variant="2" size="sm" className="bkrows-a" onClick={add}>
         <Icon name={icons.plus} size="sm" />
         {banks.length ? 'أضف حسابًا بنكيًا آخر' : 'أضف حسابًا بنكيًا'}
-      </button>
+      </Button>
     </div>
   )
 }

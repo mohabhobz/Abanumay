@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { BackTo, DateText, Empty, Glass, Head, Money, MultiSelect, Num, Tag } from '@/components/ui'
+import { Button, BackTo, DateText, Empty, Glass, Head, Money, MultiSelect, Num, Tag } from '@/components/ui'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { caseOutcome, outcomeMatches, outcomeOptions } from '@/data/shared/outcome'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
@@ -70,7 +70,7 @@ export default function CasesPage() {
                 ))}
               </ul>
             ) : res.length || kinds.length
-              ? <Empty title="لا حالات بهذه النتيجة." actions={<button type="button" className="btn btn-2" onClick={() => set({ res: undefined, kind: undefined })}>مسح الفلتر</button>} />
+              ? <Empty title="لا حالات بهذه النتيجة." actions={<Button type="button" variant="2" onClick={() => set({ res: undefined, kind: undefined })}>مسح الفلتر</Button>} />
               : <Empty title="لا حالات تعثّر." />}
           </Glass>
         </div>

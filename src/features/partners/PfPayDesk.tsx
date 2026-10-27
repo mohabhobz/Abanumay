@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DockActions, DateText, Glass, Head, Money, MoneyField, Tag } from '@/components/ui'
+import { FieldBox, Button, DockActions, DateText, Glass, Head, Money, MoneyField, Tag } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -60,7 +60,7 @@ function PfPays({ pf }: { pf: PortfolioRec }) {
               {rq && mine(rq) && (
                 <span className="rowf gp-2">
                   {rq.state === 'eligible' && <MoneyField value={amt} onChange={setAmt} label={`قيمة إذن الدفعة ${rq.no}`} placeholder={nf.format(rq.asked ?? rq.amount)} />}
-                  {rq.state === 'order' && <span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label={`رقم أمر التحويل · ${pf.name} · الدفعة ${rq.no}`} placeholder="رقم أمر التحويل" /></span>}
+                  {rq.state === 'order' && <FieldBox><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label={`رقم أمر التحويل · ${pf.name} · الدفعة ${rq.no}`} placeholder="رقم أمر التحويل" /></FieldBox>}
                   {/* Client 26 Oct · each decision confirms in its popup · the return's reason there */}
                   <DockActions
                     actions={[
@@ -86,13 +86,13 @@ function PfPays({ pf }: { pf: PortfolioRec }) {
       {sup && pf.stage === 'approved' && next && (
         <div className="apv-row mt-3">
           {issue ? <span className="sub">{issue}</span> : null}
-          <span className="fld"><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label={`مبرّر طلب الدفعة · ${pf.name}`} placeholder="مبرّر الطلب وما أُنجز" /></span>
+          <FieldBox><input value={why} onChange={(e) => setWhy(e.target.value)} aria-label={`مبرّر طلب الدفعة · ${pf.name}`} placeholder="مبرّر الطلب وما أُنجز" /></FieldBox>
           <UploadButton label="مستند الطلب" onPick={(f) => setDocs((x) => [...x, f.name])} />
           {docs.length > 0 && <span className="sub">{docs.join('، ')}</span>}
-          <button type="button" className="btn btn-p btn-sm" disabled={Boolean(issue) || pf.agreement.state !== 'signed'} title={pf.agreement.state !== 'signed' ? 'بعد توقيع الاتفاقية' : ''}
+          <Button type="button" variant="p" size="sm" disabled={Boolean(issue) || pf.agreement.state !== 'signed'} title={pf.agreement.state !== 'signed' ? 'بعد توقيع الاتفاقية' : ''}
             onClick={() => { const out = requestPfPay(pf.id, next.no, next.amount, user.name, why, docs); setSaid(out.length ? { bad: out } : { ok: `متطلبات الدفعة ${next.no}` }); if (!out.length) { setWhy(''); setDocs([]) } }}>
             ارفع متطلبات الدفعة {next.no}
-          </button>
+          </Button>
         </div>
       )}
       <Said said={said} />

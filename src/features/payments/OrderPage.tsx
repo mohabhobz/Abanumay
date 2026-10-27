@@ -2,7 +2,7 @@ import { Related } from '@/components/related/Related'
 import { Fragment } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, Glass, Head, Icon, icons, Mono, Num, Riyal, Tag,
+  Button, BackTo, DateText, Empty, Glass, Head, Icon, icons, Mono, Num, Riyal, Tag,
 } from '@/components/ui'
 import { Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -98,10 +98,10 @@ export default function OrderPage() {
               </p>
             </div>
             {ready && (
-              <button className="btn btn-2" onClick={() => setTimeout(printArea, 60)}>
+              <Button variant="2" onClick={() => setTimeout(printArea, 60)}>
                 <Icon name={icons.export} size="sm" />
                 اطبع
-              </button>
+              </Button>
             )}
           </header>
 
@@ -114,9 +114,9 @@ export default function OrderPage() {
                   `${r.state === 'supervisor' || r.state === 'returned' ? 'متطلبات الدفعة لم تُعتمد بعد' : r.state === 'eligible' ? 'الدفعة مؤهلة للصرف ولم يُنشأ إذنها بعد' : r.state === 'exec' ? 'إذن الصرف ما زال بانتظار المدير التنفيذي' : r.state === 'closed' ? 'رُفض إذن الصرف نهائيًّا' : 'إذن الصرف ما زال بانتظار مدير المنح'}.`
                 }
                 actions={
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.payment(r.id))}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.payment(r.id))}>
                     العودة إلى الدفعة
-                  </button>
+                  </Button>
                 }
               />
             </Glass>

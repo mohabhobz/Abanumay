@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Glass, Head, Select, Switch, Tag } from '@/components/ui'
+import { FieldBox, Button, Glass, Head, Select, Switch, Tag } from '@/components/ui'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useRole } from '@/hooks/useRole'
@@ -49,11 +49,11 @@ export default function AiSettingsPage() {
             <Head title="الخدمة" />
             <div className="apv-row">
               <Select label="الوضع" value={d.mode} options={[{ value: 'rules', label: 'قواعد محلية' }, { value: 'api', label: 'خدمة الخادم' }]} onChange={(v) => admin && setD({ ...d, mode: (v ?? 'rules') as AiCfg['mode'] })} />
-              <span className="fld"><input dir="ltr" value={d.endpoint} disabled={!admin} onChange={(e) => setD({ ...d, endpoint: e.target.value })} aria-label="عنوان خدمة الذكاء الاصطناعي" placeholder="https://api…/ai" /></span>
-              <button type="button" className="btn btn-2 btn-sm" disabled={!d.endpoint} onClick={() => {
+              <FieldBox><input dir="ltr" value={d.endpoint} disabled={!admin} onChange={(e) => setD({ ...d, endpoint: e.target.value })} aria-label="عنوان خدمة الذكاء الاصطناعي" placeholder="https://api…/ai" /></FieldBox>
+              <Button type="button" variant="2" size="sm" disabled={!d.endpoint} onClick={() => {
                 setPing('جارٍ الاختبار…')
                 fetch(d.endpoint, { method: 'HEAD' }).then((r) => setPing(r.ok ? 'الخدمة تستجيب' : `ردّت الخدمة بالرمز ${r.status}`)).catch(() => setPing('تعذّر الوصول إلى الخدمة'))
-              }}>اختبر الاتصال</button>
+              }}>اختبر الاتصال</Button>
               {ping && <span className="sub">{ping}</span>}
             </div>
           </Glass>
@@ -61,7 +61,7 @@ export default function AiSettingsPage() {
           <Glass>
             <Head title="خدمة التعرف الضوئي (OCR)" />
             <div className="apv-row">
-              <span className="fld"><input dir="ltr" value={d.ocrEndpoint ?? ''} disabled={!admin} onChange={(e) => setD({ ...d, ocrEndpoint: e.target.value })} aria-label="عنوان خدمة التعرف الضوئي" placeholder="https://api…/ocr" /></span>
+              <FieldBox><input dir="ltr" value={d.ocrEndpoint ?? ''} disabled={!admin} onChange={(e) => setD({ ...d, ocrEndpoint: e.target.value })} aria-label="عنوان خدمة التعرف الضوئي" placeholder="https://api…/ocr" /></FieldBox>
               {d.ocrEndpoint ? <Tag tone="teal">مربوطة</Tag> : <Tag tone="warn">غير مربوطة</Tag>}
             </div>
           </Glass>
@@ -85,10 +85,10 @@ export default function AiSettingsPage() {
             {LISTS.map((x, i) => (
               <label key={x.k} className={`regf regf-w${i ? ' mt-3' : ''}`}>
                 <span className="lb">{x.t}</span>
-                <span className="fld fld-a">
+                <FieldBox area>
                   <textarea rows={4} value={t[x.k].join('\n')} disabled={!admin} aria-label={x.t} placeholder={x.n}
                     onChange={(e) => setT({ ...t, [x.k]: e.target.value.split('\n') })} />
-                </span>
+                </FieldBox>
               </label>
             ))}
           </Glass>

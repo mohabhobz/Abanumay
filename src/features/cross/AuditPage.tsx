@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, Glass, Icon, icons, Num, Pager, SearchBox, Select, Tag } from '@/components/ui'
+import { Button, DateText, Empty, Glass, Icon, icons, Num, Pager, SearchBox, Select, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { exportXlsx, type Sheet } from '@/lib/export'
@@ -63,10 +63,10 @@ export default function AuditPage() {
               <h1 className="ptitle">سجل التدقيق</h1>
               <p className="sub mt-1"><Num>{all.length}</Num> عملية في جميع الوحدات</p>
             </div>
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => exportXlsx(sheet)}>
+            <Button type="button" variant="2" size="sm" onClick={() => exportXlsx(sheet)}>
               <Icon name={icons.export} size="sm" />
               صدّر إلى إكسل
-            </button>
+            </Button>
           </header>
 
           <Glass className="ftoolbar">

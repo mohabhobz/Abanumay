@@ -1,5 +1,4 @@
-import { Link } from 'react-router-dom'
-import { Icon, icons } from '@/components/ui'
+import { ButtonLink, Icon, icons } from '@/components/ui'
 import type { ReactNode } from 'react'
 
 /* Header actions — **one place, one order, across every screen**.
@@ -65,27 +64,27 @@ export function PageActions({ settings, secondary, create, extra }: PageActionsP
   return (
     <div className="hacts">
       {settings && (
-        <Link className="btn btn-ghost" to={settings}>
+        <ButtonLink variant="ghost" to={settings}>
           <Icon name={icons.gear} size="sm" />
           الإعدادات
-        </Link>
+        </ButtonLink>
       )}
 
       {secondary?.map((a) => (
-        <Link key={a.to} className="btn btn-2" to={a.to}>
+        <ButtonLink key={a.to} variant="2" to={a.to}>
           {a.icon && <Icon name={icons[a.icon as keyof typeof icons]} size="sm" />}
           {a.label}
           {a.count !== undefined && a.count > 0 && <b className="num">{a.count}</b>}
-        </Link>
+        </ButtonLink>
       ))}
 
       {extra}
 
       {create && (
-        <Link className="btn btn-p" to={create.to}>
+        <ButtonLink variant="p" to={create.to}>
           <Icon name={icons.plus} size="sm" />
           {create.label}
-        </Link>
+        </ButtonLink>
       )}
     </div>
   )

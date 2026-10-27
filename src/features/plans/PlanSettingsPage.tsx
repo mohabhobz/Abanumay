@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BackTo, Glass, Head, Nil, Num, Tabs, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, BackTo, Glass, Head, Nil, Num, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, useDockSlot } from '@/components/shell'
 import { StageLimits } from '@/features/settings/CfgEdit'
@@ -163,18 +163,16 @@ function ActTimingTab() {
     <Glass>
       <Head title="تأخّر الأنشطة وتعثّرها" meta={<span className="sub">الافتراضي <Num>{ACT_TIMING_DEFAULT.delayDays}</Num> و<Num>{ACT_TIMING_DEFAULT.stallDays}</Num> أيام</span>} />
       <div className="actcfg">
-        <label className="regf">
-          <span className="lb">مدة التأخير · بالأيام بعد تاريخ الانتهاء<b className="regf-r" aria-label="إلزامي">*</b></span>
-          <span className="fld"><input inputMode="numeric" value={delay} onChange={(e) => { setDelay(e.target.value.replace(/[^\d]/g, '')); setSaid('') }} aria-label="مدة التأخير بالأيام" /></span>
-        </label>
-        <label className="regf">
-          <span className="lb">مدة التعثّر · بالأيام بعد تاريخ الانتهاء<b className="regf-r" aria-label="إلزامي">*</b></span>
-          <span className="fld"><input inputMode="numeric" value={stall} onChange={(e) => { setStall(e.target.value.replace(/[^\d]/g, '')); setSaid('') }} aria-label="مدة التعثّر بالأيام" aria-invalid={issues.length > 0} /></span>
-        </label>
-        <button type="button" className="btn btn-p" disabled={!dirty || issues.length > 0}
+        <FormField label="مدة التأخير · بالأيام بعد تاريخ الانتهاء" required>
+          <FieldBox><input inputMode="numeric" value={delay} onChange={(e) => { setDelay(e.target.value.replace(/[^\d]/g, '')); setSaid('') }} aria-label="مدة التأخير بالأيام" /></FieldBox>
+        </FormField>
+        <FormField label="مدة التعثّر · بالأيام بعد تاريخ الانتهاء" required>
+          <FieldBox><input inputMode="numeric" value={stall} onChange={(e) => { setStall(e.target.value.replace(/[^\d]/g, '')); setSaid('') }} aria-label="مدة التعثّر بالأيام" aria-invalid={issues.length > 0} /></FieldBox>
+        </FormField>
+        <Button type="button" variant="p" disabled={!dirty || issues.length > 0}
           onClick={() => { const e = saveActTiming(next); setSaid(e[0] ?? 'حُفظت المدد · تُقرأ بها حالة كل نشاط من الآن') }}>
           احفظ المدد
-        </button>
+        </Button>
       </div>
       {issues.length > 0 && <p className="bad cnote" role="alert">{issues.join(' · ')}</p>}
       {said && !issues.length && <p className="sub cnote" aria-live="polite">{said}</p>}

@@ -1,7 +1,7 @@
 import { SessionGuard } from './SessionGuard'
 import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Icon, icons } from '@/components/ui'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { ButtonLink, Button, Icon, icons } from '@/components/ui'
 import { portalOf } from '@/app/entityAccess'
 import { AskDock, Background, MobileTop, NotificationBell, Rail } from '@/components/shell'
 import { AssistantOverlay } from '@/features/assistant/AssistantOverlay'
@@ -99,15 +99,15 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
               the staff navigation · its way out is its portal */}
           {entity ? (
             <nav className="xs-etop glass" aria-label="بوابة الجهة">
-              <Link className="btn btn-2 btn-sm" to={portalOf(sessionScope())}>
+              <ButtonLink variant="2" size="sm" to={portalOf(sessionScope())}>
                 <Icon name={icons.chevronBack} size="sm" />
                 بوابة {user.name}
-              </Link>
+              </ButtonLink>
               <NotificationBell user={user} entity={user.name} place="top" />
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}>
                 <Icon name={icons.logout} size="sm" />
                 تسجيل الخروج
-              </button>
+              </Button>
             </nav>
           ) : (
           <Rail

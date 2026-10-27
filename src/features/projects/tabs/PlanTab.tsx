@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Icon, KV, Money, Num, Tabs, Tag, icons } from '@/components/ui'
+import { ButtonLink, Button, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Tabs, Tag, icons } from '@/components/ui'
 import { TONE } from '@/lib/tone'
 import { ROUTES } from '@/app/routes'
 import { nf, NOUN, nounAfter, pct, ver } from '@/lib/format'
@@ -45,15 +45,15 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
           art={{ done: 0 }}
           title="هذا المشروع لم تُفتح له خطة تنفيذ."
           actions={onStart && (
-            <button
-              className="btn btn-p"
+            <Button
+              variant="p"
               disabled={Boolean(startBlocked)}
               title={startBlocked || 'يفتح الخطة ويرسلها إلى الجهة لتعبئتها'}
               onClick={onStart}
             >
               <Icon name={icons.plus} size="sm" />
               افتح خطة للمشروع
-            </button>
+            </Button>
           )}
         />
       </Glass>
@@ -190,11 +190,11 @@ export function PlanTab({ plan: p, granted, onStart, startBlocked }: PlanTabProp
 
       {/* Client 27 Oct · the card's actions on its own foot, clear of the data above them */}
       <div className="cardfoot">
-        <Link to={ROUTES.plan(p.id)} className="btn btn-p">
+        <ButtonLink to={ROUTES.plan(p.id)} variant="p">
           افتح الخطة
           <Icon name={icons.chevron} size="sm" />
-        </Link>
-        <Link to={ROUTES.plans} className="btn btn-2">صندوق الخطط</Link>
+        </ButtonLink>
+        <ButtonLink to={ROUTES.plans} variant="2">صندوق الخطط</ButtonLink>
       </div>
     </Glass>
   )

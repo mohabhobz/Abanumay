@@ -3,7 +3,7 @@ import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { useMemo, useState } from 'react'
 import { readAllocation, readBudgetAdvice } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { type TabItem, Tabs, FieldMultiSelect,
+import { ButtonLink, FormField, FieldBox, Button, type TabItem, Tabs, FieldMultiSelect,
   DateField, BackTo, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Nil, Num,
   Face, Person, Riyal, Tag, DockWhy } from '@/components/ui'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -188,7 +188,7 @@ export default function BudgetDocPage() {
             <Glass>
               <Empty
                 title="الميزانية غير موجودة."
-                actions={<button className="btn btn-2" onClick={() => navigate(ROUTES.budget)}>ارجع إلى الميزانية</button>}
+                actions={<Button variant="2" onClick={() => navigate(ROUTES.budget)}>ارجع إلى الميزانية</Button>}
               />
             </Glass>
           </div>
@@ -258,23 +258,20 @@ export default function BudgetDocPage() {
               <Glass>
                 <Head title="بيانات الميزانية" />
                 <div className="regfields">
-                  <label className="regf regf-w">
-                    <span className="lb">اسم الميزانية<b className="regf-r" aria-label="إلزامي">*</b></span>
-                    <span className="fld">
+                  <FormField label="اسم الميزانية" required wide>
+                    <FieldBox>
                       <input disabled={ro} value={doc.name ?? ''} onChange={(e) => setDoc((d) => ({ ...d, name: e.target.value }))} placeholder="مثال: ميزانية المنح 2027" aria-label="اسم الميزانية" />
-                    </span>
+                    </FieldBox>
 
-                  </label>
+                  </FormField>
 
-                  <label className="regf regf-w">
-                    <span className="lb">تعريف الميزانية</span>
-                    <span className="fld fld-a">
+                  <FormField label="تعريف الميزانية" wide>
+                    <FieldBox area>
                       <textarea rows={2} disabled={ro} value={doc.description ?? ''} onChange={(e) => setDoc((d) => ({ ...d, description: e.target.value }))} aria-label="تعريف الميزانية" />
-                    </span>
-                  </label>
+                    </FieldBox>
+                  </FormField>
 
-                  <label className="regf">
-                    <span className="lb">السنة المالية<b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <FormField label="السنة المالية" required>
                     <FieldSelect
                       value={doc.yearId}
                       label="السنة المالية"
@@ -283,29 +280,25 @@ export default function BudgetDocPage() {
                       onChange={setYear}
                     />
 
-                  </label>
+                  </FormField>
 
-                  <label className="regf">
-                    <span className="lb">المبلغ الإجمالي<b className="regf-r" aria-label="إلزامي">*</b></span>
-                    <span className="fld">
+                  <FormField label="المبلغ الإجمالي" required>
+                    <FieldBox>
                       <input type="text" inputMode="numeric" disabled={ro} value={doc.total ? nf.format(doc.total) : ''} onChange={(e) => setTotal(digits(e.target.value))} aria-label="المبلغ الإجمالي" />
                       <Riyal />
-                    </span>
+                    </FieldBox>
 
-                  </label>
+                  </FormField>
 
-                  <label className="regf">
-                    <span className="lb">من تاريخ</span>
+                  <FormField label="من تاريخ">
                     <DateField disabled={ro} value={doc.from} onChange={(x) => setDoc((d) => ({ ...d, from: x }))} label="من تاريخ" />
-                  </label>
+                  </FormField>
 
-                  <label className="regf">
-                    <span className="lb">إلى تاريخ</span>
+                  <FormField label="إلى تاريخ">
                     <DateField disabled={ro} value={doc.to} onChange={(x) => setDoc((d) => ({ ...d, to: x }))} label="إلى تاريخ" min={doc.from || undefined} />
-                  </label>
+                  </FormField>
 
-                  <label className="regf regf-w">
-                    <span className="lb">التوجهات الاستراتيجية<b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <FormField label="التوجهات الاستراتيجية" required wide>
                     <FieldMultiSelect
                       placeholder="اختر التوجهات"
                       disabled={ro}
@@ -314,7 +307,7 @@ export default function BudgetDocPage() {
                       onChange={(v) => setDoc((d) => ({ ...d, directionIds: v }))}
                     />
 
-                  </label>
+                  </FormField>
                 </div>
 
                 {/* Funding source (1.2.2 · 1.4.4) · client 18 Oct (#37): each source has its own budget,
@@ -331,22 +324,22 @@ export default function BudgetDocPage() {
                         onChange={(v) => setSources(sources.map((x, j) => (j === i ? { ...x, code: v } : x)))}
                       />
                       {many && (
-                        <span className="fld">
+                        <FieldBox>
                           <input type="text" inputMode="numeric" disabled={ro} value={s.amount ? nf.format(s.amount) : ''} onChange={(e) => setSources(sources.map((x, j) => (j === i ? { ...x, amount: digits(e.target.value) } : x)))} aria-label={`مبلغ ${sourceName(s.code)}`} />
                           <Riyal />
-                        </span>
+                        </FieldBox>
                       )}
                       {!ro && sources.length > 1 && (
-                        <button className="btn btn-ghost btn-sm" aria-label={`احذف ${sourceName(s.code)}`} title="احذف المصدر" onClick={() => setSources(sources.filter((_, j) => j !== i))}>
+                        <Button variant="ghost" size="sm" aria-label={`احذف ${sourceName(s.code)}`} title="احذف المصدر" onClick={() => setSources(sources.filter((_, j) => j !== i))}>
                           <Icon name={icons.close} size="sm" />
-                        </button>
+                        </Button>
                       )}
                     </li>
                   ))}
                 </ul>
                 {!ro && sources.length === 0 && (
-                  <button
-                    className="btn btn-2 btn-sm"
+                  <Button
+                    variant="2" size="sm"
                     onClick={() => {
                       const free = fundSources.find((f) => !sources.some((x) => x.code === f.code))
                       if (free) setSources([...sources, { code: free.code, amount: sources.length ? 0 : doc.total }])
@@ -354,7 +347,7 @@ export default function BudgetDocPage() {
                   >
                     <Icon name={icons.plus} size="sm" />
                     {sources.length ? 'أضف مصدرًا آخر' : 'اختر مصدر التمويل'}
-                  </button>
+                  </Button>
                 )}
 
               </Glass>
@@ -406,10 +399,10 @@ export default function BudgetDocPage() {
 
                 actions={editable ? (
                   /* "Add item", not "add the root item" - the choice is open, and the rule governs it. */
-                  <button className="btn btn-p" disabled={!headReady} title={headReady ? 'أضف بندًا إلى الشجرة' : 'أكمل بيانات الميزانية أولًا'} onClick={() => setModal({ edit: null, under: null })}>
+                  <Button variant="p" disabled={!headReady} title={headReady ? 'أضف بندًا إلى الشجرة' : 'أكمل بيانات الميزانية أولًا'} onClick={() => setModal({ edit: null, under: null })}>
                     <Icon name={icons.plus} size="sm" />
                     أضف بندًا
-                  </button>
+                  </Button>
                 ) : undefined}
               />
             ) : (
@@ -447,9 +440,9 @@ export default function BudgetDocPage() {
                         {/* Indentation via a class, not an inline variable. */}
                         <span className={`btree-n l${Math.min(lvl, 6)}`}>
                           {kids ? (
-                            <button className="btree-x" onClick={() => toggle(x.id)} aria-label={shut.has(x.id) ? 'افتح البند' : 'اطوِ البند'} aria-expanded={!shut.has(x.id)}>
+                            <Button plain className="btree-x" onClick={() => toggle(x.id)} aria-label={shut.has(x.id) ? 'افتح البند' : 'اطوِ البند'} aria-expanded={!shut.has(x.id)}>
                               <Icon name={shut.has(x.id) ? icons.chevronDown : icons.chevronUp} size="sm" />
-                            </button>
+                            </Button>
                           ) : (
                             <span className="btree-x" />
                           )}
@@ -492,30 +485,30 @@ export default function BudgetDocPage() {
                         <span className="btree-act">
                           {editable ? (
                             <>
-                              <button className="btn btn-ghost btn-sm" title={`عدّل ${x.label}`} aria-label={`عدّل ${x.label}`} onClick={() => setModal({ edit: x.id, under: x.parentId })}>
+                              <Button variant="ghost" size="sm" title={`عدّل ${x.label}`} aria-label={`عدّل ${x.label}`} onClick={() => setModal({ edit: x.id, under: x.parentId })}>
                                 <Icon name={icons.edit} size="sm" />
-                              </button>
+                              </Button>
                               {x.kind !== 'sub' ? (
-                                <button className="btn btn-ghost btn-sm" title={`أضف بندًا تحت ${x.label}`} aria-label={`أضف بندًا تحت ${x.label}`} onClick={() => setModal({ edit: null, under: x.id })}>
+                                <Button variant="ghost" size="sm" title={`أضف بندًا تحت ${x.label}`} aria-label={`أضف بندًا تحت ${x.label}`} onClick={() => setModal({ edit: null, under: x.id })}>
                                   <Icon name={icons.plus} size="sm" />
-                                </button>
+                                </Button>
                               ) : <span className="act-slot" aria-hidden="true" />}
                               {x.parentId === null ? <span className="act-slot" aria-hidden="true" /> : (
-                                <button
-                                  className="btn btn-ghost btn-sm"
+                                <Button
+                                  variant="ghost" size="sm"
                                   disabled={Boolean(block)}
                                   title={block || 'احذف البند'}
                                   aria-label={block ? `لا يُحذف ${x.label} · ${block}` : `احذف ${x.label}`}
                                   onClick={() => removeNode(x.id)}
                                 >
                                   <Icon name={icons.close} size="sm" />
-                                </button>
+                                </Button>
                               )}
                             </>
                           ) : live && x.parentId !== null && (mayStatus || mayAct('status', role) || canPrepare) ? (
-                            <button className="btn btn-ghost btn-sm" title={`إجراء على ${x.label}`} aria-label={`إجراء على ${x.label}`} onClick={() => setAct(x)}>
+                            <Button variant="ghost" size="sm" title={`إجراء على ${x.label}`} aria-label={`إجراء على ${x.label}`} onClick={() => setAct(x)}>
                               <Icon name={icons.dots} size="sm" />
-                            </button>
+                            </Button>
                           ) : null}
                         </span>
                       </div>
@@ -585,33 +578,33 @@ export default function BudgetDocPage() {
             <div className="rowf gp-2">
               {editable && (
                 <>
-                  <button className="btn btn-2" disabled={!headReady || !doc.name?.trim()} title={headReady ? 'احفظ كمسودة' : 'أكمل بيانات الميزانية أولًا'} onClick={() => persist(false)}>
+                  <Button variant="2" disabled={!headReady || !doc.name?.trim()} title={headReady ? 'احفظ كمسودة' : 'أكمل بيانات الميزانية أولًا'} onClick={() => persist(false)}>
                     احفظ المسودة
-                  </button>
-                  <button
-                    className="btn btn-p"
+                  </Button>
+                  <Button
+                    variant="p"
                     disabled={!canSubmit}
                     title={head[0] ?? (issues.length ? `${issues.length} ملاحظة على الشجرة` : `أرسل إلى ${whoActs('submitted')}`)}
                     onClick={() => persist(true)}
                   >
                     أرسل للمراجعة
-                  </button>
+                  </Button>
                 </>
               )}
               {myStep && existing && (
                 <>
-                  <button className="btn btn-p" onClick={() => setDecide('ok')}>{STEP_SAY[myStep].ok}</button>
-                  <button className="btn btn-2" onClick={() => setDecide('back')}>{STEP_SAY[myStep].back}</button>
+                  <Button variant="p" onClick={() => setDecide('ok')}>{STEP_SAY[myStep].ok}</Button>
+                  <Button variant="2" onClick={() => setDecide('back')}>{STEP_SAY[myStep].back}</Button>
                 </>
               )}
               {live && existing && canPrepare && (
-                <Link className="btn btn-2" to={`${ROUTES.budgetOpNew}?doc=${existing.id}`}>
+                <ButtonLink variant="2" to={`${ROUTES.budgetOpNew}?doc=${existing.id}`}>
                   <Icon name={icons.redo} size="sm" />
                   طلب مناقلة أو تعزيز
-                </Link>
+                </ButtonLink>
               )}
               {!editable && !myStep && !live && (
-                <button className="btn btn-2" onClick={() => navigate(ROUTES.budget)}>ارجع إلى الميزانية</button>
+                <Button variant="2" onClick={() => navigate(ROUTES.budget)}>ارجع إلى الميزانية</Button>
               )}
             </div>
           </div>

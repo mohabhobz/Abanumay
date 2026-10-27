@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Glass, Head, Switch } from '@/components/ui'
+import { Button, Glass, Head, Switch } from '@/components/ui'
 import { CfgNum } from './CfgEdit'
 import { AUTH_RULES, DEMO, saveAuthRules, setSwitcher, type AuthRules } from '@/data/authGuard'
 
@@ -19,7 +19,7 @@ export function AuthRulesCard({ by, admin }: { by: string; admin: boolean }) {
   )
   return (
     <Glass>
-      <Head title="حماية الدخول" meta={dirty && admin ? <button type="button" className="btn btn-p btn-sm" onClick={() => { saveAuthRules(d, by); setSaved({ ...d }) }}>احفظ</button> : undefined} />
+      <Head title="حماية الدخول" meta={dirty && admin ? <Button type="button" variant="p" size="sm" onClick={() => { saveAuthRules(d, by); setSaved({ ...d }) }}>احفظ</Button> : undefined} />
       <ul className="cfglist">
         {row('maxTries', 'محاولات كلمة المرور الخاطئة', 'محاولات')}
         {row('lockMinutes', 'مدة القفل', 'دقيقة')}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { BackTo, Empty, Glass, Head, Icon, Num, Tag, icons } from '@/components/ui'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ButtonLink, FormField, FieldBox, Button, BackTo, Empty, Glass, Head, Icon, Num, Tag, icons } from '@/components/ui'
 import { DocList, DocReadNote, UploadButton, useDocReads, type DocRow } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -64,9 +64,9 @@ export default function ReportEditPage() {
               <Empty
                 title="لا يوجد طلب إغلاق بهذا الرقم."
                 actions={
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.closings)}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.closings)}>
                     العودة إلى صندوق الإغلاق
-                  </button>
+                  </Button>
                 }
               />
             </Glass>
@@ -160,10 +160,10 @@ export default function ReportEditPage() {
                 {REPORT_TERMS.map((t) => <li key={t}>{t}</li>)}
               </ol>
               <div className="rowf gp-2 mt-3" role="radiogroup" aria-label="نموذج التقرير">
-                <button type="button" role="radio" aria-checked={template === 'foundation'} className={`cfgchip${template === 'foundation' ? ' on' : ''}`} disabled={closed} onClick={() => setTemplate('foundation')}>قالب المؤسسة</button>
-                <button type="button" role="radio" aria-checked={template === 'own'} className={`cfgchip${template === 'own' ? ' on' : ''}`} disabled={closed} onClick={() => setTemplate('own')}>نموذج الجهة الخاص</button>
+                <Button plain type="button" role="radio" aria-checked={template === 'foundation'} className={`cfgchip${template === 'foundation' ? ' on' : ''}`} disabled={closed} onClick={() => setTemplate('foundation')}>قالب المؤسسة</Button>
+                <Button plain type="button" role="radio" aria-checked={template === 'own'} className={`cfgchip${template === 'own' ? ' on' : ''}`} disabled={closed} onClick={() => setTemplate('own')}>نموذج الجهة الخاص</Button>
                 <span className="pc-sp" />
-                <button type="button" className="btn btn-2 btn-sm" onClick={downloadTemplate}><Icon name={icons.export} size="sm" />نزّل قالب المؤسسة</button>
+                <Button type="button" variant="2" size="sm" onClick={downloadTemplate}><Icon name={icons.export} size="sm" />نزّل قالب المؤسسة</Button>
               </div>
             </Glass>
           )}
@@ -177,10 +177,9 @@ export default function ReportEditPage() {
                 ? <TargetActual c={c} />
                 : <TargetActual c={c} edit values={tva} onValue={setTva} outputs={outs} onOutput={(i, v) => setOuts((x) => x.map((y, j) => (j === i ? { ...y, achieved: v } : y)))} />}
               {partial && (
-                <label className="regf mt-3">
-                  <span className="lb">علاقة مساهمة المؤسسة بما تحقق<b className="regf-r" aria-label="إلزامي">*</b></span>
-                  <span className="fld"><textarea rows={2} value={contribution} disabled={closed} onChange={(e) => setContribution(e.target.value)} aria-label="علاقة مساهمة المؤسسة بما تحقق" placeholder="ما الذي موّلته مساهمة المؤسسة تحديدًا من المخرجات" /></span>
-                </label>
+                <FormField label="علاقة مساهمة المؤسسة بما تحقق" required className="mt-3">
+                  <FieldBox><textarea rows={2} value={contribution} disabled={closed} onChange={(e) => setContribution(e.target.value)} aria-label="علاقة مساهمة المؤسسة بما تحقق" placeholder="ما الذي موّلته مساهمة المؤسسة تحديدًا من المخرجات" /></FieldBox>
+                </FormField>
               )}
             </Glass>
           )}
@@ -188,11 +187,9 @@ export default function ReportEditPage() {
           <Glass>
             <Head title="النتائج والتحديات" />
 
-            <label className="regf">
-              <span className="lb">
-                {stopped ? 'ما نُفّذ حتى الإيقاف' : 'أبرز المخرجات والنتائج المحققة'}<b className="regf-r" aria-label="إلزامي">*</b>
-              </span>
-              <span className="fld">
+            <FormField label={<>
+                {stopped ? 'ما نُفّذ حتى الإيقاف' : 'أبرز المخرجات والنتائج المحققة'}</>} required>
+              <FieldBox>
                 <textarea
                   rows={4}
                   value={outcomes}
@@ -201,14 +198,13 @@ export default function ReportEditPage() {
                   aria-label="أبرز المخرجات والنتائج المحققة"
                   placeholder="نُفّذت 42 جلسة من 48 · وخدمت 780 مستفيدًا في ستة مراكز"
                 />
-              </span>
-            </label>
+              </FieldBox>
+            </FormField>
 
             {/* Note: "challenges" isn't required · an unexplained gap between target and actual comes
                 back as a reviewer's question, and the cycle runs one extra lap. */}
-            <label className="regf">
-              <span className="lb">التحديات والانحرافات · اختياري</span>
-              <span className="fld">
+            <FormField label="التحديات والانحرافات · اختياري">
+              <FieldBox>
                 <textarea
                   rows={3}
                   value={risks}
@@ -217,8 +213,8 @@ export default function ReportEditPage() {
                   aria-label="التحديات والانحرافات"
                   placeholder="تأخّر التوريد شهرًا في المرحلة الثانية"
                 />
-              </span>
-            </label>
+              </FieldBox>
+            </FormField>
           </Glass>
 
           <Glass>
@@ -242,9 +238,9 @@ export default function ReportEditPage() {
             <Head title="رابط خارجي · اختياري" meta={c.report.links.length ? <span className="sub"><Num>{c.report.links.length}</Num> رابط</span> : undefined} />
             {!closed && (
               <div className="apv-row">
-                <span className="fld"><input type="url" value={link} onChange={(e) => setLink(e.target.value)} aria-label="رابط خارجي" placeholder="https://" /></span>
-                <span className="fld"><input value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} placeholder="وصف الرابط" aria-label="وصف الرابط" /></span>
-                <button type="button" className="btn btn-2 btn-sm" disabled={!link.trim()} onClick={() => { const out = addLink(c.id, linkLabel, link, c.entityName); setBad(out); if (!out.length) { setLink(''); setLinkLabel('') } }}>أضف الرابط</button>
+                <FieldBox><input type="url" value={link} onChange={(e) => setLink(e.target.value)} aria-label="رابط خارجي" placeholder="https://" /></FieldBox>
+                <FieldBox><input value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} placeholder="وصف الرابط" aria-label="وصف الرابط" /></FieldBox>
+                <Button type="button" variant="2" size="sm" disabled={!link.trim()} onClick={() => { const out = addLink(c.id, linkLabel, link, c.entityName); setBad(out); if (!out.length) { setLink(''); setLinkLabel('') } }}>أضف الرابط</Button>
               </div>
             )}
             {c.report.links.length > 0 && <ul className="apv-list">{c.report.links.map((l) => <li key={l.url}><span className="apv-t"><b>{l.label}</b><span className="sub">{l.url}</span></span></li>)}</ul>}
@@ -253,10 +249,10 @@ export default function ReportEditPage() {
 
           {!closed && (
             <div className="act-a">
-              <button type="button" className="btn btn-p" onClick={onSave}>
+              <Button type="button" variant="p" onClick={onSave}>
                 احفظ وارجع إلى الطلب
-              </button>
-              <Link className="btn btn-2" to={back}>إلغاء</Link>
+              </Button>
+              <ButtonLink variant="2" to={back}>إلغاء</ButtonLink>
             </div>
           )}
 

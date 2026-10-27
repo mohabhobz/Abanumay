@@ -1,7 +1,7 @@
 import { downloadDoc } from '@/lib/download'
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { DocThumb } from './DocThumb'
 import { docKind, isScan, KIND_LABEL } from './kind'
 
@@ -62,9 +62,9 @@ export function DocPreview({ name, meta, src, mime, onClose }: DocPreviewProps) 
           <a className="aclose" download={name} href="#" onClick={(e) => { e.preventDefault(); downloadDoc(name) }} title="تنزيل" aria-label="تنزيل">
             <Icon name={icons.export} size="sm" />
           </a>
-          <button className="aclose" onClick={onClose} aria-label="إغلاق">
+          <Button plain className="aclose" onClick={onClose} aria-label="إغلاق">
             <Icon name={icons.close} size="sm" />
-          </button>
+          </Button>
         </div>
 
         <div className="fpbody">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FieldMultiSelect, FieldSelect, Glass, Head, Icon, MultiSelect, Num, Person, Switch, icons } from '@/components/ui'
+import { FieldBox, Button, FieldMultiSelect, FieldSelect, Glass, Head, Icon, MultiSelect, Num, Person, Switch, icons } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
 import { CfgNum } from '@/features/settings/CfgEdit'
 import { capOf } from '@/data/approval'
@@ -72,13 +72,13 @@ export function ApprovalRulesTab() {
             <li key={`${c}-${i}`} className="itk-sup">
               <span className="cfgl"><b>{c}</b></span>
               <span className="pc-sp" />
-              <button type="button" className="iact" aria-label={`احذف المعيار ${c}`} title="احذف" onClick={() => put('referCriteria', d.referCriteria.filter((_, j) => j !== i))}><Icon name={icons.close} size="sm" /></button>
+              <Button plain type="button" className="iact" aria-label={`احذف المعيار ${c}`} title="احذف" onClick={() => put('referCriteria', d.referCriteria.filter((_, j) => j !== i))}><Icon name={icons.close} size="sm" /></Button>
             </li>
           ))}
         </ul>
         <div className="cfgrow">
-          <span className="fld"><input value={crit} onChange={(e) => setCrit(e.target.value)} placeholder="معيار إحالة جديد" aria-label="معيار إحالة جديد" /></span>
-          <button type="button" className="btn btn-2 cfgadd" disabled={!crit.trim() || d.referCriteria.includes(crit.trim())} onClick={() => { put('referCriteria', [...d.referCriteria, crit.trim()]); setCrit('') }}>أضف المعيار</button>
+          <FieldBox><input value={crit} onChange={(e) => setCrit(e.target.value)} placeholder="معيار إحالة جديد" aria-label="معيار إحالة جديد" /></FieldBox>
+          <Button type="button" variant="2" className="cfgadd" disabled={!crit.trim() || d.referCriteria.includes(crit.trim())} onClick={() => { put('referCriteria', [...d.referCriteria, crit.trim()]); setCrit('') }}>أضف المعيار</Button>
         </div>
         <ul className="cfglist">
           <li className="itk-sup">
@@ -165,25 +165,25 @@ export function ApprovalRulesTab() {
               <Person name={c.person} />
               <span className="sub trim1">{entityRows.find((e) => e.id === c.entityId)?.name ?? c.entityId} · {c.reason}</span>
               <span className="pc-sp" />
-              <button className="btn btn-ghost btn-sm" aria-label={`احذف تعارض ${c.person}`} onClick={() => put('conflicts', d.conflicts.filter((_, j) => j !== i))}>
+              <Button variant="ghost" size="sm" aria-label={`احذف تعارض ${c.person}`} onClick={() => put('conflicts', d.conflicts.filter((_, j) => j !== i))}>
                 <Icon name={icons.close} size="sm" />
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
         <div className="apv-row">
           <MultiSelect label="الشخص" all="الشخص" people values={cp ? [cp] : []} options={STAFF()} onChange={(v) => setCp(v[v.length - 1] ?? '')} />
           <FieldSelect value={ce} label="الجهة" placeholder="الجهة" searchAt={6} options={entityRows.filter((e) => !e.archived).slice(0, 200).map((e) => ({ value: e.id, label: e.name }))} onChange={setCe} />
-          <span className="fld"><input value={cr} onChange={(e) => setCr(e.target.value)} placeholder="سبب التعارض" aria-label="سبب التعارض" /></span>
-          <button className="btn btn-2 btn-sm" disabled={!cp || !ce || !cr.trim()} onClick={() => { put('conflicts', [...d.conflicts, { person: cp, entityId: ce, reason: cr.trim() }]); setCp(''); setCe(''); setCr('') }}>
+          <FieldBox><input value={cr} onChange={(e) => setCr(e.target.value)} placeholder="سبب التعارض" aria-label="سبب التعارض" /></FieldBox>
+          <Button variant="2" size="sm" disabled={!cp || !ce || !cr.trim()} onClick={() => { put('conflicts', [...d.conflicts, { person: cp, entityId: ce, reason: cr.trim() }]); setCp(''); setCe(''); setCr('') }}>
             <Icon name={icons.plus} size="sm" />أضف
-          </button>
+          </Button>
         </div>
       </Glass>
 
       <Glass>
         <Head title="بيانات العرض التجريبي" />
-        <button type="button" className="btn btn-2" onClick={resetApprovals}>أعد ضبط بيانات الاعتماد</button>
+        <Button type="button" variant="2" onClick={resetApprovals}>أعد ضبط بيانات الاعتماد</Button>
       </Glass>
 
       {dirty && (

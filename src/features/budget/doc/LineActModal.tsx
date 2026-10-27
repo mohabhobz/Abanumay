@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
-import { FieldMultiSelect, Icon, icons } from '@/components/ui'
+import { FormField, FieldBox, Modal, ModalHead, Button, FieldMultiSelect, icons } from '@/components/ui'
 import { childrenOf, pathOf, type BudgetDoc, type BudgetNode } from '@/data/mock/budgetTree'
 import { CYCLE } from '@/data/intake/cycle'
 import { ownersOf, setLineOwners, setLineStatus } from '@/data/budget/store'
@@ -22,30 +21,24 @@ export function LineActModal({ doc, node, me, mayStatus, onClose }: {
   const domain = node.kind === 'main' && node.parentId !== null && doc.nodes.find((x) => x.id === node.parentId)?.kind === 'main'
   const ownersChanged = JSON.stringify(owners) !== JSON.stringify(ownersOf(node))
 
-  return createPortal(
-    <div className="bmask" role="presentation" onClick={onClose}>
-      <div className="chrome modal" role="dialog" aria-modal="true" aria-label={`إجراء على ${node.label}`} onClick={(x) => x.stopPropagation()}>
-        <div className="mh">
-          <Icon name={icons.budget} size="md" />
-          <b>{node.label}</b>
+  return <Modal label={`إجراء على ${node.label}`} onClose={onClose}>
+        <ModalHead icon={icons.budget} title={node.label}>
           <span className="pc-sp" />
           <span className="sub trim1">{pathOf(doc.nodes, node.id)}</span>
-        </div>
+        </ModalHead>
         <div className="mb col">
           {mayStatus && (
             <>
               {node.active && n > 0 && (
                 <p className="sub cnote">يتوقف معه <b className="num">{n}</b> بندًا تحته.</p>
               )}
-              <label className="regf">
-                <span className="lb">السبب{node.active && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
-                <span className="fld"><input autoFocus value={reason} onChange={(x) => setReason(x.target.value)} aria-label="السبب" /></span>
-              </label>
+              <FormField label="السبب" required={node.active}>
+                <FieldBox><input autoFocus value={reason} onChange={(x) => setReason(x.target.value)} aria-label="السبب" /></FieldBox>
+              </FormField>
             </>
           )}
           {domain && (
-            <label className="regf">
-              <span className="lb">مشرف المنح المسؤول</span>
+            <FormField label="مشرف المنح المسؤول">
               <FieldMultiSelect
                 label="مشرف المنح المسؤول"
                 placeholder="بلا إسناد"
@@ -55,28 +48,25 @@ export function LineActModal({ doc, node, me, mayStatus, onClose }: {
                 onChange={setOwners}
               />
 
-            </label>
+            </FormField>
           )}
         </div>
         <div className="mf">
           {mayStatus && (
-            <button
-              className={`btn ${node.active ? 'btn-d' : 'btn-p'}`}
+            <Button
+              variant={node.active ? 'd' : 'p'}
               disabled={node.active && !reason.trim()}
               onClick={() => { setLineStatus(doc.id, node.id, !node.active, reason.trim(), me); onClose() }}
             >
               {node.active ? 'أوقف البند' : 'فعّل البند'}
-            </button>
+            </Button>
           )}
           {domain && (
-            <button className="btn btn-2" disabled={!ownersChanged} onClick={() => { setLineOwners(doc.id, node.id, owners, me); onClose() }}>
+            <Button variant="2" disabled={!ownersChanged} onClick={() => { setLineOwners(doc.id, node.id, owners, me); onClose() }}>
               احفظ الإسناد
-            </button>
+            </Button>
           )}
-          <button className="btn btn-2" onClick={onClose}>تراجع</button>
+          <Button variant="2" onClick={onClose}>تراجع</Button>
         </div>
-      </div>
-    </div>,
-    document.body,
-  )
+      </Modal>
 }

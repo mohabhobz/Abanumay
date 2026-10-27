@@ -1,6 +1,5 @@
-import { Link } from 'react-router-dom'
 import { MISSING_ITEM, NOUN, nounAfter } from '@/lib/format'
-import { DateText, Empty, Glass, Head, Icon, KV, Money, Num, Tag, icons } from '@/components/ui'
+import { ButtonLink, Button, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import {
   CLOSE_DOCS, CLOSE_TONE, canOpenClose, closeCycle, closeRequirements, closeStageLabel,
@@ -36,7 +35,7 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
       <Glass>
         <Head title="إغلاق المشروع" meta={<Tag tone="ok">مغلق مباشرة</Tag>} />
         <Empty title={`أُغلق المشروع بإجراء الإغلاق المباشر ${direct.id}.`}
-          actions={<Link className="btn btn-2" to={ROUTES.distress(direct.id)}>افتح الإغلاق المباشر</Link>} />
+          actions={<ButtonLink variant="2" to={ROUTES.distress(direct.id)}>افتح الإغلاق المباشر</ButtonLink>} />
       </Glass>
     )
   }
@@ -57,14 +56,14 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
             ? 'المشروع مؤهَّل ولم يُفتح له طلب تقرير ختامي بعد.'
             : `لا يمكن بدء الإغلاق الآن · ${gate.why}`}
           actions={gate.ok && onOpen && (
-            <button
-              className="btn btn-p"
+            <Button
+              variant="p"
               title="يفتح طلب التقرير الختامي ويرسله إلى الجهة لتعبئته"
               onClick={onOpen}
             >
               <Icon name={icons.plus} size="sm" />
               افتح طلب التقرير الختامي
-            </button>
+            </Button>
           )}
         />
       </Glass>
@@ -156,11 +155,11 @@ export function CloseTab({ row: c, projectId, onOpen }: CloseTabProps) {
       )}
 
       <div className="rowf gp-2">
-        <Link to={ROUTES.closing(c.id)} className="btn btn-p">
+        <ButtonLink to={ROUTES.closing(c.id)} variant="p">
           افتح الإغلاق
           <Icon name={icons.chevron} size="sm" />
-        </Link>
-        <Link to={ROUTES.closings} className="btn btn-2">صندوق الإغلاق</Link>
+        </ButtonLink>
+        <ButtonLink to={ROUTES.closings} variant="2">صندوق الإغلاق</ButtonLink>
       </div>
     </Glass>
   )

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Icon, Num, icons } from '@/components/ui'
+import { FormField, FieldBox, Button, DateText, Empty, Glass, Head, Icon, Num, icons } from '@/components/ui'
 import { DocFile, UploadButton } from '@/components/docs'
 import { isolate } from '@/lib/format'
 import { ROUTES } from '@/app/routes'
@@ -88,7 +88,7 @@ export function FollowUpsTab({ projectId, followUps, types, me, onAdd }: FollowU
       </div>
       <div className="chips">
         {types.filter((t) => !IN_ACTIVITIES.includes(t)).map((t) => (
-          <button
+          <Button plain
             type="button"
             className={`chip${type === t ? ' on' : ''}`}
             aria-pressed={type === t}
@@ -96,17 +96,14 @@ export function FollowUpsTab({ projectId, followUps, types, me, onAdd }: FollowU
             onClick={() => { setAdded(null); setType(type === t ? null : t) }}
           >
             {t}
-          </button>
+          </Button>
         ))}
       </div>
 
       {type && (
         <div className="fu-form">
-          <label className="regf">
-            <span className="lb">
-              وصف المتابعة<b className="regf-r" aria-label="إلزامي">*</b>
-            </span>
-            <span className="fld fld-a">
+          <FormField label="وصف المتابعة" required>
+            <FieldBox area>
               <textarea
                 rows={3}
                 autoFocus
@@ -115,8 +112,8 @@ export function FollowUpsTab({ projectId, followUps, types, me, onAdd }: FollowU
                 aria-label="وصف المتابعة"
                 placeholder={`ما الذي تغيّر في «${type}»`}
               />
-            </span>
-          </label>
+            </FieldBox>
+          </FormField>
           <div className="acts-up">
             {file ? <DocFile name={file} /> : (
               <UploadButton label="ارفع مرفقًا للمتابعة" onPick={(f) => setFile(f.name)} />
@@ -125,11 +122,11 @@ export function FollowUpsTab({ projectId, followUps, types, me, onAdd }: FollowU
           <div className="acts-foot">
             <span className="pc-sp" />
             {tried && !body.trim() && <span className="sub">ناقص: وصف المتابعة</span>}
-            <button type="button" className="btn btn-2" onClick={close}>إلغاء</button>
-            <button type="button" className="btn btn-p" onClick={save}>
+            <Button type="button" variant="2" onClick={close}>إلغاء</Button>
+            <Button type="button" variant="p" onClick={save}>
               <Icon name={icons.plus} size="sm" />
               أضف المتابعة
-            </button>
+            </Button>
           </div>
         </div>
       )}

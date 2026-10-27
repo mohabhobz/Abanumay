@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react'
-import { Glass, Head, Num } from '@/components/ui'
+import { FieldBox, Button, Glass, Head, Num } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
 import { useRole } from '@/hooks/useRole'
 import { ENTITY_REASONS, REASON_KINDS, saveReasons, type ReasonKind } from '@/data/entities/reasons'
@@ -47,22 +47,22 @@ export function EntityReasonsTab() {
                 <ul className="cfglist cfglist-w">
                   {list.map((r, i) => (
                     <li key={i}>
-                      <span className="fld"><input value={r} aria-label={`${k.label} · السبب ${i + 1}`} onChange={(e) => edit(kind, (x) => x.map((y, j) => (j === i ? e.target.value : y)))} /></span>
+                      <FieldBox><input value={r} aria-label={`${k.label} · السبب ${i + 1}`} onChange={(e) => edit(kind, (x) => x.map((y, j) => (j === i ? e.target.value : y)))} /></FieldBox>
                       <span className="pc-sp" />
-                      <button type="button" className="btn btn-2 btn-sm" onClick={() => edit(kind, (x) => x.filter((_, j) => j !== i))}>احذف</button>
+                      <Button type="button" variant="2" size="sm" onClick={() => edit(kind, (x) => x.filter((_, j) => j !== i))}>احذف</Button>
                     </li>
                   ))}
                   <li>
-                    <span className="fld"><input value={add[kind] ?? ''} aria-label={`${k.label} · سبب جديد`} placeholder="سبب جديد" onChange={(e) => setAdd((m) => ({ ...m, [kind]: e.target.value }))} /></span>
+                    <FieldBox><input value={add[kind] ?? ''} aria-label={`${k.label} · سبب جديد`} placeholder="سبب جديد" onChange={(e) => setAdd((m) => ({ ...m, [kind]: e.target.value }))} /></FieldBox>
                     <span className="pc-sp" />
-                    <button
+                    <Button
                       type="button"
-                      className="btn btn-2 btn-sm"
+                      variant="2" size="sm"
                       disabled={!add[kind]?.trim()}
                       onClick={() => { const v = add[kind]!.trim(); edit(kind, (x) => [...x, v]); setAdd((m) => ({ ...m, [kind]: '' })) }}
                     >
                       أضف
-                    </button>
+                    </Button>
                   </li>
                 </ul>
               </Glass>

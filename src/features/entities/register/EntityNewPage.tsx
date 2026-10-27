@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from 'react'
 import { DOC_EXPIRY, duplicates, expiredDocs, formatIssue } from '@/data/entities/validate'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, Empty, Glass, Head, Icon, icons, Mono, Num, Steps, Tag, type StepItem, DockWhy } from '@/components/ui'
+  Button, BackTo, Empty, Glass, Head, Icon, icons, Mono, Num, Steps, Tag, type StepItem, DockWhy } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { AnalysisCard } from '@/components/assistant'
 import { requestPartner } from '@/data/partners/store'
@@ -356,13 +356,13 @@ export default function EntityNewPage() {
                                   block
                                   download={false}
                                 />
-                                <button
-                                  className="btn btn-ghost btn-sm"
+                                <Button
+                                  variant="ghost" size="sm"
                                   onClick={() => clearDoc(d.key)}
                                 >
                                   <Icon name={icons.close} size="sm" />
                                   أزل الملف
-                                </button>
+                                </Button>
                               </div>
                             ) : (
                               <label className="regdrop">
@@ -430,24 +430,24 @@ export default function EntityNewPage() {
                   </span>
                   <span className="pc-sp" />
                   <div className="rowf gp-2">
-                    <button
-                      className="btn btn-2"
+                    <Button
+                      variant="2"
                       disabled={first}
                       title={first ? 'هذه أول خطوة' : `ارجع إلى ${STAGES[at - 1].label}`}
                       onClick={() => go(-1)}
                     >
                       <Icon name={icons.chevronBack} size="sm" />
                       السابق
-                    </button>
+                    </Button>
                     {!last && (
-                      <button
-                        className="btn btn-p"
+                      <Button
+                        variant="p"
                         title={`انتقل إلى ${STAGES[at + 1].label}`}
                         onClick={() => go(1)}
                       >
                         التالي
                         <Icon name={icons.chevron} size="sm" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -536,8 +536,8 @@ export default function EntityNewPage() {
             </div>
             <div className="rowf gp-2">
               {!done ? (
-                <button
-                  className="btn btn-p"
+                <Button
+                  variant="p"
                   disabled={!canSave}
                   title={
                     clash
@@ -559,22 +559,22 @@ export default function EntityNewPage() {
                   }}
                 >
                   سجّل الجهة
-                </button>
+                </Button>
               ) : (
                 <>
                   {strategic && (
-                    <button className="btn btn-2" onClick={() => navigate(`${ROUTES.permissions}?tab=roles&r=partner`)}>
+                    <Button variant="2" onClick={() => navigate(`${ROUTES.permissions}?tab=roles&r=partner`)}>
                       صلاحيات الشريك
-                    </button>
+                    </Button>
                   )}
                   {newId && (
-                    <button className="btn btn-p" onClick={() => navigate(ROUTES.entity(newId))}>
+                    <Button variant="p" onClick={() => navigate(ROUTES.entity(newId))}>
                       افتح ملف الجهة
-                    </button>
+                    </Button>
                   )}
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.entities)}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.entities)}>
                     العودة إلى الجهات
-                  </button>
+                  </Button>
                 </>
               )}
             </div>

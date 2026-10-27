@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Glass, Head, Icon, icons, Money } from '@/components/ui'
+import { Button, Glass, Head, Icon, icons, Money } from '@/components/ui'
 import { BoardBody } from '@/features/board/BoardBody'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -96,10 +96,10 @@ export function TodayReport() {
               </div>
 
               <div className="ibx-more">
-                <button type="button" className="btn btn-2" aria-expanded={more} onClick={() => setMore((x) => !x)}>
+                <Button type="button" variant="2" aria-expanded={more} onClick={() => setMore((x) => !x)}>
                   <Icon name={icons.chart} size="sm" />
                   {more ? 'أخفِ الأعمار والميزانية' : 'اعرض الأعمار والميزانية والجهات'}
-                </button>
+                </Button>
               </div>
 
               <div className="ibx-side">

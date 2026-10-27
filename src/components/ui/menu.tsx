@@ -1,3 +1,4 @@
+import { Button } from './Button'
 import { useEffect, useState, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { useFloat } from '@/hooks/useFloat'
@@ -126,7 +127,7 @@ export function MenuOpt({
   on, onPick, lead, mark, fix, off, title, markClass, textClass, children,
 }: MenuOptProps) {
   return (
-    <button
+    <Button plain
       type="button"
       role="option"
       aria-selected={on}
@@ -142,7 +143,7 @@ export function MenuOpt({
       </span>
       {lead}
       <span className={`fopt-t${textClass ? ` ${textClass}` : ''}`}>{children}</span>
-    </button>
+    </Button>
   )
 }
 

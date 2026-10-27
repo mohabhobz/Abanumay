@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { BackTo, Empty, Glass, icons, Mono, Money, Num, Person, Select } from '@/components/ui'
+import { useParams } from 'react-router-dom'
+import { ButtonLink, BackTo, Empty, Glass, icons, Mono, Money, Num, Person, Select } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
@@ -58,7 +58,7 @@ export default function ReportView() {
             <Glass>
               <Empty
                 title="التقرير غير موجود."
-                actions={<Link className="btn btn-2" to={ROUTES.reportTab('board')}>العودة إلى لوحة التقارير</Link>}
+                actions={<ButtonLink variant="2" to={ROUTES.reportTab('board')}>العودة إلى لوحة التقارير</ButtonLink>}
               />
             </Glass>
           </div>

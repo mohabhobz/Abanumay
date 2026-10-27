@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Glass, Head, Empty, Icon, icons } from '@/components/ui'
+import { Button, Glass, Head, Empty, Icon, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 
@@ -58,10 +58,10 @@ export function ModulePlaceholder({ title, facts, demoTo }: ModulePlaceholderPro
               title={`${title}، لم تُبنَ بعد في هذا النموذج.`}
               actions={
                 demoTo && (
-                  <button className="btn btn-2" onClick={() => navigate(demoTo.to)}>
+                  <Button variant="2" onClick={() => navigate(demoTo.to)}>
                     <Icon name={icons.doc} size="sm" />
                     {demoTo.label}
-                  </button>
+                  </Button>
                 )
               }
             />

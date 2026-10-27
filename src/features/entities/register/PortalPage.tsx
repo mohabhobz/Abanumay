@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { BankGrid, BankCard,
+import { ButtonLink, Button, BankGrid, BankCard,
   CopyId, DateText, Glass, Head, Icon, KV, Mono, Num, Steps, Tag, icons, type StepItem,
 } from '@/components/ui'
 import { DocList, UploadButton } from '@/components/docs'
@@ -201,13 +201,13 @@ export default function PortalPage() {
                 clicked, and nothing happened; the client caught it. It now clears the session and
                 returns to the login screen with `replace`, so a browser "back" doesn't reopen the
                 portal after logout. */}
-            <button
-              className="btn btn-2 btn-sm"
+            <Button
+              variant="2" size="sm"
               onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
             >
               <Icon name={icons.logout} size="sm" />
               تسجيل الخروج
-            </button>
+            </Button>
           </div>
 
           <header className="phead">
@@ -351,8 +351,8 @@ export default function PortalPage() {
                     {' · '}<Mono>{reqOf.id}</Mono>
                   </span>
                   {view.act && !resent && (
-                    <button
-                      className="btn btn-p"
+                    <Button
+                      variant="p"
                       disabled={view.editable && (short.length > 0 || Object.keys(editErr).length > 0)}
                       title={view.editable && short.length > 0
                         ? 'ارفع المستندات الناقصة أولًا'
@@ -364,7 +364,7 @@ export default function PortalPage() {
                     >
                       <Icon name={reqOf.state === 'approved' ? icons.entity : icons.send} size="sm" />
                       {reqOf.state === 'approved' ? view.act : 'أعد إرسال الطلب'}
-                    </button>
+                    </Button>
                   )}
                 </footer>
               </Glass>
@@ -420,7 +420,7 @@ export default function PortalPage() {
                   updates execution and files the final report · it decides nothing (13.2.3 · 13.2.20) */}
               {entityId && isStrategic(entityId) && (
                 <Glass>
-                  <Head title="محافظك" meta={typeAllowed(entityId, 'portfolio') ? <Link className="btn btn-p btn-sm" to={`${ROUTES.portfolioNew}?as=partner&entity=${entityId}`}>طلب محفظة</Link> : undefined} />
+                  <Head title="محافظك" meta={typeAllowed(entityId, 'portfolio') ? <ButtonLink variant="p" size="sm" to={`${ROUTES.portfolioNew}?as=partner&entity=${entityId}`}>طلب محفظة</ButtonLink> : undefined} />
                   <ul className="ptn-slots">
                     {pfOfEntity(entityId).map((pf) => (
                       <li key={pf.id}>
@@ -443,10 +443,10 @@ export default function PortalPage() {
                     meta={account && !account.canApply
                       ? <Tag tone="mute">التقديم موقوف</Tag>
                       : inPeriod()
-                      ? <Link className="btn btn-p btn-sm" to={`${ROUTES.projectNew}?as=entity&entity=${entityId}`}>
+                      ? <ButtonLink variant="p" size="sm" to={`${ROUTES.projectNew}?as=entity&entity=${entityId}`}>
                           <Icon name={icons.plus} size="sm" />
                           قدّم طلب مشروع
-                        </Link>
+                        </ButtonLink>
                       : <Tag tone="mute">البوابة مغلقة</Tag>}
                   />
                   <p className="sub cnote">
@@ -475,7 +475,7 @@ export default function PortalPage() {
                         </span>
                         <span className="pc-sp" />
                         <Tag tone="mute">مسودة</Tag>
-                        <Link className="btn btn-2 btn-sm" to={`${ROUTES.projectNew}?as=entity&entity=${entityId}`}>أكمل الطلب</Link>
+                        <ButtonLink variant="2" size="sm" to={`${ROUTES.projectNew}?as=entity&entity=${entityId}`}>أكمل الطلب</ButtonLink>
                       </li>
                     )}
                     {mine.map((p) => {
@@ -507,16 +507,16 @@ export default function PortalPage() {
                           <Tag tone="mute">{p.statusGroup}</Tag>
                           {back && editing !== p.id && (
                             /* v3 · 3.2.10 · the entity corrects the request itself, not only its attachments */
-                            <button className="btn btn-2 btn-sm" onClick={() => setEditing(p.id)}>
+                            <Button variant="2" size="sm" onClick={() => setEditing(p.id)}>
                               <Icon name={icons.edit} size="sm" />
                               عدّل بيانات الطلب
-                            </button>
+                            </Button>
                           )}
                           {back && (
-                            <button className="btn btn-p btn-sm" disabled={short.length > 0} title={short.length ? 'ارفع المرفقات الناقصة أولًا' : undefined} onClick={() => resubmit(p.id, p.entityName)}>
+                            <Button variant="p" size="sm" disabled={short.length > 0} title={short.length ? 'ارفع المرفقات الناقصة أولًا' : undefined} onClick={() => resubmit(p.id, p.entityName)}>
                               <Icon name={icons.send} size="sm" />
                               أعد الإرسال
-                            </button>
+                            </Button>
                           )}
                         </li>
                       )
@@ -555,7 +555,7 @@ export default function PortalPage() {
                         <span className="trim1">{d.name}</span>
                         <span className="pc-sp" />
                         <Tag tone="teal"><Num>{d.raise}</Num> متاحة للمتطلبات</Tag>
-                        <Link className="btn btn-p btn-sm" to={`${ROUTES.paymentNew(d.id)}&as=entity`}>ارفع المتطلبات</Link>
+                        <ButtonLink variant="p" size="sm" to={`${ROUTES.paymentNew(d.id)}&as=entity`}>ارفع المتطلبات</ButtonLink>
                       </li>
                     ))}
                     {pays.map((r) => {

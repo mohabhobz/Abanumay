@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { BackTo, Empty, FieldSelect, Glass, Head, Num, Tag } from '@/components/ui'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ButtonLink, FormField, FieldBox, Button, BackTo, Empty, FieldSelect, Glass, Head, Num, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -58,9 +58,9 @@ export default function EvalEditPage() {
               <Empty
                 title="لا يوجد طلب إغلاق بهذا الرقم."
                 actions={
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.closings)}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.closings)}>
                     العودة إلى صندوق الإغلاق
-                  </button>
+                  </Button>
                 }
               />
             </Glass>
@@ -85,7 +85,7 @@ export default function EvalEditPage() {
                   ? 'اعتُمد التقرير · يمكن بدء التقييم الآن.'
                   : 'لم يُعتمد التقرير الختامي بعد.'}
                 actions={
-                  <Link className="btn btn-p" to={ROUTES.closing(c.id)}>افتح الطلب</Link>
+                  <ButtonLink variant="p" to={ROUTES.closing(c.id)}>افتح الطلب</ButtonLink>
                 }
               />
             </Glass>
@@ -143,11 +143,9 @@ export default function EvalEditPage() {
 
             <div className="regfields">
               {ev.indicators.map((i, n) => (
-                <label className="regf" key={i.name}>
-                  <span className="lb">
-                    {i.name}<b className="regf-r" aria-label="إلزامي">*</b>
-                  </span>
-                  <span className="fld">
+                <FormField key={i.name} label={<>
+                    {i.name}</>} required>
+                  <FieldBox>
                     <input
                       inputMode="numeric"
                       value={vals[n] ?? ''}
@@ -160,11 +158,11 @@ export default function EvalEditPage() {
                       aria-label={`المتحقّق في ${i.name}`}
                       placeholder="0"
                     />
-                  </span>
+                  </FieldBox>
                   <span className="sub regf-h">
                     المستهدف <span className="num">{i.unit === '%' ? pct(i.target) : nf.format(i.target)}</span>{i.unit !== '%' && <> {unitAfter(i.target, i.unit)}</>}
                   </span>
-                </label>
+                </FormField>
               ))}
             </div>
           </Glass>
@@ -172,11 +170,8 @@ export default function EvalEditPage() {
           <Glass>
             <Head title="الأثر والدروس" />
 
-            <label className="regf">
-              <span className="lb">
-                الأثر المرصود<b className="regf-r" aria-label="إلزامي">*</b>
-              </span>
-              <span className="fld">
+            <FormField label="الأثر المرصود" required>
+              <FieldBox>
                 <textarea
                   rows={3}
                   value={impact}
@@ -185,14 +180,11 @@ export default function EvalEditPage() {
                   aria-label="الأثر المرصود"
                   placeholder="أربع جمعيات من خمس أصبحت لديها خطة مالية معتمدة"
                 />
-              </span>
-            </label>
+              </FieldBox>
+            </FormField>
 
-            <label className="regf">
-              <span className="lb">
-                الدروس المستفادة<b className="regf-r" aria-label="إلزامي">*</b>
-              </span>
-              <span className="fld">
+            <FormField label="الدروس المستفادة" required>
+              <FieldBox>
                 <textarea
                   rows={3}
                   value={lessons}
@@ -201,13 +193,10 @@ export default function EvalEditPage() {
                   aria-label="الدروس المستفادة"
                   placeholder="ربط الصرف بمراحل الترخيص قلّل التأخير إلى شهر بدل ثلاثة"
                 />
-              </span>
-            </label>
+              </FieldBox>
+            </FormField>
 
-            {!ev.criteria?.length && <label className="regf">
-              <span className="lb">
-                التقدير العام<b className="regf-r" aria-label="إلزامي">*</b>
-              </span>
+            {!ev.criteria?.length && <FormField label="التقدير العام" required>
               <FieldSelect
                 value={score}
                 options={SCORES}
@@ -215,7 +204,7 @@ export default function EvalEditPage() {
                 label="التقدير العام"
                 placeholder="اختر تقديرًا من 5"
               />
-            </label>}
+            </FormField>}
           </Glass>
 
           {/* v3 · 10.4.31 · the questions and weights set by the authority · a score out of 100 · a low
@@ -225,10 +214,9 @@ export default function EvalEditPage() {
               <Head title="أسئلة التقييم وأوزانها" meta={<span className="sub">الدرجة <Num>{evalScore({ ...ev, criteria: ev.criteria!.map((x, i) => ({ ...x, rating: rates[i] ? Number(rates[i]) : null })) }) ?? '—'}</Num> من 100</span>} />
               <div className="regfields">
                 {ev.criteria!.map((x, i) => (
-                  <label className="regf" key={x.key}>
-                    <span className="lb">{x.label} · الوزن <Num>{x.weight}</Num><b className="regf-r" aria-label="إلزامي">*</b></span>
+                  <FormField key={x.key} label={<>{x.label} · الوزن <Num>{x.weight}</Num></>} required>
                     <FieldSelect value={rates[i] ?? ''} options={SCORES} onChange={(v) => setRates((r) => { const n = [...r]; n[i] = v; return n })} label={x.label} placeholder="اختر من 5" />
-                  </label>
+                  </FormField>
                 ))}
               </div>
             </Glass>
@@ -236,9 +224,9 @@ export default function EvalEditPage() {
 
           {!closed && (
             <div className="act-a">
-              <button
+              <Button
                 type="button"
-                className="btn btn-p"
+                variant="p"
                 onClick={() => {
                   saveEvaluation(c.id, {
                     indicators: ev.indicators.map((i, n) => ({ ...i, actual: vals[n] ? Number(vals[n]) : null })),
@@ -249,8 +237,8 @@ export default function EvalEditPage() {
                 }}
               >
                 احفظ وارجع إلى الطلب
-              </button>
-              <Link className="btn btn-2" to={ROUTES.closing(c.id)}>إلغاء</Link>
+              </Button>
+              <ButtonLink variant="2" to={ROUTES.closing(c.id)}>إلغاء</ButtonLink>
             </div>
           )}
 

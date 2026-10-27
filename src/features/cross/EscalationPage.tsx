@@ -1,6 +1,6 @@
 import { rowGo } from '@/lib/rowGo'
 import { Link, useNavigate } from 'react-router-dom'
-import { DateText, Empty, Glass, Head, Icon, icons, Num, Segments, Tag } from '@/components/ui'
+import { ButtonLink, Button, DateText, Empty, Glass, Head, Icon, icons, Num, Segments, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { HEAT_TONE } from '@/lib/tone'
@@ -66,12 +66,12 @@ export default function EscalationPage() {
               </p>
             </div>
             <div className="rowf gp-2">
-              <Link className="btn btn-2 btn-sm" to={ROUTES.escalationSettings}>إعداد آلية التصعيد</Link>
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => exportXlsx(sheet)}>
+              <ButtonLink variant="2" size="sm" to={ROUTES.escalationSettings}>إعداد آلية التصعيد</ButtonLink>
+              <Button type="button" variant="2" size="sm" onClick={() => exportXlsx(sheet)}>
                 <Icon name={icons.export} size="sm" />
                 صدّر إلى إكسل
-              </button>
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => setTimeout(printArea, 60)}>اطبع</button>
+              </Button>
+              <Button type="button" variant="2" size="sm" onClick={() => setTimeout(printArea, 60)}>اطبع</Button>
             </div>
           </header>
 
@@ -81,7 +81,7 @@ export default function EscalationPage() {
           <Segments items={HEATS} active={v.heat ?? ''} onChange={(x) => set({ heat: x })} />
 
           <Glass className="tblcard">
-            <Head title="حسب الإجراء" meta={proc ? <button type="button" className="lnk" onClick={() => set({ proc: undefined })}>كل الإجراءات</button> : undefined} />
+            <Head title="حسب الإجراء" meta={proc ? <Button plain type="button" className="lnk" onClick={() => set({ proc: undefined })}>كل الإجراءات</Button> : undefined} />
             <div className="tblwrap">
               <table className="tbl esc-procs" aria-label="المتأخر والمتعثر حسب الإجراء">
                 <thead>
@@ -97,7 +97,7 @@ export default function EscalationPage() {
                     const c = counts[p.key] ?? { late: 0, stuck: 0 }
                     return (
                       <tr key={p.key} className={proc === p.key ? 'sel' : undefined} onClick={() => set({ proc: proc === p.key ? undefined : p.key })}>
-                        <td><button type="button" className="tlink" onClick={(e) => { e.stopPropagation(); set({ proc: proc === p.key ? undefined : p.key }) }}>{p.label}</button>{/* doc p.bpd */}</td>
+                        <td><Button plain type="button" className="tlink" onClick={(e) => { e.stopPropagation(); set({ proc: proc === p.key ? undefined : p.key }) }}>{p.label}</Button>{/* doc p.bpd */}</td>
                         <td className="n"><Num>{c.late}</Num></td>
                         <td className="n"><Num>{c.stuck}</Num></td>
                         <td className="sub">{stuckSay(p.key)}</td>

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { DecisionDialog, Icon, icons, Money, Person, Tag } from '@/components/ui'
+import { ButtonLabel, FormField, FieldBox, Button, DecisionDialog, Icon, icons, Money, Person, Tag } from '@/components/ui'
 import { nf } from '@/lib/format'
 import { useProximity } from '@/hooks/useProximity'
 import { payStops, type PayAction } from '@/data/payments/store'
@@ -58,7 +58,7 @@ export function ActionDock({ user, request, actions, onAct }: ActionDockProps) {
                  and the reason is written in `title`, not hidden in color alone. */
               const stops = payStops(request, a.act, a.needsAmount ? request.due : request.asked)
               return (
-                <button
+                <Button plain
                   key={a.label}
                   className={`btn ${a.kind}`}
                   data-needs-note={a.needsNote ? '' : undefined}
@@ -67,7 +67,7 @@ export function ActionDock({ user, request, actions, onAct }: ActionDockProps) {
                   onClick={() => { setPick(a); setAmount(''); setProof(null) }}
                 >
                   {a.label}
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -87,26 +87,24 @@ export function ActionDock({ user, request, actions, onAct }: ActionDockProps) {
           onConfirm={(n) => onAct(pick, proof?.name, pick.needsAmount ? amt : undefined, n)}
         >
           {pick.needsAmount && (
-            <label className="regf">
-              <span className="lb">قيمة إذن الصرف<b className="regf-r" aria-label="إلزامي">*</b></span>
-              <span className="fld">
+            <FormField label="قيمة إذن الصرف" required>
+              <FieldBox>
                 <input className="num" inputMode="numeric" aria-label="قيمة إذن الصرف"
                   value={nf.format(amount === '' ? request.due : Number(amount) || 0)}
                   onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} />
-              </span>
-            </label>
+              </FieldBox>
+            </FormField>
           )}
           {pick.needsFile && (
-            <div className="regf">
-              <span className="lb">{pick.needsFile}<b className="regf-r" aria-label="إلزامي">*</b></span>
+            <FormField label={pick.needsFile} required as="div">
               <span className="apv-row">
-                <label className="btn btn-2 btn-sm">
+                <ButtonLabel variant="2" size="sm">
                   <Icon name={icons.upload} size="sm" />{proof ? 'استبدل الملف' : 'ارفع الملف'}
                   <input className="vis-h" type="file" accept=".pdf,.jpg,.png" aria-label={`${pick.label} · ${pick.needsFile}`} onChange={(e) => { const f = e.target.files?.[0]; if (f) setProof({ act: pick.act, name: f.name }); e.target.value = '' }} />
-                </label>
+                </ButtonLabel>
                 {proof ? <Tag tone="ok">{proof.name}</Tag> : <span className="sub">لا ملف بعد</span>}
               </span>
-            </div>
+            </FormField>
           )}
         </DecisionDialog>
       )}

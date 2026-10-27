@@ -1,8 +1,8 @@
 import { planKind } from '@/data/approvals/store'
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Num, icons } from '@/components/ui'
+  ButtonLink, FormField, FieldBox, Button, BackTo, DateText, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Num, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { ROUTES } from '@/app/routes'
@@ -77,7 +77,7 @@ export default function PlanNewPage() {
               <Empty
                 title={`فُتحت لمشروع «${has.projectName}» الخطة ${has.id}.`}
                 actions={
-                  <Link className="btn btn-p" to={ROUTES.plan(has.id)}>افتح الخطة</Link>
+                  <ButtonLink variant="p" to={ROUTES.plan(has.id)}>افتح الخطة</ButtonLink>
                 }
               />
             </Glass>
@@ -117,10 +117,7 @@ export default function PlanNewPage() {
                     between two options reads as a mistake. The client caught the same issue in the
                     region filter - so both fields here are single columns. */}
                 <div className="regfields">
-                  <label className="regf">
-                    <span className="lb">
-                      المشروع<b className="regf-r" aria-label="إلزامي">*</b>
-                    </span>
+                  <FormField label="المشروع" required>
                     <FieldSelect
                       value={v.project ?? ''}
                       options={options}
@@ -128,13 +125,12 @@ export default function PlanNewPage() {
                       label="المشروع"
                       placeholder="اختر مشروعًا معتمدًا"
                     />
-                  </label>
+                  </FormField>
 
                   {/* Note: this choice is recorded and can't change afterward - the "drafted by"
                       column in the inbox shows it, and the reviewer reads what the entity wrote
                       with a different eye than what was written on their behalf. */}
-                  <label className="regf">
-                    <span className="lb">كاتب المسودة</span>
+                  <FormField label="كاتب المسودة">
                     <FieldSelect
                       value={by}
                       options={[
@@ -144,7 +140,7 @@ export default function PlanNewPage() {
                       onChange={(x) => set({ by: x === 'supervisor' ? 'supervisor' : undefined })}
                       label="كاتب المسودة"
                     />
-                  </label>
+                  </FormField>
                 </div>
 
                 {/* Note: this block has its own heading rather than sitting loose under the field -
@@ -167,11 +163,10 @@ export default function PlanNewPage() {
                 )}
 
                 {needReason && (
-                  <label className="regf regf-w">
-                    <span className="lb">سبب فتح الخطة<b className="regf-r" aria-label="إلزامي">*</b></span>
-                    <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: تعدّد مراحل التنفيذ وتوزّعها على فصلين دراسيين" aria-label="سبب فتح الخطة" /></span>
+                  <FormField label="سبب فتح الخطة" required wide>
+                    <FieldBox><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثال: تعدّد مراحل التنفيذ وتوزّعها على فصلين دراسيين" aria-label="سبب فتح الخطة" /></FieldBox>
                     <span className="sub regf-h">لا يوجد قرار موثّق بأن المشروع يتطلب خطة{/* doc 12.4.33 */}</span>
-                  </label>
+                  </FormField>
                 )}
 
                 <div className="regfoot">
@@ -181,11 +176,11 @@ export default function PlanNewPage() {
                       : 'اختر المشروع أولًا'}
                   </span>
                   <div className="rowf gp-2">
-                    <button className="btn btn-2" onClick={() => navigate(ROUTES.plans)}>
+                    <Button variant="2" onClick={() => navigate(ROUTES.plans)}>
                       إلغاء
-                    </button>
-                    <button
-                      className="btn btn-p"
+                    </Button>
+                    <Button
+                      variant="p"
                       disabled={!pr || (needReason && !reason.trim())}
                       title={!pr ? 'اختر المشروع أولًا' : needReason && !reason.trim() ? 'اكتب سبب فتح الخطة' : 'يفتح مسودة وينقلك إلى المحرّر'}
                       onClick={() => {
@@ -198,7 +193,7 @@ export default function PlanNewPage() {
                     >
                       <Icon name={icons.plus} size="sm" />
                       افتح الخطة
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </>

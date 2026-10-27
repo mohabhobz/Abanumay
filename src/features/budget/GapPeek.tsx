@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Icon, icons, Money, Num, Tag } from '@/components/ui'
+import { Button, Icon, icons, Money, Num, Tag } from '@/components/ui'
 import { childSum, nodeAt, PLAN_LEVELS, type Imbalance, type PlanNode } from '@/data/budgetPlan'
 
 /**
@@ -52,9 +52,9 @@ export function GapPeek({
             <span className="sub">{PLAN_LEVELS[gap.level]}</span>
             <div className="atitle">{gap.label || root.label}</div>
           </div>
-          <button className="aclose" onClick={onClose} aria-label="أغلق النافذة">
+          <Button plain className="aclose" onClick={onClose} aria-label="أغلق النافذة">
             <Icon name={icons.close} size="sm" />
-          </button>
+          </Button>
         </div>
 
         {/* Both figures in one glance - what the tree wasn't giving. */}
@@ -108,7 +108,7 @@ export function GapPeek({
         {/* The primary action here is jumping to the tree - "done" is just a dismiss, so it sits
             after it, not before. */}
         <div className="gpeek-f">
-          <button className="btn btn-2" onClick={onClose}>أغلق</button>
+          <Button variant="2" onClick={onClose}>أغلق</Button>
         </div>
       </div>
     </>,

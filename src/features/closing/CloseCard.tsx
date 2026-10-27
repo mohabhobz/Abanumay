@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { rowGo } from '@/lib/rowGo'
-import { DateText, Icon, icons, Money, Mono, Num, Person, Tag } from '@/components/ui'
+import { ButtonLink, DateText, Icon, icons, Money, Mono, Num, Person, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { isolate, MISSING_ITEM, nf, NOUN, nounAfter } from '@/lib/format'
 import {
@@ -131,10 +131,10 @@ export function CloseCard({ c }: { c: CloseRow }) {
 
       <footer className="payq-f">
         <span className="payq-when"><Person name={c.owner} /></span>
-        <Link className="btn btn-2 btn-sm" to={ROUTES.closing(c.id)}>
+        <ButtonLink variant="2" size="sm" to={ROUTES.closing(c.id)}>
           افتح الإغلاق
           <Icon name={icons.chevron} size="sm" />
-        </Link>
+        </ButtonLink>
       </footer>
     </article>
   )

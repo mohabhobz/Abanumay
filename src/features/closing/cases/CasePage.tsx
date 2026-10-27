@@ -2,7 +2,7 @@ import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Tabs, BackTo, DateText, DockActions, Empty, Glass, Head, Icon, KV, Money, MoneyField, Mono, Person, Tag, icons } from '@/components/ui'
+import { Button, Tabs, BackTo, DateText, DockActions, Empty, Glass, Head, Icon, KV, Money, MoneyField, Mono, Person, Tag, icons } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -138,7 +138,7 @@ export default function CasePage() {
                 {c.kind === 'stop' && c.outcome === 'cancel' && !['approved', 'closed', 'rejected'].includes(c.stage) && !asEntity && role.key !== 'finance'
                   && cancelBlockers(c.projectId).some((x) => x.startsWith('طلب صرف')) && (
                   <div className="act-a">
-                    <button type="button" className="btn btn-2 btn-sm" onClick={() => cancelOpenRequests(c.projectId, c.id, user.name)}>ألغِ طلبات الصرف المفتوحة</button>
+                    <Button type="button" variant="2" size="sm" onClick={() => cancelOpenRequests(c.projectId, c.id, user.name)}>ألغِ طلبات الصرف المفتوحة</Button>
                   </div>
                 )}
                 {c.kind === 'reduce' && !c.annex && !asEntity && role.key === 'supervisor' && (
@@ -169,9 +169,9 @@ export default function CasePage() {
                   {!asEntity && role.key === 'supervisor' && c.stage === 'settle' && (
                     <div className="apv-row mt-3">
                       <MoneyField value={actual} onChange={setActual} label="المصروف الفعلي المعتمد" />
-                      <button type="button" className="btn btn-2 btn-sm" disabled={actual === '' || !s.report || !(s.evidence || s.invoices)} onClick={() => { const out = settleCase(c.id, Number(actual), user.name); setSaid(out.length ? { bad: out } : { ok: 'اعتماد المصروف الفعلي' }) }}>
+                      <Button type="button" variant="2" size="sm" disabled={actual === '' || !s.report || !(s.evidence || s.invoices)} onClick={() => { const out = settleCase(c.id, Number(actual), user.name); setSaid(out.length ? { bad: out } : { ok: 'اعتماد المصروف الفعلي' }) }}>
                         اعتمد المصروف الفعلي
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </Glass>

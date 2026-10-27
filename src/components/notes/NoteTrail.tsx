@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon, Person, icons } from '@/components/ui'
+import { FormField, FieldBox, Button, Icon, Person, icons } from '@/components/ui'
 import { isolate, readDateTime } from '@/lib/format'
 import type { ActivityNote } from '@/types/domain'
 
@@ -71,9 +71,8 @@ export function NoteTrail({ notes, me, onAdd }: NoteTrailProps) {
 
       {onAdd && (open ? (
         <div className="notes-add">
-          <label className="regf">
-            <span className="lb">السبب · باسم {me}</span>
-            <span className="fld">
+          <FormField label={<>السبب · باسم {me}</>}>
+            <FieldBox>
               <input
                 autoFocus
                 value={draft}
@@ -85,15 +84,15 @@ export function NoteTrail({ notes, me, onAdd }: NoteTrailProps) {
                 aria-label="نصّ السبب"
                 placeholder="مثال: كشف المستفيدين غير مرفق"
               />
-            </span>
-          </label>
+            </FieldBox>
+          </FormField>
           <div className="act-a">
-            <button className="btn btn-p btn-sm" disabled={!draft.trim()} onClick={add}>
+            <Button variant="p" size="sm" disabled={!draft.trim()} onClick={add}>
               أضف السبب
-            </button>
-            <button className="btn btn-2 btn-sm" onClick={() => { setOpen(false); setDraft('') }}>
+            </Button>
+            <Button variant="2" size="sm" onClick={() => { setOpen(false); setDraft('') }}>
               إلغاء
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -101,10 +100,10 @@ export function NoteTrail({ notes, me, onAdd }: NoteTrailProps) {
            reason: the supervisor adds another reason, and the entity replies to it — "comment" made
            it read like a side chat with no weight. The name is stated as soon as the field opens
            ("Reason, as [name]"), so no one thinks they need to type their own name. */
-        <button className="btn btn-ghost btn-sm notes-open" onClick={() => setOpen(true)}>
+        <Button variant="ghost" size="sm" className="notes-open" onClick={() => setOpen(true)}>
           <Icon name={icons.plus} size="sm" />
           إضافة سبب
-        </button>
+        </Button>
       ))}
     </div>
   )

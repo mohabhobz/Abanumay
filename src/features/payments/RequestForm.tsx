@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
-  BackTo, DateText, Empty, Glass, Head, Icon, icons, Money, MoneyField, Mono, Num, Select, Tag, DockWhy,
+  ButtonLink, FieldBox, Button, BackTo, DateText, Empty, Glass, Head, Icon, icons, Money, MoneyField, Mono, Num, Select, Tag, DockWhy,
 } from '@/components/ui'
 import { DocFile, DocReadNote, UploadButton, useDocReads } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
@@ -142,7 +142,7 @@ export default function RequestForm() {
               <Empty
                 title="لا تُعدَّل متطلبات هذه الدفعة."
 
-                actions={<button className="btn btn-2" onClick={() => navigate(`${ROUTES.payment(resend.id)}${asEntity ? '?as=entity' : ''}`)}>العودة إلى الدفعة</button>}
+                actions={<Button variant="2" onClick={() => navigate(`${ROUTES.payment(resend.id)}${asEntity ? '?as=entity' : ''}`)}>العودة إلى الدفعة</Button>}
               />
             </Glass>
           </div>
@@ -161,9 +161,9 @@ export default function RequestForm() {
               <Empty
                 title="السجل غير موجود."
                 actions={
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.payments)}>
                     العودة إلى صندوق الصرف
-                  </button>
+                  </Button>
                 }
               />
             </Glass>
@@ -240,9 +240,9 @@ export default function RequestForm() {
                 title="لا صرف لهذا المشروع الآن."
                 note={project.why}
                 actions={
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.project(project.id))}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.project(project.id))}>
                     افتح المشروع
-                  </button>
+                  </Button>
                 }
               />
             </Glass>
@@ -346,10 +346,10 @@ export default function RequestForm() {
                         {/* the supervisor confirms what the record can't read (an output, a note) */}
                         {!picked.conditionMet && !held && role.key === 'supervisor' && !asEntity && (
                           <div className="apv-row mt-3">
-                            <span className="fld"><input value={condNote} onChange={(e) => setCondNote(e.target.value)} placeholder="ما استُوفي به الشرط · إلزامي" aria-label="ما استُوفي به الشرط" /></span>
-                            <button type="button" className="btn btn-2 btn-sm" disabled={!condNote.trim()} onClick={() => { const out = confirmCondition(projectId ?? '', picked.no, condNote, user.name); setBad(out); if (!out.length) setCondNote('') }}>
+                            <FieldBox><input value={condNote} onChange={(e) => setCondNote(e.target.value)} placeholder="ما استُوفي به الشرط · إلزامي" aria-label="ما استُوفي به الشرط" /></FieldBox>
+                            <Button type="button" variant="2" size="sm" disabled={!condNote.trim()} onClick={() => { const out = confirmCondition(projectId ?? '', picked.no, condNote, user.name); setBad(out); if (!out.length) setCondNote('') }}>
                               أكّد استيفاء الشرط
-                            </button>
+                            </Button>
                           </div>
                         )}
                         {held && <p className="bad cnote">لا تُرفع متطلبات الدفعة قبل استيفاء شرطها{/* doc 9.4.8 */}.</p>}
@@ -448,8 +448,8 @@ export default function RequestForm() {
                 </span>
               </div>
               {!sent && mayOpen && (
-                <button
-                  className="btn btn-p"
+                <Button
+                  variant="p"
                   disabled={!canSend}
                   title={
                     held ? /* doc 9.4.8 */ 'شروط الدفعة غير مستوفاة'
@@ -462,12 +462,12 @@ export default function RequestForm() {
                   onClick={send}
                 >
                   {resend ? 'أعد رفع المتطلبات' : permit ? 'أنشئ إذن الصرف' : 'ارفع المتطلبات'}
-                </button>
+                </Button>
               )}
               {sent && (
-                <Link className="btn btn-2" to={`${ROUTES.payment(sent)}${asEntity ? '?as=entity' : ''}`}>
+                <ButtonLink variant="2" to={`${ROUTES.payment(sent)}${asEntity ? '?as=entity' : ''}`}>
                   افتح الدفعة
-                </Link>
+                </ButtonLink>
               )}
             </div>
           </div>
@@ -492,7 +492,7 @@ function SlotRow({
 
   return (
     <li className={`payslot${picked ? ' on' : ''}${can ? '' : ' off'}`}>
-      <button
+      <Button plain
         className="payslot-b"
         onClick={can ? onPick : slot.requestId ? onOpen : undefined}
         disabled={!can && !slot.requestId}
@@ -509,7 +509,7 @@ function SlotRow({
         <span className="sub trim1 payslot-c">{slot.condition ? isolate(slot.condition) : ''}</span>
         <Tag tone={SLOT_TONE[slot.state] ?? 'mute'}>{say.label}</Tag>
         <span className="payslot-k">{picked && <Icon name={icons.check} size="sm" />}</span>
-      </button>
+      </Button>
     </li>
   )
 }

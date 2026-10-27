@@ -1,6 +1,6 @@
 import { accountEvents } from '@/data/entities/auth'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { BankGrid, BankCard, DateText, Empty, Glass, Head, Icon, KV, Mono, Num, Person, Tabs, Tag, icons } from '@/components/ui'
+import { FormField, FieldBox, Button, BankGrid, BankCard, DateText, Empty, Glass, Head, Icon, KV, Mono, Num, Person, Tabs, Tag, icons } from '@/components/ui'
 import { DataTable, nextSort, readCols, sortRows, type ColSort } from '@/components/table'
 import { COLS, rowHref } from '@/features/projects/list/columns'
 import { DONE, DROPPED, LIVE } from '@/data/status'
@@ -356,12 +356,11 @@ export function EntityEvalCard({ entityId }: { entityId: string }) {
       {sum.projects.length > 0 && (
         <KV rows={sum.projects.map((x) => ({ k: x.name, v: <><Num>{x.score}</Num> <span className="sub">من 100</span></> }))} />
       )}
-      <label className="regf">
-        <span className="lb">الدروس المستفادة على مستوى الجهة</span>
-        <span className="fld"><textarea rows={2} value={text} disabled={!may} onChange={(e) => setText(e.target.value)} aria-label="الدروس المستفادة على مستوى الجهة" placeholder="ما تعلّمته المؤسسة من العمل مع هذه الجهة" /></span>
+      <FormField label="الدروس المستفادة على مستوى الجهة">
+        <FieldBox><textarea rows={2} value={text} disabled={!may} onChange={(e) => setText(e.target.value)} aria-label="الدروس المستفادة على مستوى الجهة" placeholder="ما تعلّمته المؤسسة من العمل مع هذه الجهة" /></FieldBox>
         {les && <span className="sub regf-h">آخر تحديث · <Person name={les.by} /> · <DateText>{les.at}</DateText></span>}
-      </label>
-      {may && <div className="act-a"><button type="button" className="btn btn-2 btn-sm" disabled={!text.trim() || text === les?.text} onClick={() => setBad(saveEntityLessons(entityId, text, user.name, role.key))}>احفظ الدروس</button></div>}
+      </FormField>
+      {may && <div className="act-a"><Button type="button" variant="2" size="sm" disabled={!text.trim() || text === les?.text} onClick={() => setBad(saveEntityLessons(entityId, text, user.name, role.key))}>احفظ الدروس</Button></div>}
       {bad.map((b) => <p key={b} className="bad cnote">{b}</p>)}
     </Glass>
   )

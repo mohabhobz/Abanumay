@@ -2,7 +2,7 @@ import { switcherOn } from '@/data/authGuard'
 import { useEffect, useState } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Face, Icon, icons, type IconName } from '@/components/ui'
+import { Button, Face, Icon, icons, type IconName } from '@/components/ui'
 import { STAFF_DIRECTORY, roleByKey, switchAccount } from '@/data/roles'
 import { useRole } from '@/hooks/useRole'
 import { ROUTES, type NavItem } from '@/app/routes'
@@ -56,7 +56,7 @@ export function AccountMenu({
 
   return (
     <div className="acctwrap" ref={wrap}>
-      <button
+      <Button plain
         className={`acctbtn${open ? ' on' : ''}${here ? ' here' : ''}`}
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
@@ -71,7 +71,7 @@ export function AccountMenu({
           <span className="acct-who-r">{user.role}</span>
         </span>
         <span className="acct-mob-l">حسابي</span>
-      </button>
+      </Button>
 
       {open && (
         <div className={`acct${drop ? ' drop' : ''}`} role="menu">
@@ -84,7 +84,7 @@ export function AccountMenu({
               <div className="acct-name">{user.name}</div>
               <div className="sub acct-role">{user.role}{role.key === 'admin' ? ' · صلاحيات كاملة' : ''}</div>
             </div>
-            {switcherOn() && <button
+            {switcherOn() && <Button plain
               type="button"
               className="iact acct-sw"
               aria-expanded={who}
@@ -94,7 +94,7 @@ export function AccountMenu({
               onClick={() => setWho((x) => !x)}
             >
               <Icon name={who ? icons.chevronUp : icons.chevronDown} size="sm" />
-            </button>}
+            </Button>}
           </div>
 
           {who && switcherOn() && (
@@ -105,7 +105,7 @@ export function AccountMenu({
               {STAFF_DIRECTORY.map((a) => {
                 const on = a.name === user.name && a.role === role.key
                 return (
-                  <button
+                  <Button plain
                     key={a.login}
                     role="menuitemradio"
                     aria-checked={on}
@@ -123,7 +123,7 @@ export function AccountMenu({
                       <span className="sub">{roleByKey(a.role).title}</span>
                     </span>
                     {on && <Icon name={icons.check} size="sm" />}
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -154,7 +154,7 @@ export function AccountMenu({
             <div className="acct-lbl">المظهر</div>
             <div className="seg" role="radiogroup" aria-label="المظهر">
               {THEME_ITEMS.map((t) => (
-                <button
+                <Button plain
                   key={t.key}
                   className={theme === t.key ? 'on' : ''}
                   role="radio"
@@ -163,20 +163,20 @@ export function AccountMenu({
                 >
                   <Icon name={icons[t.icon]} size="sm" />
                   <span>{t.label}</span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
           <div className="acct-sec">
-            <button role="menuitem" onClick={() => go(ROUTES.account)}>
+            <Button plain role="menuitem" onClick={() => go(ROUTES.account)}>
               <Icon name={icons.user} size="sm" />
               إعدادات الحساب
-            </button>
-            <button role="menuitem" onClick={() => go(ROUTES.preferences)}>
+            </Button>
+            <Button plain role="menuitem" onClick={() => go(ROUTES.preferences)}>
               <Icon name={icons.gear} size="sm" />
               التفضيلات والإشعارات
-            </button>
+            </Button>
           </div>
 
           {/* ⚠️ **System settings are kept separate from preferences, deliberately.** Preferences
@@ -184,36 +184,36 @@ export function AccountMenu({
               behavior **for every user** — mixing them into one section is what makes someone go
               looking for "cities" under their own preferences. */}
           <div className="acct-sec">
-            <button role="menuitem" onClick={() => go(ROUTES.settings)}>
+            <Button plain role="menuitem" onClick={() => go(ROUTES.settings)}>
               <Icon name={icons.gear} size="sm" />
               إعدادات النظام
-            </button>
+            </Button>
             {/* The system admin's entry · in production it shows only to holders of
                 «الصلاحيات · تعديل»; the mock shows it so the screen can be reviewed. */}
-            <button role="menuitem" onClick={() => go(ROUTES.permissions)}>
+            <Button plain role="menuitem" onClick={() => go(ROUTES.permissions)}>
               <Icon name={icons.shield} size="sm" />
               الصلاحيات والأدوار
-            </button>
+            </Button>
             {/* Cross · the shared services · the late report, the outbox and the audit log */}
-            <button role="menuitem" onClick={() => go(ROUTES.escalation)}>
+            <Button plain role="menuitem" onClick={() => go(ROUTES.escalation)}>
               <Icon name={icons.clock} size="sm" />
               المتأخر والمتعثر
-            </button>
-            <button role="menuitem" onClick={() => go(ROUTES.notifyHub)}>
+            </Button>
+            <Button plain role="menuitem" onClick={() => go(ROUTES.notifyHub)}>
               <Icon name={icons.bell} size="sm" />
               سجل الإشعارات
-            </button>
-            <button role="menuitem" onClick={() => go(ROUTES.audit)}>
+            </Button>
+            <Button plain role="menuitem" onClick={() => go(ROUTES.audit)}>
               <Icon name={icons.checks} size="sm" />
               سجل التدقيق
-            </button>
+            </Button>
           </div>
 
           <div className="acct-sec">
-            <button className="danger" role="menuitem" onClick={() => onSignOut?.()}>
+            <Button plain className="danger" role="menuitem" onClick={() => onSignOut?.()}>
               <Icon name={icons.logout} size="sm" />
               تسجيل الخروج
-            </button>
+            </Button>
           </div>
         </div>
       )}

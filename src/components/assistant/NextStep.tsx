@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DecisionDialog, Icon, icons, Tag } from '@/components/ui'
+import { Button, DecisionDialog, Icon, icons, Tag } from '@/components/ui'
 import { toast } from '@/data/feedback'
 import { pct } from '@/lib/format'
 import type { AgentAct, SuggestOpt, Suggestion } from '@/data/shared/agent'
@@ -41,7 +41,7 @@ export function NextStep<A extends AgentAct>({ s, exec }: {
             {s.options.map((o) => {
               const danger = Boolean(o.action.kind?.includes('btn-d'))
               return (
-                <button
+                <Button plain
                   key={o.action.label}
                   type="button"
                   className={`nstep-c${o.best ? ' best' : ''}${danger ? ' dng' : ''}`}
@@ -55,7 +55,7 @@ export function NextStep<A extends AgentAct>({ s, exec }: {
                     {o.blocked && <span className="sub nstep-d">{o.blocked}</span>}
                   </span>
                   {!o.blocked && <Icon name={icons.chevron} size="sm" className="nstep-go" />}
-                </button>
+                </Button>
               )
             })}
           </div>

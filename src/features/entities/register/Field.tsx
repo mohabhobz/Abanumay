@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { DateField, FieldSelect } from '@/components/ui'
+import { FormField, FieldBox, DateField, FieldSelect } from '@/components/ui'
 import { citiesOf, type RegField } from '@/data/mock/registration'
 
 /**
@@ -30,12 +30,7 @@ export function Field({
   const locked = Boolean(f.dependsOn) && !parent
 
   return (
-    <label className={`regf${f.wide ? ' regf-w' : ''}${f.nl ? ' regf-nl' : ''}`}>
-      <span className="lb">
-        {f.label}
-        {f.req && <b className="regf-r" aria-label="إلزامي">*</b>}
-        {tag}
-      </span>
+    <FormField wide={f.wide} className={f.nl ? 'regf-nl' : undefined} label={f.label} required={f.req} after={tag}>
       {/* Note: `.fld` isn't a cosmetic class - it's the system's actual control for fields,
           registered in `ctlaudit` so its focus ring gets checked alongside search and filters. A
           field written specifically for this screen would have been a sixth corner case of the same
@@ -56,7 +51,7 @@ export function Field({
         /* Client 27 Oct · the system's own calendar · the browser's one read in English and its own style */
         <DateField value={value} onChange={(x) => onChange(x)} label={f.label} disabled={disabled} />
       ) : (
-        <span className="fld">
+        <FieldBox>
           {/* Note: `type="password"` isn't decoration, it's behavior. This field takes a password,
               and the browser needs to know that to mask the characters, suggest a strong one, and
               avoid saving it in ordinary autofill - `text` would have shown exactly what the user
@@ -80,11 +75,11 @@ export function Field({
             aria-label={f.label}
             aria-invalid={error ? true : undefined}
           />
-        </span>
+        </FieldBox>
       )}
       {error
         ? <span className="bad regf-h">{error}</span>
         : f.hint && <span className="sub regf-h">{f.hint}</span>}
-    </label>
+    </FormField>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { onToast } from '@/data/feedback'
@@ -33,12 +33,12 @@ export function TodayReturn() {
         <span><Icon name={icons.check} size="sm" /> أُنجز · {next ? <>التالي: <b>{next.title}</b></> : 'لا شيء آخر ينتظرك'}</span>
       )}
       {!still && next && (
-        <button type="button" className="btn btn-p btn-sm" onClick={() => { setTrail({ id: next.id, queueKey: next.queueKey, title: next.title, to: next.to }); navigate(next.to) }}>التالي</button>
+        <Button type="button" variant="p" size="sm" onClick={() => { setTrail({ id: next.id, queueKey: next.queueKey, title: next.title, to: next.to }); navigate(next.to) }}>التالي</Button>
       )}
-      <button type="button" className="btn btn-2 btn-sm" onClick={back}>ارجع ليومك</button>
-      <button type="button" className="aclose" aria-label="أخفِ الشريط" title="أخفِ" onClick={() => { clearTrail(); setTick((t) => t + 1) }}>
+      <Button type="button" variant="2" size="sm" onClick={back}>ارجع ليومك</Button>
+      <Button plain type="button" className="aclose" aria-label="أخفِ الشريط" title="أخفِ" onClick={() => { clearTrail(); setTick((t) => t + 1) }}>
         <Icon name={icons.close} size="sm" />
-      </button>
+      </Button>
     </nav>
   )
 }

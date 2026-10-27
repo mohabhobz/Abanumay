@@ -1,6 +1,7 @@
+import { ButtonLink, FieldBox, Button } from '@/components/ui'
 import { reducedMotion } from '@/lib/prefs'
 import { useState, type MouseEvent } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { Icon } from '@/components/ui/Icon'
 import { icons } from '@/components/ui/icons'
 import { nf, pct, unitAfter } from '@/lib/format'
@@ -88,14 +89,14 @@ export function ReadingBlock({ reading: r, typing, chars, hidden }: ReadingBlock
           {(r.to || r.actions) && (
             <div className="qr-acts">
               {r.to && (
-                <Link
-                  className="btn btn-2 btn-sm"
+                <ButtonLink
+                  variant="2" size="sm"
                   to={readingHref(r.to, here)}
                   onClick={(e) => rescrollIfSame(e, readingHref(r.to!, here), here)}
                 >
                   {r.toLabel ?? 'اعرضها'}
                   <Icon name={icons.chevron} size="sm" />
-                </Link>
+                </ButtonLink>
               )}
               {r.actions && <ReadingActs actions={r.actions} />}
             </div>
@@ -209,7 +210,7 @@ function ReadingActs({ actions }: { actions: ReadingAction[] }) {
             {a.done ?? 'تم'}
           </span>
         ) : (
-          <button
+          <Button plain
             key={a.label}
             type="button"
             className={`btn ${a.kind ?? 'btn-2'} btn-sm`}
@@ -217,12 +218,12 @@ function ReadingActs({ actions }: { actions: ReadingAction[] }) {
             onClick={() => (a.note ? setWriting(writing === a ? null : a) : finish(a))}
           >
             {a.label}
-          </button>
+          </Button>
         ),
       )}
       {writing && (
         <div className="qr-note">
-          <span className="fld">
+          <FieldBox>
             <input
               autoFocus
               value={text}
@@ -231,10 +232,10 @@ function ReadingActs({ actions }: { actions: ReadingAction[] }) {
               placeholder={writing.note}
               aria-label={writing.note}
             />
-          </span>
-          <button type="button" className="btn btn-p btn-sm" disabled={!text.trim()} onClick={() => finish(writing)}>
+          </FieldBox>
+          <Button type="button" variant="p" size="sm" disabled={!text.trim()} onClick={() => finish(writing)}>
             حفظ
-          </button>
+          </Button>
         </div>
       )}
     </>

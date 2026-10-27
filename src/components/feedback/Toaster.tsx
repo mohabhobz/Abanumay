@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { onToast, toast, type ToastMsg } from '@/data/feedback'
 
 /* The one place a toast is drawn · bottom of the screen, above the decision bar · three at most,
@@ -27,10 +27,10 @@ export function Toaster() {
   return (
     <div className="toasts" role="status" aria-live="polite">
       {list.map((m) => (
-        <button type="button" key={m.id} className={`toast toast-${m.tone}`} onClick={() => setList((x) => x.filter((y) => y.id !== m.id))} aria-label={`${m.text} · إغلاق`}>
+        <Button plain type="button" key={m.id} className={`toast toast-${m.tone}`} onClick={() => setList((x) => x.filter((y) => y.id !== m.id))} aria-label={`${m.text} · إغلاق`}>
           <Icon name={m.tone === 'ok' ? icons.check : m.tone === 'bad' ? icons.close : icons.info} size="sm" />
           <span>{m.text}</span>
-        </button>
+        </Button>
       ))}
     </div>
   )

@@ -1,7 +1,7 @@
 import { requirementOf } from '@/data/agreements/conds'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, Icon, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
+import { ButtonLabel, FieldBox, Button, DateText, Glass, Head, Icon, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { ROUTES } from '@/app/routes'
 import { isolate, nf, readDate } from '@/lib/format'
@@ -33,20 +33,20 @@ export function ClausesCard({ clauses, onChange }: { clauses: Clause[]; onChange
           <li key={c.id}>
             <span className="agx-cl-h">
               {onChange
-                ? <span className="fld agx-cl-t"><input value={c.title} onChange={(e) => put(i, { title: e.target.value })} aria-label={`عنوان البند ${i + 1}`} /></span>
+                ? <FieldBox className="agx-cl-t"><input value={c.title} onChange={(e) => put(i, { title: e.target.value })} aria-label={`عنوان البند ${i + 1}`} /></FieldBox>
                 : <b>{c.title}</b>}
               <span className="pc-sp" />
               {/* Client 27 Oct · the clause's kind on the end side, after its title */}
               <Tag tone={c.kind === 'condition' ? 'warn' : c.kind === 'obligation' ? 'teal' : 'mute'}>{CLAUSE_SAY[c.kind]}</Tag>
               <span className="sub">{SOURCE_SAY[c.source]}</span>
               {onChange && (
-                <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف البند ${i + 1}`} onClick={() => onChange(clauses.filter((_, j) => j !== i))}>
+                <Button type="button" variant="ghost" size="sm" aria-label={`احذف البند ${i + 1}`} onClick={() => onChange(clauses.filter((_, j) => j !== i))}>
                   <Icon name={icons.close} size="sm" />
-                </button>
+                </Button>
               )}
             </span>
             {onChange
-              ? <span className="fld"><textarea rows={2} value={c.body} onChange={(e) => put(i, { body: e.target.value })} aria-label={`نص البند ${i + 1}`} /></span>
+              ? <FieldBox><textarea rows={2} value={c.body} onChange={(e) => put(i, { body: e.target.value })} aria-label={`نص البند ${i + 1}`} /></FieldBox>
               : <p className="prose">{isolate(c.body)}</p>}
           </li>
         ))}
@@ -55,14 +55,14 @@ export function ClausesCard({ clauses, onChange }: { clauses: Clause[]; onChange
         <div className="agx-add">
           <div className="cfgchips" role="radiogroup" aria-label="نوع البند">
             {KINDS.map((k) => (
-              <button key={k} type="button" role="radio" aria-checked={kind === k} className={`cfgchip${kind === k ? ' on' : ''}`} onClick={() => setKind(k)}>{CLAUSE_SAY[k]}</button>
+              <Button plain key={k} type="button" role="radio" aria-checked={kind === k} className={`cfgchip${kind === k ? ' on' : ''}`} onClick={() => setKind(k)}>{CLAUSE_SAY[k]}</Button>
             ))}
           </div>
-          <span className="fld"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان البند" aria-label="عنوان البند الجديد" /></span>
-          <span className="fld"><textarea rows={2} value={body} onChange={(e) => setBody(e.target.value)} placeholder="نص البند" aria-label="نص البند الجديد" /></span>
-          <button type="button" className="btn btn-2 btn-sm" disabled={!title.trim() || !body.trim()} onClick={() => { onChange([...clauses, { id: `cl-${stamp()}`, kind, title: title.trim(), body: body.trim(), source: 'staff' }]); setTitle(''); setBody('') }}>
+          <FieldBox><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان البند" aria-label="عنوان البند الجديد" /></FieldBox>
+          <FieldBox><textarea rows={2} value={body} onChange={(e) => setBody(e.target.value)} placeholder="نص البند" aria-label="نص البند الجديد" /></FieldBox>
+          <Button type="button" variant="2" size="sm" disabled={!title.trim() || !body.trim()} onClick={() => { onChange([...clauses, { id: `cl-${stamp()}`, kind, title: title.trim(), body: body.trim(), source: 'staff' }]); setTitle(''); setBody('') }}>
             <Icon name={icons.plus} size="sm" />أضف البند
-          </button>
+          </Button>
         </div>
       )}
     </Glass>
@@ -84,9 +84,9 @@ export function AnnexesCard({ docs, onChange, title = 'الاتفاقية ومل
             <span key={`${d.name}-${i}`} className="agx-doc">
               <DocFile name={d.name} meta={`${d.kind} · ${readDate(d.at)}`} />
               {onChange && (
-                <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف ${d.name}`} onClick={() => onChange(docs.filter((_, j) => j !== i))}>
+                <Button type="button" variant="ghost" size="sm" aria-label={`احذف ${d.name}`} onClick={() => onChange(docs.filter((_, j) => j !== i))}>
                   <Icon name={icons.close} size="sm" />
-                </button>
+                </Button>
               )}
             </span>
           ))}
@@ -97,17 +97,17 @@ export function AnnexesCard({ docs, onChange, title = 'الاتفاقية ومل
         <div className="apv-row mt-3">
           <div className="cfgchips" role="radiogroup" aria-label="نوع الملحق">
             {ANNEX_KINDS.map((k) => (
-              <button key={k} type="button" role="radio" aria-checked={kind === k} className={`cfgchip${kind === k ? ' on' : ''}`} onClick={() => setKind(k)}>{k}</button>
+              <Button plain key={k} type="button" role="radio" aria-checked={kind === k} className={`cfgchip${kind === k ? ' on' : ''}`} onClick={() => setKind(k)}>{k}</Button>
             ))}
           </div>
-          <label className="btn btn-2 btn-sm">
+          <ButtonLabel variant="2" size="sm">
             <Icon name={icons.upload} size="sm" />ارفع الملحق
             <input className="vis-h" type="file" aria-label="ارفع الملحق" onChange={(e) => {
               const x = e.target.files?.[0]
               if (x) onChange([...docs, { name: x.name, kind, at: new Date().toISOString().slice(0, 10), size: `${nf.format(Math.max(1, Math.round(x.size / 1024)))} ك.ب` }])
               e.target.value = ''
             }} />
-          </label>
+          </ButtonLabel>
         </div>
       )}
     </Glass>
@@ -118,7 +118,7 @@ export function AnnexesCard({ docs, onChange, title = 'الاتفاقية ومل
 export function AgreementTextCard({ parts }: { parts: TextPart[] }) {
   return (
     <Glass>
-      <Head title="نص الاتفاقية" meta={<span className="rowf gp-2"><button type="button" className="btn btn-2 btn-sm" onClick={() => window.print()}><Icon name={icons.doc} size="sm" />اطبع</button></span>} />
+      <Head title="نص الاتفاقية" meta={<span className="rowf gp-2"><Button type="button" variant="2" size="sm" onClick={() => window.print()}><Icon name={icons.doc} size="sm" />اطبع</Button></span>} />
       <div className="agr-body">
         {parts.map((s) => (
           <section key={s.h}>
@@ -142,8 +142,8 @@ export function ReviewCard({ hints, onAdd, onTemplate }: { hints: AgrHint[]; onA
             <Icon name={h.tone === 'ok' ? icons.spark : icons.alert} size="sm" />
             <span className="agx-hint">
               <span>{isolate(h.text)}</span>
-              {h.add && onAdd && <button type="button" className="btn btn-2 btn-sm" onClick={() => onAdd({ ...h.add!, id: `cl-${stamp()}` })}>أضف البند</button>}
-              {h.template && onTemplate && <button type="button" className="btn btn-2 btn-sm" onClick={() => onTemplate(h.template!)}>اعتمد النموذج</button>}
+              {h.add && onAdd && <Button type="button" variant="2" size="sm" onClick={() => onAdd({ ...h.add!, id: `cl-${stamp()}` })}>أضف البند</Button>}
+              {h.template && onTemplate && <Button type="button" variant="2" size="sm" onClick={() => onTemplate(h.template!)}>اعتمد النموذج</Button>}
             </span>
           </li>
         ))}
@@ -207,7 +207,7 @@ export function VersionsCard({ a, versions, children }: { a: AgreementRow; versi
               {v.returned ? <Tag tone="warn">نسخة عند الإعادة</Tag> : v.final && v.version === f.inForce ? <Tag tone="ok">نافذ</Tag> : null}
               <Person name={v.by} />
               <span className="sub"><DateText>{v.at}</DateText></span>
-              <button type="button" className="btn btn-2 btn-sm" onClick={() => setOpen(open === i ? null : i)}>{open === i ? 'أخفِ' : 'اعرض'}</button>
+              <Button type="button" variant="2" size="sm" onClick={() => setOpen(open === i ? null : i)}>{open === i ? 'أخفِ' : 'اعرض'}</Button>
               {open === i && (
                 <div className="agx-ver">
                   {v.payments.map((p) => <span key={p.no} className="sub">الدفعة {nf.format(p.no)} · {nf.format(p.amount)} · {p.dueAt} · {requirementOf(p)}</span>)}
@@ -270,9 +270,9 @@ export function ProjectAgreements({ list, onAdditional, additionalBlock }: { lis
       </ul>
       {onAdditional && (
         <div className="apv-row mt-3">
-          <button type="button" className="btn btn-2 btn-sm" disabled={Boolean(additionalBlock)} title={additionalBlock || 'اتفاقية إضافية تحلّ محل السارية عند سريانها'} onClick={onAdditional}>
+          <Button type="button" variant="2" size="sm" disabled={Boolean(additionalBlock)} title={additionalBlock || 'اتفاقية إضافية تحلّ محل السارية عند سريانها'} onClick={onAdditional}>
             <Icon name={icons.plus} size="sm" />اتفاقية إضافية
-          </button>
+          </Button>
 
         </div>
       )}

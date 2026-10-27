@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { StatRow,
+import { ButtonLink, Button, StatRow,
   DateText, Empty, Glass, Head, Icon, icons, MultiSelect, GroupPicker, Num, Person, SearchBox, Segments, Select, Stat,
   Tag, Toggle, ViewToggle,
 } from '@/components/ui'
@@ -183,7 +183,7 @@ export default function ClosingPage() {
               </p>
             </div>
             {/* 10.9 · stops and value changes live in their own list */}
-            <Link className="btn btn-2 btn-sm" to={ROUTES.distresses}>حالات التعثر</Link>
+            <ButtonLink variant="2" size="sm" to={ROUTES.distresses}>حالات التعثر</ButtonLink>
           </header>
 
           <QuickRead
@@ -263,7 +263,7 @@ export default function ClosingPage() {
                   on={v.short === '1'}
                   onChange={(on) => set({ short: on ? '1' : undefined })}
                 />
-                <button
+                <Button plain
                   className={`fchip${advOpen ? ' on' : ''}`}
                   onClick={() => set({ adv: advOpen ? undefined : '1' })}
                   aria-expanded={advOpen}
@@ -273,7 +273,7 @@ export default function ClosingPage() {
                   {activeCount(NOT_FILTERS) > 0 && (
                     <b className="num">{activeCount(NOT_FILTERS)}</b>
                   )}
-                </button>
+                </Button>
               </div>
 
               <div className="ftool-a">
@@ -324,7 +324,7 @@ export default function ClosingPage() {
             {(chips.length > 0 || v.cycle || v.late === '1' || v.short === '1') && (
               <div className="factive">
                 {chips.map((c) => (
-                  <button
+                  <Button plain
                     key={`${c.key as string}:${c.value}`}
                     className="fpill"
                     onClick={() =>
@@ -335,28 +335,28 @@ export default function ClosingPage() {
                   >
                     <span className="sub">{c.label}:</span> {c.text}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 ))}
                 {v.cycle && (
-                  <button className="fpill" onClick={() => set({ cycle: undefined })}>
+                  <Button plain className="fpill" onClick={() => set({ cycle: undefined })}>
                     <span className="sub">الدورة:</span>{' '}
                     {CYCLES.find((c) => c.value === v.cycle)?.label}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
                 {v.short === '1' && (
-                  <button className="fpill" onClick={() => set({ short: undefined })}>
+                  <Button plain className="fpill" onClick={() => set({ short: undefined })}>
                     الناقص
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
                 {v.late === '1' && (
-                  <button className="fpill" onClick={() => set({ late: undefined })}>
+                  <Button plain className="fpill" onClick={() => set({ late: undefined })}>
                     المتأخر عن حدّ المحطة
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
-                <button className="fclear" onClick={clear}>مسح الكل</button>
+                <Button plain className="fclear" onClick={clear}>مسح الكل</Button>
               </div>
             )}
           </Glass>
@@ -365,7 +365,7 @@ export default function ClosingPage() {
             <Glass>
               <Empty
                 title="لا توجد طلبات إغلاق بهذه الفلاتر."
-                actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
+                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
               />
             </Glass>
           ) : view === 'table' ? (
@@ -391,9 +391,9 @@ export default function ClosingPage() {
               {grouped && (
                 <p className="sub tcen">
                   <span className="num">{countLeaves(groupTree(sorted, group))}</span> مجموعات ·{' '}
-                  <button className="lnk" onClick={() => set({ group: undefined })}>
+                  <Button plain className="lnk" onClick={() => set({ group: undefined })}>
                     إلغاء التجميع
-                  </button>
+                  </Button>
                 </p>
               )}
             </>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckMark, Icon, icons } from '@/components/ui'
+import { Button, CheckMark, Icon, icons } from '@/components/ui'
 
 export interface FilterDef {
   key: string
@@ -56,10 +56,10 @@ export function FilterCustomizer({
           <span className="num">{all.length}</span>
         </span>
         <span className="ftool-sp" />
-        <button className="fclear" onClick={() => onChange(all.map((f) => f.key))}>
+        <Button plain className="fclear" onClick={() => onChange(all.map((f) => f.key))}>
           أعد الترتيب الافتراضي
-        </button>
-        <button className="btn btn-2 btn-sm" onClick={onClose}>أغلق</button>
+        </Button>
+        <Button variant="2" size="sm" onClick={onClose}>أغلق</Button>
       </div>
 
       <ul className="fcust-l">
@@ -75,32 +75,32 @@ export function FilterCustomizer({
           >
             <span className="fcust-g" aria-hidden="true"><Icon name={icons.grip} size="sm" /></span>
 
-            <button
+            <Button plain
               className="fcust-c on"
               aria-pressed="true"
               aria-label={`إخفاء ${f.label}`}
               onClick={() => onChange(visible.filter((k) => k !== f.key))}
             >
               <CheckMark />
-            </button>
+            </Button>
 
             <span className="fcust-n">{f.label}</span>
 
             <span className="fcust-a">
-              <button
+              <Button plain
                 aria-label={`تحريك ${f.label} لأعلى`}
                 disabled={i === 0}
                 onClick={() => move(f.key, -1)}
               >
                 <Icon name={icons.chevronUp} size="sm" />
-              </button>
-              <button
+              </Button>
+              <Button plain
                 aria-label={`تحريك ${f.label} لأسفل`}
                 disabled={i === shown.length - 1}
                 onClick={() => move(f.key, 1)}
               >
                 <Icon name={icons.chevronDown} size="sm" />
-              </button>
+              </Button>
             </span>
           </li>
         ))}
@@ -113,7 +113,7 @@ export function FilterCustomizer({
             {hidden.map((f) => (
               <li key={f.key} className="fcust-r off">
                 <span className="fcust-g" aria-hidden="true" />
-                <button
+                <Button plain
                   className="fcust-c"
                   aria-pressed="false"
                   aria-label={`إظهار ${f.label}`}

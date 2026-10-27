@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { markSeen, threadOf, unreadOf, useThreads } from '@/data/thread'
 import { Thread, type ThreadProps } from './Thread'
 
@@ -78,7 +78,7 @@ export function ChatDock({ title, ...thread }: ChatDockProps) {
 
   return createPortal(
     <>
-      <button
+      <Button plain
         ref={launcher}
         type="button"
         className={`chatfab${open ? ' on' : ''}`}
@@ -90,7 +90,7 @@ export function ChatDock({ title, ...thread }: ChatDockProps) {
         <Icon name={icons.chat} size="sm" />
         <span className="chatfab-t">{title}</span>
         {unread > 0 && <b className="chatfab-n">{unread}</b>}
-      </button>
+      </Button>
 
       {open && (
         <div ref={panel} id="chatpop" className="chatpop" role="dialog" aria-label={title}>
@@ -100,9 +100,9 @@ export function ChatDock({ title, ...thread }: ChatDockProps) {
               <b>{title}</b>
               <span className="sub">{thread.me === 'staff' ? thread.entityName : 'مؤسسة سليمان أبانمي'}{total ? ` · ${total} رسائل` : ''}</span>
             </div>
-            <button type="button" className="aclose" aria-label="أغلق المحادثة" onClick={() => { setOpen(false); launcher.current?.focus() }}>
+            <Button plain type="button" className="aclose" aria-label="أغلق المحادثة" onClick={() => { setOpen(false); launcher.current?.focus() }}>
               <Icon name={icons.close} size="sm" />
-            </button>
+            </Button>
           </div>
           <Thread {...thread} />
         </div>

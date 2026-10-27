@@ -1,3 +1,4 @@
+import { Button } from './Button'
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useMenu } from '@/hooks/useMenu'
@@ -100,7 +101,7 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
 
   return (
     <span className={`fldsel${end ? ' end' : ''}`} ref={box}>
-      <button
+      <Button plain
         type="button"
         className={`fld fldsel-b${disabled ? ' off' : ''}`}
         disabled={disabled}
@@ -115,7 +116,7 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
           {value ? say(value) : 'اختر التاريخ'}
         </span>
         <Icon name={icons.date} size="sm" />
-      </button>
+      </Button>
 
       {open && createPortal(
         <div className="fmenu cal float" role="dialog" aria-label={label ?? 'التقويم'} ref={pop}>
@@ -123,15 +124,15 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
             {/* Warning: the arrow follows reading direction — "previous" is on the right in Arabic
                 · the browser calendar's back arrow used to point the wrong way because it was
                 hardcoded for Latin */}
-            <button type="button" className="cal-n" aria-label="الشهر السابق" onClick={() => step(-1)}>
+            <Button plain type="button" className="cal-n" aria-label="الشهر السابق" onClick={() => step(-1)}>
               <Icon name={icons.chevronBack} size="sm" />
-            </button>
+            </Button>
             <span className="cal-t">
               {MONTHS[at.m]} <span className="num">{at.y}</span>
             </span>
-            <button type="button" className="cal-n" aria-label="الشهر التالي" onClick={() => step(1)}>
+            <Button plain type="button" className="cal-n" aria-label="الشهر التالي" onClick={() => step(1)}>
               <Icon name={icons.chevron} size="sm" />
-            </button>
+            </Button>
           </div>
 
           <div className="cal-w" aria-hidden="true">
@@ -143,7 +144,7 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
               if (d === null) return <span key={`e${i}`} className="cal-d off" />
               const v = iso(at.y, at.m, d)
               return (
-                <button
+                <Button plain
                   type="button"
                   key={v}
                   role="gridcell"
@@ -153,19 +154,19 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
                   onClick={() => pick(d)}
                 >
                   {d}
-                </button>
+                </Button>
               )
             })}
           </div>
 
           <div className="fmenu-f cal-f">
-            <button type="button" className="fclear" onClick={() => { onChange(today); setOpen(false) }}>
+            <Button plain type="button" className="fclear" onClick={() => { onChange(today); setOpen(false) }}>
               اليوم
-            </button>
+            </Button>
             {value && (
-              <button type="button" className="fclear" onClick={() => { onChange(''); setOpen(false) }}>
+              <Button plain type="button" className="fclear" onClick={() => { onChange(''); setOpen(false) }}>
                 مسح
-              </button>
+              </Button>
             )}
           </div>
         </div>,

@@ -3,7 +3,7 @@ import { useDocReads } from '@/lib/docCache'
 import { suggestNext } from '@/data/shared/agent'
 import { rowGo } from '@/lib/rowGo'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { FieldMultiSelect, BackTo, FieldSelect, Glass, Head, KV, Money, Tabs, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, FieldMultiSelect, BackTo, FieldSelect, Glass, Head, KV, Money, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
@@ -70,8 +70,8 @@ export default function PartnersPage() {
               <p className="sub mt-1"><span className="num">{PROFILES.filter((p) => p.state === 'approved').length}</span> شريك معتمد · <span className="num">{PORTFOLIOS.length}</span> محافظ</p>
             </div>
             <span className="rowf gp-2">
-              {EXT_CREATE.includes(role.key) && <button type="button" className="btn btn-2" onClick={() => navigate(ROUTES.externalNew)}>مشروع لجهة خارجية</button>}
-              {role.key === 'supervisor' && <button type="button" className="btn btn-2" onClick={() => navigate(ROUTES.portfolioNew)}>محفظة جديدة</button>}
+              {EXT_CREATE.includes(role.key) && <Button type="button" variant="2" onClick={() => navigate(ROUTES.externalNew)}>مشروع لجهة خارجية</Button>}
+              {role.key === 'supervisor' && <Button type="button" variant="2" onClick={() => navigate(ROUTES.portfolioNew)}>محفظة جديدة</Button>}
             </span>
           </header>
 
@@ -246,12 +246,12 @@ function ExternalTab() {
         <Glass>
           <Head title="سجل مرجعي جديد" />
           <div className="regfields">
-            <label className="regf"><span className="lb">اسم الجهة الخارجية</span><span className="fld"><input value={v.name} onChange={(e) => setV((x) => ({ ...x, name: e.target.value }))} aria-label="اسم الجهة الخارجية" /></span></label>
-            <label className="regf"><span className="lb">المنطقة · اختياري</span><FieldSelect value={v.region} onChange={(x) => setV((y) => ({ ...y, region: x }))} label="منطقة الجهة الخارجية" options={[...REGIONS]} /></label>
-            <label className="regf"><span className="lb">بيانات الحساب البنكي{EXT_CFG.party.includes('transfer') ? '' : ' · إذا لزم'}</span><span className="fld"><input value={v.transfer} onChange={(e) => setV((x) => ({ ...x, transfer: e.target.value }))} aria-label="بيانات الحساب أو التحويل" /></span></label>
-            <label className="regf"><span className="lb">البيانات المرجعية{EXT_CFG.party.includes('refs') ? '' : ' · اختياري'}</span><span className="fld"><input value={v.refs} onChange={(e) => setV((x) => ({ ...x, refs: e.target.value }))} aria-label="البيانات المرجعية" /></span></label>
+            <FormField label="اسم الجهة الخارجية"><FieldBox><input value={v.name} onChange={(e) => setV((x) => ({ ...x, name: e.target.value }))} aria-label="اسم الجهة الخارجية" /></FieldBox></FormField>
+            <FormField label="المنطقة · اختياري"><FieldSelect value={v.region} onChange={(x) => setV((y) => ({ ...y, region: x }))} label="منطقة الجهة الخارجية" options={[...REGIONS]} /></FormField>
+            <FormField label={<>بيانات الحساب البنكي{EXT_CFG.party.includes('transfer') ? '' : ' · إذا لزم'}</>}><FieldBox><input value={v.transfer} onChange={(e) => setV((x) => ({ ...x, transfer: e.target.value }))} aria-label="بيانات الحساب أو التحويل" /></FieldBox></FormField>
+            <FormField label={<>البيانات المرجعية{EXT_CFG.party.includes('refs') ? '' : ' · اختياري'}</>}><FieldBox><input value={v.refs} onChange={(e) => setV((x) => ({ ...x, refs: e.target.value }))} aria-label="البيانات المرجعية" /></FieldBox></FormField>
           </div>
-          <div className="apv-row mt-3"><button type="button" className="btn btn-p btn-sm" onClick={add}>أنشئ السجل المرجعي</button></div>
+          <div className="apv-row mt-3"><Button type="button" variant="p" size="sm" onClick={add}>أنشئ السجل المرجعي</Button></div>
           <Said said={said} />
         </Glass>
       )}
@@ -261,7 +261,7 @@ function ExternalTab() {
           { k: 'الجهة الخارجية', v: <FieldMultiSelect disabled={!may} values={cfg.party} options={(Object.keys(EXT_PARTY_FIELD_SAY) as ExtPartyField[]).map((f) => ({ value: f, label: EXT_PARTY_FIELD_SAY[f] }))} label="حقول الجهة الخارجية" placeholder="حقول الجهة الخارجية" onChange={(xs) => setCfg((c) => ({ ...c, party: xs as ExtPartyField[] }))} /> },
           { k: 'المشروع', v: <FieldMultiSelect disabled={!may} values={cfg.project} options={(Object.keys(EXT_PROJECT_FIELD_SAY) as ExtProjectField[]).map((f) => ({ value: f, label: EXT_PROJECT_FIELD_SAY[f] }))} label="حقول المشروع" placeholder="حقول المشروع" onChange={(xs) => setCfg((c) => ({ ...c, project: xs as ExtProjectField[] }))} /> },
         ]} />
-        {may && <div className="apv-row mt-3"><button type="button" className="btn btn-p btn-sm" onClick={() => { const out = saveExtCfg(cfg, user.name, role.key); setCfgSaid(out.length ? { bad: out } : { ok: 'الحد الأدنى من البيانات' }) }}>احفظ الإعداد</button></div>}
+        {may && <div className="apv-row mt-3"><Button type="button" variant="p" size="sm" onClick={() => { const out = saveExtCfg(cfg, user.name, role.key); setCfgSaid(out.length ? { bad: out } : { ok: 'الحد الأدنى من البيانات' }) }}>احفظ الإعداد</Button></div>}
         <Said said={cfgSaid} />
       </Glass>
       {waiting.length > 0 && (
@@ -270,7 +270,7 @@ function ExternalTab() {
           <ul className="ptn-slots">{waiting.map((p) => <li key={p.id}><Link className="tlink" to={ROUTES.project(p.id)}>{p.name}</Link><span className="sub">{p.platform}</span></li>)}</ul>
         </Glass>
       )}
-      {EXT_CREATE.includes(role.key) && <div className="apv-row"><button type="button" className="btn btn-2 btn-sm" onClick={() => navigate(ROUTES.externalNew)}>مشروع لجهة خارجية</button></div>}
+      {EXT_CREATE.includes(role.key) && <div className="apv-row"><Button type="button" variant="2" size="sm" onClick={() => navigate(ROUTES.externalNew)}>مشروع لجهة خارجية</Button></div>}
     </>
   )
 }

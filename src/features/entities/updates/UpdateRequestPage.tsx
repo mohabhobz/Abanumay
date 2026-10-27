@@ -2,8 +2,8 @@ import { readExpiry } from '@/data/entities/expiry'
 import { useMemo, useState } from 'react'
 import { isPortalPreview } from '@/data/session'
 import { ReadOnly } from '@/components/shell/ReadOnly'
-import { Link, useNavigate } from 'react-router-dom'
-import { BankGrid, BankCard, DateField, DateText, Glass, Head, Icon, KV, Mono, Num, Tag, icons } from '@/components/ui'
+import { useNavigate } from 'react-router-dom'
+import { ButtonLink, FormField, Button, BankGrid, BankCard, DateField, DateText, Glass, Head, Icon, KV, Mono, Num, Tag, icons } from '@/components/ui'
 import { DocList, UploadButton } from '@/components/docs'
 import { Background } from '@/components/shell'
 import Logo from '@/assets/LogoColor'
@@ -130,9 +130,9 @@ export default function UpdateRequestPage() {
                 <Logo className="mark mark-38" />
                 <div><b>منح أبانمي</b><span className="sub">بوّابة الجهة · تحديث بياناتك</span></div>
                 <span className="pc-sp" />
-                <Link className="btn btn-2 btn-sm" to={`${ROUTES.entityPortal}?entity=${e.id}`}>
+                <ButtonLink variant="2" size="sm" to={`${ROUTES.entityPortal}?entity=${e.id}`}>
                   <Icon name={icons.chevronBack} size="sm" /> العودة إلى البوابة
-                </Link>
+                </ButtonLink>
               </div>
 
               <header className="phead">
@@ -173,7 +173,7 @@ export default function UpdateRequestPage() {
                   </ul>
                   <footer className="payq-f">
                     <span className="sub payq-when"><Mono>{reqId}</Mono></span>
-                    <button className="btn btn-p" onClick={() => navigate(`${ROUTES.entityPortal}?entity=${e.id}`)}>العودة إلى البوابة</button>
+                    <Button variant="p" onClick={() => navigate(`${ROUTES.entityPortal}?entity=${e.id}`)}>العودة إلى البوابة</Button>
                   </footer>
                 </Glass>
               ) : locked ? (
@@ -230,15 +230,15 @@ export default function UpdateRequestPage() {
                           return (
                             <BankCard key={b.id} bank={b.bank} iban={b.iban} holder={b.accountName} purpose={b.shortName} status={b.status}
                               actions={
-                                <button
+                                <Button
                                   type="button"
-                                  className="btn btn-2 btn-sm"
+                                  variant="2" size="sm"
                                   disabled={editing}
                                   aria-label={`عدّل الحساب ${b.shortName || b.bank}`}
                                   onClick={() => setBanks((s) => [...s, { id: `ed${Date.now()}`, bankName: b.bank, bankHolder: b.accountName, shortName: b.shortName, iban: '', replaces: b.id }])}
                                 >
                                   {editing ? 'تعديله في الطلب' : 'عدّل الحساب'}
-                                </button>
+                                </Button>
                               } />
                           )
                         })}
@@ -264,9 +264,9 @@ export default function UpdateRequestPage() {
                           uploaded: Boolean(up) || Boolean(was?.uploaded && !was.expired),
                           required: Boolean(was?.expired),
                           action: up
-                            ? <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDocs((s) => s.filter((y) => y.key !== k.key))}>
+                            ? <Button type="button" variant="ghost" size="sm" onClick={() => setDocs((s) => s.filter((y) => y.key !== k.key))}>
                                 <Icon name={icons.close} size="sm" /> أزل
-                              </button>
+                              </Button>
                             : <UploadButton label={was?.uploaded && !was.expired ? `استبدل ${k.label}` : `ارفع ${k.label}`} onPick={(file) => {
                                 setDocs((s) => [...s, { key: k.key, label: k.label, file: file.name }])
                                 /* client 19 Oct · the expiry read from the document prefills its date */
@@ -280,12 +280,11 @@ export default function UpdateRequestPage() {
                     {docs.some((x) => DOC_KEYS.find((k) => k.key === x.key)?.expiry) && (
                       <div className="regfields mt-3">
                         {docs.filter((x) => DOC_KEYS.find((k) => k.key === x.key)?.expiry).map((x) => (
-                          <label key={x.key} className="regf">
-                            <span className="lb">نهاية صلاحية {x.label}<b className="regf-r" aria-label="إلزامي">*</b></span>
+                          <FormField key={x.key} label={<>نهاية صلاحية {x.label}</>} required>
                             <DateField label={`نهاية صلاحية ${x.label}`} value={x.expires ?? ''} min={todayIso()}
                               onChange={(v) => setDocs((s) => s.map((y) => (y.key === x.key ? { ...y, expires: v } : y)))} />
                             {readAt[x.key] && readAt[x.key] === x.expires && <span className="sub">قُرئ تاريخ الانتهاء من المستند</span>}
-                          </label>
+                          </FormField>
                         ))}
                       </div>
                     )}
@@ -297,16 +296,16 @@ export default function UpdateRequestPage() {
                     {saved && <p className="sub cnote" role="status">حُفظ الطلب مسودة.</p>}
                     <footer className="payq-f">
                       <span className="sub payq-when"><Num>{changes.length}</Num> حقول · <Num>{banks.length}</Num> حسابات · <Num>{docs.length}</Num> وثائق</span>
-                      <button className="btn btn-2" disabled={nothing} onClick={() => { saveUpdate(payload(), false); setSaved(true) }}>احفظ مسودة</button>
-                      <button
-                        className="btn btn-p"
+                      <Button variant="2" disabled={nothing} onClick={() => { saveUpdate(payload(), false); setSaved(true) }}>احفظ مسودة</Button>
+                      <Button
+                        variant="p"
                         disabled={nothing || gaps.length > 0}
                         title={nothing ? 'لم يتغيّر شيء بعد' : gaps.length ? 'صحّح الملاحظات أولًا' : undefined}
                         onClick={() => (otpTo.length ? setPhase('otp') : send())}
                       >
                         <Icon name={icons.send} size="sm" />
                         {existing?.state === 'completion' ? 'أعد إرسال الطلب' : 'أرسل طلب التحديث'}
-                      </button>
+                      </Button>
                     </footer>
                   </Glass>
                 </>

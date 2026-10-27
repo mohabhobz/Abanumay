@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import {
-  DateField, DateText, Glass, Head, Icon, icons, Person, Select, Switch, Tabs, Tag } from '@/components/ui'
+  FormField, FieldBox, Button, DateField, DateText, Glass, Head, Icon, icons, Person, Select, Switch, Tabs, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES, NAV } from '@/app/routes'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -103,10 +103,10 @@ function NotifyTab({ roleKey, roleName }: { roleKey: string; roleName: string })
         <Head
           title="ما يصلك وأين"
           meta={
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => setP(notifyDefaults(roleKey))}>
+            <Button type="button" variant="2" size="sm" onClick={() => setP(notifyDefaults(roleKey))}>
               <Icon name={icons.redo} size="sm" />
               افتراضيات {roleName}
-            </button>
+            </Button>
           }
         />
         <div className="tblwrap">
@@ -270,16 +270,13 @@ function DelegateTab({ me }: { me: string }) {
           />
           {d.on && (
             <div className="regfields mt-3">
-              <div className="regf">
-                <span className="lb">من تاريخ<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <FormField label="من تاريخ" required as="div">
                 <DateField value={d.from} onChange={(from) => setD((x) => ({ ...x, from }))} label="بداية التفويض" min={today()} />
-              </div>
-              <div className="regf">
-                <span className="lb">إلى تاريخ<b className="regf-r" aria-label="إلزامي">*</b></span>
+              </FormField>
+              <FormField label="إلى تاريخ" required as="div">
                 <DateField value={d.to} onChange={(to) => setD((x) => ({ ...x, to }))} label="نهاية التفويض" min={d.from || today()} />
-              </div>
-              <div className="regf">
-                <span className="lb">المفوَّض إليه<b className="regf-r" aria-label="إلزامي">*</b></span>
+              </FormField>
+              <FormField label="المفوَّض إليه" required as="div">
                 <Select
                   value={d.delegate || undefined}
                   all="اختر الزميل…"
@@ -288,25 +285,23 @@ function DelegateTab({ me }: { me: string }) {
                   options={people}
                   onChange={(delegate) => setD((x) => ({ ...x, delegate: delegate ?? '' }))}
                 />
-              </div>
-              <div className="regf">
-                <span className="lb">النطاق</span>
+              </FormField>
+              <FormField label="النطاق" as="div">
                 <div className="seg" role="radiogroup" aria-label="نطاق التفويض">
                   {([['approvals', 'الاعتمادات فقط'], ['all', 'كل المهام']] as const).map(([k, l]) => (
-                    <button key={k} type="button" role="radio" aria-checked={d.scope === k}
+                    <Button plain key={k} type="button" role="radio" aria-checked={d.scope === k}
                       className={d.scope === k ? 'on' : ''} onClick={() => setD((x) => ({ ...x, scope: k }))}>
                       {l}
-                    </button>
+                    </Button>
                   ))}
                 </div>
-              </div>
-              <label className="regf regf-w">
-                <span className="lb">ملاحظة تظهر لمن يفتح مهامك</span>
-                <span className="fld fld-a">
+              </FormField>
+              <FormField label="ملاحظة تظهر لمن يفتح مهامك" wide>
+                <FieldBox area>
                   <textarea rows={2} value={d.note} onChange={(e) => setD((x) => ({ ...x, note: e.target.value }))}
                     placeholder="مثال: في إجازة سنوية، والعاجل عبر الزميل المفوَّض" aria-label="ملاحظة التفويض" />
-                </span>
-              </label>
+                </FieldBox>
+              </FormField>
             </div>
           )}
         </Glass>
@@ -353,10 +348,10 @@ function DisplayTab() {
           <Head title="المظهر" />
           <div className="seg" role="radiogroup" aria-label="المظهر">
             {([['light', 'فاتح', icons.sun], ['dark', 'داكن', icons.moon]] as const).map(([k, l, ic]) => (
-              <button key={k} type="button" role="radio" aria-checked={theme === k}
+              <Button plain key={k} type="button" role="radio" aria-checked={theme === k}
                 className={theme === k ? 'on' : ''} onClick={() => setTheme(k)}>
                 <Icon name={ic} size="sm" /><span>{l}</span>
-              </button>
+              </Button>
             ))}
           </div>
           <div className="pf-row mt-4">
@@ -370,10 +365,10 @@ function DisplayTab() {
           <Head title="التقويم" />
           <div className="seg" role="radiogroup" aria-label="التقويم">
             {([['gregory', 'ميلادي'], ['hijri', 'هجري'], ['both', 'الاثنان']] as const).map(([k, l]) => (
-              <button key={k} type="button" role="radio" aria-checked={d.cal === k}
+              <Button plain key={k} type="button" role="radio" aria-checked={d.cal === k}
                 className={d.cal === k ? 'on' : ''} onClick={() => setD({ cal: k as CalendarChoice })}>
                 {l}
-              </button>
+              </Button>
             ))}
           </div>
           <p className="sub cnote">
@@ -417,19 +412,19 @@ function A11yTab() {
           <Head
             title="حجم النص"
             meta={changed ? (
-              <button type="button" className="btn btn-2 btn-sm" onClick={reset}>
+              <Button type="button" variant="2" size="sm" onClick={reset}>
                 <Icon name={icons.redo} size="sm" />
                 الإعدادات الافتراضية
-              </button>
+              </Button>
             ) : undefined}
           />
           <div className="seg pf-sizes" role="radiogroup" aria-label="حجم النص">
             {SIZES.map((s) => (
-              <button key={s.k} type="button" role="radio" aria-checked={a.text === s.k}
+              <Button plain key={s.k} type="button" role="radio" aria-checked={a.text === s.k}
                 className={a.text === s.k ? 'on' : ''} onClick={() => setA({ text: s.k })}>
                 <span className={`pf-a pf-a${s.k}`} aria-hidden="true">أ</span>
                 <span>{s.label}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </Glass>
@@ -462,18 +457,17 @@ function A11yTab() {
             <span className="kpi-v num">2</span>
             <span className="kpi-n">1 فوق الحدّ</span>
           </div>
-          <label className="regf mt-4">
-            <span className="lb">اسم المشروع</span>
-            <span className="fld"><input defaultValue="علاج 60 من مرضى الكلى بالأحساء" aria-label="اسم المشروع (معاينة)" /></span>
+          <FormField label="اسم المشروع" className="mt-4">
+            <FieldBox><input defaultValue="علاج 60 من مرضى الكلى بالأحساء" aria-label="اسم المشروع (معاينة)" /></FieldBox>
             <span className="sub regf-h">كما سيظهر في الاتفاقية</span>
-          </label>
+          </FormField>
           <p className="prose mt-4">
             متوقف عند «رفع التقرير الختامي» منذ 110 أيام ·{' '}
             <Link className="lnk" to={ROUTES.projects}>اعرض المشاريع</Link>
           </p>
           <div className="rowf gp-2 mt-4">
-            <button type="button" className="btn btn-p">توصية بالموافقة</button>
-            <button type="button" className="btn btn-2">طلب استكمال</button>
+            <Button type="button" variant="p">توصية بالموافقة</Button>
+            <Button type="button" variant="2">طلب استكمال</Button>
           </div>
         </Glass>
       </div>

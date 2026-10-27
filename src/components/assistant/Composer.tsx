@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { useProximity } from '@/hooks/useProximity'
 import { Disclaimer } from './Disclaimer'
 import { toast } from '@/data/feedback'
@@ -92,11 +92,11 @@ export function Composer({
             }} />
           </label>
           {busy ? (
-            <button className="go stop" onClick={onStop} title="إيقاف" aria-label="إيقاف">
+            <Button plain className="go stop" onClick={onStop} title="إيقاف" aria-label="إيقاف">
               <span className="sq" />
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button plain
               className="go"
               onClick={() => onSend(value)}
               disabled={!value.trim() && !canSend}
@@ -104,7 +104,7 @@ export function Composer({
               aria-label="إرسال"
             >
               <Icon name={icons.send} />
-            </button>
+            </Button>
           )}
         </div>
       </div>

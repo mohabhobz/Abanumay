@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from './AuthShell'
 import { ROUTES } from '@/app/routes'
 import {
@@ -79,7 +79,7 @@ export default function ForgotPage() {
         <form className="lform" onSubmit={identify} noValidate>
           <AuthField id="fp-who" name="username" label="اسم المستخدم أو البريد أو الجوال" icon={icons.user}
             value={who} onChange={setWho} autoComplete="username" enterKeyHint="go" />
-          <button className="btn btn-p btn-full" type="submit">أرسل رمز التحقّق</button>
+          <Button variant="p" full type="submit">أرسل رمز التحقّق</Button>
         </form>
       )}
 
@@ -94,16 +94,16 @@ export default function ForgotPage() {
                 ? <span className="bad">{left === 0 ? OTP_SAY.expired : OTP_SAY.dead}</span>
                 : <>صالح لمدة <span className="num">{mmss(left)}</span> · {triesLeft()} محاولات متبقية</>
               : <>صالح لمدة <span className="num">{ENTITY_RULES.otpMinutes}</span> دقائق</>} />
-          <button className="btn btn-p btn-full" type="submit" disabled={code.length !== OTP_LEN}>تحقّق من الرمز</button>
-          <button
-            className="btn btn-2 btn-full"
+          <Button variant="p" full type="submit" disabled={code.length !== OTP_LEN}>تحقّق من الرمز</Button>
+          <Button
+            variant="2" full
             type="button"
             disabled={Boolean(acct) && wait > 0}
             onClick={() => { if (acct) sendOtp('reset', [acct.email, /X/.test(acct.mobile) ? '' : acct.mobile], acct.id); setCode('') }}
           >
             <Icon name={icons.redo} size="sm" />
             {acct && wait > 0 ? <>رمز جديد بعد <span className="num">{wait}</span> ث</> : 'أرسل رمزًا جديدًا'}
-          </button>
+          </Button>
           {acct && c && !c.dead && <p className="lnote sub otp-demo">رمز النموذج التجريبي: <span className="num">{c.code}</span></p>}
         </form>
       )}
@@ -113,14 +113,14 @@ export default function ForgotPage() {
           <p className="lnote sub lwhy">عيّن كلمة مرور جديدة لـ <b>{acct ? mask(acct.email) : ''}</b></p>
           <AuthField id="fp-pass" name="new-password" label="كلمة المرور الجديدة" icon={icons.lock}
             type={show ? 'text' : 'password'} value={pass} onChange={setPass} autoComplete="new-password" enterKeyHint="next"
-            trailing={<button type="button" className="leye" onClick={() => setShow((v) => !v)} aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>
-              <Icon name={show ? icons.eyeOff : icons.eye} size="md" /></button>}
+            trailing={<Button plain type="button" className="leye" onClick={() => setShow((v) => !v)} aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>
+              <Icon name={show ? icons.eyeOff : icons.eye} size="md" /></Button>}
             hint={pass ? (issues.length ? <span className="bad">ينقص: {issues.join('، ')}</span> : <span className="ok-ink">تستوفي السياسة</span>)
               : <>{ENTITY_RULES.passMin} أحرف على الأقل، فيها حرف ورقم</>} />
           <AuthField id="fp-pass2" name="confirm-password" label="تأكيد كلمة المرور" icon={icons.lock}
             type={show ? 'text' : 'password'} value={pass2} onChange={setPass2} autoComplete="new-password" enterKeyHint="go"
             hint={pass2 && pass !== pass2 ? <span className="bad">لا تطابق كلمة المرور</span> : undefined} />
-          <button className="btn btn-p btn-full" type="submit">احفظ كلمة المرور</button>
+          <Button variant="p" full type="submit">احفظ كلمة المرور</Button>
         </form>
       )}
 
@@ -129,15 +129,15 @@ export default function ForgotPage() {
           <p className="lnote sub lwhy">
             <Icon name={icons.check} size="sm" /> حُفظت كلمة المرور الجديدة.
           </p>
-          <button className="btn btn-p btn-full" type="button"
+          <Button variant="p" full type="button"
             onClick={() => navigate(ROUTES.login, { replace: true, state: { user: acct?.username, reset: true } })}>
             الذهاب إلى تسجيل الدخول
-          </button>
+          </Button>
         </div>
       )}
 
       <div className="lalt">
-        <button className="btn btn-2 btn-full" type="button" onClick={() => navigate(ROUTES.login)}>العودة إلى تسجيل الدخول</button>
+        <Button variant="2" full type="button" onClick={() => navigate(ROUTES.login)}>العودة إلى تسجيل الدخول</Button>
       </div>
     </AuthShell>
   )

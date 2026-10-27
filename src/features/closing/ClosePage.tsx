@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from 'react'
 import { closingAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TONE } from '@/lib/tone'
-import { type TabItem, Tabs,
+import { ButtonLink, Button, type TabItem, Tabs,
   BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, StepArc, Tag,
   icons, type GateStep,
 } from '@/components/ui'
@@ -105,9 +105,9 @@ export default function ClosePage() {
               <Empty
                 title="لا يوجد طلب إغلاق بهذا الرقم."
                 actions={
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.closings)}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.closings)}>
                     افتح صندوق الإغلاق
-                  </button>
+                  </Button>
                 }
               />
             </Glass>
@@ -343,10 +343,10 @@ export default function ClosePage() {
 
                 {(!asEntity || !closed) && (
                   <div className="act-a">
-                    <Link className="btn btn-2 btn-sm" to={ROUTES.closingReport(c.id)}>
+                    <ButtonLink variant="2" size="sm" to={ROUTES.closingReport(c.id)}>
                       {closed ? 'اعرض التقرير' : 'حرّر التقرير الختامي'}
                       <Icon name={icons.chevron} size="sm" />
-                    </Link>
+                    </ButtonLink>
                   </div>
                 )}
               </Glass>
@@ -436,10 +436,10 @@ export default function ClosePage() {
                     />
                     {!asEntity && !closed && (
                       <div className="act-a">
-                        <Link className="btn btn-2 btn-sm" to={ROUTES.closingEval(c.id)}>
+                        <ButtonLink variant="2" size="sm" to={ROUTES.closingEval(c.id)}>
                           حرّر التقييم
                           <Icon name={icons.chevron} size="sm" />
-                        </Link>
+                        </ButtonLink>
                       </div>
                     )}
                   </>
@@ -509,14 +509,14 @@ export default function ClosePage() {
                         {missing[0]}</>}
                   </span>
                 </div>
-                <button
-                  className="btn btn-p"
+                <Button
+                  variant="p"
                   disabled={missing.length > 0 || (c.stage !== 'draft' && c.stage !== 'returned')}
                   title={missing.length > 0 ? /* doc rule 3 */ `ينقص: ${missing[0]}` : 'أرسل التقرير إلى مشرف المنح للمراجعة'}
                   onClick={() => { const out = sendClosingReport(c.id, c.entityName); setSaid(out.length ? { bad: out } : { ok: 'أُرسل التقرير إلى مشرف المنح' }) }}
                 >
                   أرسل التقرير للمراجعة
-                </button>
+                </Button>
               </div>
             </div>
           )

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { rowGo } from '@/lib/rowGo'
-import { DateText, Icon, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
+import { ButtonLink, DateText, Icon, Money, Mono, Num, Person, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { payHeat, payStateWho } from '@/data/mock/disbursements'
 import type { PayRequest } from '@/types/domain'
@@ -143,10 +143,10 @@ export function RequestCard({ r, showState }: RequestCardProps) {
         <span className="pc-sp" />
         {/* The request, not the project - the card summarizes the decision and the request page
             carries it through, so the button continues the path instead of leaving it. */}
-        <Link className="btn btn-2 btn-sm" to={ROUTES.payment(r.id)}>
+        <ButtonLink variant="2" size="sm" to={ROUTES.payment(r.id)}>
           افتح الدفعة
           <Icon name={icons.chevron} size="sm" />
-        </Link>
+        </ButtonLink>
       </footer>
     </article>
   )

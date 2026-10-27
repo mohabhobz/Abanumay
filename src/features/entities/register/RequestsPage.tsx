@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { regTrends } from '@/data/shared/ai'
-import { Link, useNavigate } from 'react-router-dom'
-import { StatRow,
+import { useNavigate } from 'react-router-dom'
+import { ButtonLink, Button, StatRow,
   DateField, DateText, Empty, Glass, Icon, icons, GroupPicker, MultiSelect, Num, SearchBox, Segments, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
@@ -188,10 +188,10 @@ export default function RequestsPage() {
                 leading to direct registration - two buttons for the same intent, with different
                 names and destinations. Whoever's here is staff, so the destination is direct
                 registration (rule 32), and the name is an imperative, per the writing guide. */}
-            <Link className="btn btn-p" to={ROUTES.entityNew}>
+            <ButtonLink variant="p" to={ROUTES.entityNew}>
               <Icon name={icons.plus} size="sm" />
               {ENTITY_CREATE_LABEL}
-            </Link>
+            </ButtonLink>
           </header>
 
           <QuickRead
@@ -266,7 +266,7 @@ export default function RequestsPage() {
                   on={v.short === '1'}
                   onChange={(on) => set({ short: on ? '1' : undefined })}
                 />
-                <button
+                <Button plain
                   className={`fchip${advOpen ? ' on' : ''}`}
                   onClick={() => set({ adv: advOpen ? undefined : '1' })}
                   aria-expanded={advOpen}
@@ -276,7 +276,7 @@ export default function RequestsPage() {
                   {activeCount(NOT_FILTERS) > 0 && (
                     <b className="num">{activeCount(NOT_FILTERS)}</b>
                   )}
-                </button>
+                </Button>
               </div>
 
               <div className="ftool-a">
@@ -366,7 +366,7 @@ export default function RequestsPage() {
             {(chips.length > 0 || v.short === '1' || v.from || v.to) && (
               <div className="factive">
                 {chips.map((c) => (
-                  <button
+                  <Button plain
                     key={`${c.key as string}:${c.value}`}
                     className="fpill"
                     onClick={() =>
@@ -377,21 +377,21 @@ export default function RequestsPage() {
                   >
                     <span className="sub">{c.label}:</span> {c.text}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 ))}
                 {(v.from || v.to) && (
-                  <button className="fpill" onClick={() => set({ from: undefined, to: undefined })}>
+                  <Button plain className="fpill" onClick={() => set({ from: undefined, to: undefined })}>
                     <span className="sub">تاريخ الإرسال:</span> {v.from ? <DateText>{v.from}</DateText> : '…'} – {v.to ? <DateText>{v.to}</DateText> : '…'}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
                 {v.short === '1' && (
-                  <button className="fpill" onClick={() => set({ short: undefined })}>
+                  <Button plain className="fpill" onClick={() => set({ short: undefined })}>
                     ملفها ناقص
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
-                <button className="fclear" onClick={clear}>مسح الكل</button>
+                <Button plain className="fclear" onClick={clear}>مسح الكل</Button>
               </div>
             )}
           </Glass>
@@ -400,7 +400,7 @@ export default function RequestsPage() {
             <Glass>
               <Empty
                 title="لا توجد طلبات بهذه الفلاتر."
-                actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
+                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
               />
             </Glass>
           ) : view === 'table' ? (
@@ -426,9 +426,9 @@ export default function RequestsPage() {
               {grouped && (
                 <p className="sub tcen">
                   <span className="num">{countLeaves(groupTree(sorted, group))}</span> مجموعات ·{' '}
-                  <button className="lnk" onClick={() => set({ group: undefined })}>
+                  <Button plain className="lnk" onClick={() => set({ group: undefined })}>
                     إلغاء التجميع
-                  </button>
+                  </Button>
                 </p>
               )}
             </>

@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
-import { FieldSelect, Icon, icons, Person } from '@/components/ui'
+import { FormField, FieldBox, Modal, ModalHead, Button, FieldSelect, icons, Person } from '@/components/ui'
 import type { ProjectRow } from '@/types/domain'
 import { CYCLE } from '@/data/intake/cycle'
 import { FIELDS_BY_TRACK, GOALS_BY_FIELD, TRACKS } from '@/data/mock/taxonomy'
@@ -54,46 +53,36 @@ export function TransferModal({ row, me, onClose, mode = 'transfer' }: { row: Pr
     if (!w.length) onClose()
   }
 
-  return createPortal(
-    <div className="bmask" role="presentation" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
-      <div className="chrome modal" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <div className="mh">
-          <Icon name={icons.send} size="md" />
-          <b>{title}</b>
-        </div>
+  return <Modal label={title} onClose={onClose} escape>
+        <ModalHead icon={icons.send} title={title} />
         <div className="mb col">
           <p className="sub cnote">{row.name} · في مجال «{row.field}» عند {row.owner ? <Person name={row.owner} /> : 'بلا مشرف'}</p>
           {mode === 'transfer' && (
-            <div className="regf">
-              <span className="lb">ما الذي يتغيّر؟</span>
+            <FormField label="ما الذي يتغيّر؟" as="div">
               <div className="cfgchips" role="radiogroup" aria-label="نوع التعديل">
                 {(['owner', 'field'] as const).map((k) => (
-                  <button key={k} type="button" role="radio" aria-checked={kind === k} className={`cfgchip${kind === k ? ' on' : ''}`}
+                  <Button plain key={k} type="button" role="radio" aria-checked={kind === k} className={`cfgchip${kind === k ? ' on' : ''}`}
                     onClick={() => { setKind(k); setOwner(''); setTrack(row.track); setField(row.field); setGoal(row.goal) }}>
                     {k === 'owner' ? 'مشرف المنح فقط' : 'المجال (ومعه المشرف)'}
-                  </button>
+                  </Button>
                 ))}
               </div>
-            </div>
+            </FormField>
           )}
           {kind === 'field' && (
             <>
-              <label className="regf">
-                <span className="lb">المسار<b className="regf-r" aria-label="إلزامي">*</b></span>
+              <FormField label="المسار" required>
                 <FieldSelect value={track} label="المسار" options={[...TRACKS]} onChange={(v) => { setTrack(v); setField(''); setGoal(''); setOwner('') }} />
-              </label>
-              <label className="regf">
-                <span className="lb">المجال<b className="regf-r" aria-label="إلزامي">*</b></span>
+              </FormField>
+              <FormField label="المجال" required>
                 <FieldSelect value={field} label="المجال" options={fields} placeholder="اختر" onChange={(v) => { setField(v); setGoal(''); setOwner('') }} />
-              </label>
-              <label className="regf">
-                <span className="lb">الهدف<b className="regf-r" aria-label="إلزامي">*</b></span>
+              </FormField>
+              <FormField label="الهدف" required>
                 <FieldSelect value={goal} label="الهدف" options={goals} placeholder={field ? 'اختر' : 'اختر المجال أولًا'} disabled={!field} onChange={setGoal} />
-              </label>
+              </FormField>
             </>
           )}
-          <label className="regf">
-            <span className="lb">{kind === 'owner' ? 'مشرف المجال نفسه' : 'مشرف المجال'}{ownerNeeded && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
+          <FormField label={kind === 'owner' ? 'مشرف المجال نفسه' : 'مشرف المجال'} required={ownerNeeded}>
             <FieldSelect
               value={owner}
               label="مشرف المجال"
@@ -102,21 +91,17 @@ export function TransferModal({ row, me, onClose, mode = 'transfer' }: { row: Pr
               disabled={sups.length === 0}
               onChange={setOwner}
             />
-          </label>
-          <label className="regf">
-            <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التحويل" placeholder={kind === 'owner' ? 'مثال: توزيع الأحمال بين مشرفي المجال' : 'مثال: المشروع صحي لا تعليمي'} /></span>
-          </label>
+          </FormField>
+          <FormField label="السبب" required>
+            <FieldBox><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التحويل" placeholder={kind === 'owner' ? 'مثال: توزيع الأحمال بين مشرفي المجال' : 'مثال: المشروع صحي لا تعليمي'} /></FieldBox>
+          </FormField>
           {said.map((x) => <p key={x} className="bad cnote">{x}</p>)}
         </div>
         <div className="mf">
-          <button className="btn btn-p" disabled={!ok} onClick={submit}>
+          <Button variant="p" disabled={!ok} onClick={submit}>
             {kind === 'owner' ? 'عدّل المشرف' : mode === 'rehouse' ? 'أعد التسكين' : 'حوّل المشروع'}
-          </button>
-          <button className="btn btn-2" onClick={onClose}>تراجع</button>
+          </Button>
+          <Button variant="2" onClick={onClose}>تراجع</Button>
         </div>
-      </div>
-    </div>,
-    document.body,
-  )
+      </Modal>
 }

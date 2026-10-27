@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FieldMultiSelect, DateField, FieldSelect, Glass, Head, Icon, Tag, icons } from '@/components/ui'
+import { Button, FieldMultiSelect, DateField, FieldSelect, Glass, Head, Icon, Tag, icons } from '@/components/ui'
 import { PLAN_AUTH, delegationOf, savePlanAuth, type PlanAuth } from '@/data/plans/auth'
 import { STAFF_ROLES, meOf, readRole, roleByKey, type RoleKey } from '@/data/roles'
 import { liveDay } from '@/data/clock'
@@ -37,7 +37,7 @@ export function PlanAuthTab() {
             <Tag tone={x.until >= liveDay() ? 'ok' : 'mute'}>{x.until >= liveDay() ? 'نافذ' : 'منتهٍ'}</Tag>
             <span className="apv-t"><b>{roleByKey(x.to).title} حتى {x.until}</b><span className="sub">فوّضه {x.by} · {x.at}</span></span>
             <span className="pc-sp" />
-            {can && <button type="button" className="iact" aria-label={`ألغِ تفويض ${roleByKey(x.to).title}`} title="ألغِ" onClick={() => put({ ...d, delegations: d.delegations.filter((_, j) => j !== i) })}><Icon name={icons.close} size="sm" /></button>}
+            {can && <Button plain type="button" className="iact" aria-label={`ألغِ تفويض ${roleByKey(x.to).title}`} title="ألغِ" onClick={() => put({ ...d, delegations: d.delegations.filter((_, j) => j !== i) })}><Icon name={icons.close} size="sm" /></Button>}
           </li>
         ))}
       </ul>
@@ -45,7 +45,7 @@ export function PlanAuthTab() {
         <div className="cfgrow">
           <FieldSelect value={to} label="المفوَّض" options={ROLE_OPTS.filter((o) => !d.approveBy.includes(o.value as RoleKey) && o.value !== 'supervisor')} onChange={(v) => setTo(v as RoleKey)} />
           <DateField value={until} onChange={setUntil} label="التفويض حتى" />
-          <button type="button" className="btn btn-2 cfgadd" disabled={!to || !until || until < liveDay() || Boolean(to && delegationOf(to))} onClick={() => { if (!to) return; put({ ...d, delegations: [...d.delegations, { to, until, by: me, at: liveDay() }] }); setTo(''); setUntil('') }}>فوّض</button>
+          <Button type="button" variant="2" className="cfgadd" disabled={!to || !until || until < liveDay() || Boolean(to && delegationOf(to))} onClick={() => { if (!to) return; put({ ...d, delegations: [...d.delegations, { to, until, by: me, at: liveDay() }] }); setTo(''); setUntil('') }}>فوّض</Button>
         </div>
       )}
       {!can && <p className="sub cnote">للاطلاع فقط.</p>}

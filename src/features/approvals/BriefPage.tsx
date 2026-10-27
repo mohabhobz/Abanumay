@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
-import { BackTo, Empty, Glass, Head, Icon, Money, Tag, icons } from '@/components/ui'
+import { Button, BackTo, Empty, Glass, Head, Icon, Money, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -105,7 +105,7 @@ export default function BriefPage() {
                 </div>
                 <span className="rowf gp-2">
                   <Tag tone="mute">لقطة {b.at} {b.time}</Tag>
-                  <button className="btn btn-2" onClick={() => setTimeout(printArea, 60)}><Icon name={icons.export} size="sm" />PDF للبريد</button>
+                  <Button variant="2" onClick={() => setTimeout(printArea, 60)}><Icon name={icons.export} size="sm" />PDF للبريد</Button>
                 </span>
               </header>
               <Glass>

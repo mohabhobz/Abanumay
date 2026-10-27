@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { useMenuOf } from '@/hooks/useMenu'
 import type { SavedChat } from '@/data/mock/assistant'
 
@@ -77,17 +77,17 @@ export function ChatList({
         {/* Note: the collapse button lives inside the sidebar, not in the conversation header -
             whoever collapses something clicks on it, and whoever restores it clicks where it was.
             So this button collapses, and a different button in the conversation header restores it. */}
-        <button
+        <Button plain
           className="cl-new"
           onClick={onShut}
           title="اطوِ المحادثات"
           aria-label="اطوِ المحادثات"
         >
           <Icon name={icons.panel} size="sm" />
-        </button>
-        <button className="cl-new" onClick={onNew} title="محادثة جديدة · ⌘⇧O" aria-label="محادثة جديدة">
+        </Button>
+        <Button plain className="cl-new" onClick={onNew} title="محادثة جديدة · ⌘⇧O" aria-label="محادثة جديدة">
           <Icon name={icons.plus} size="sm" />
-        </button>
+        </Button>
       </div>
 
       <div className="cl-search">
@@ -127,7 +127,7 @@ export function ChatList({
                     <Icon name={icons.grip} size="sm" />
                   </span>
 
-                  <button className="cl-main" onClick={() => onOpen(c.id)}>
+                  <Button plain className="cl-main" onClick={() => onOpen(c.id)}>
                     {/* 11 Oct · audit UI-215/216 · the title is its own box so it can end in «…» (a
                         flex row can't), and the pin follows it, so pinned and unpinned titles start
                         on the same edge. */}
@@ -135,34 +135,34 @@ export function ChatList({
                       <span className="cl-tx">{c.title}</span>
                       {c.pinned && <Icon name={icons.pin} size="sm" />}
                     </div>
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button plain
                     className="cl-more"
                     aria-label="خيارات المحادثة"
                     onClick={() => menu.toggle(c.id)}
                   >
                     <Icon name={icons.dots} size="sm" />
-                  </button>
+                  </Button>
 
                   {menu.id === c.id && (
                     <div className="cl-menu chrome">
-                      <button onClick={() => togglePin(c.id)}>
+                      <Button plain onClick={() => togglePin(c.id)}>
                         <Icon name={icons.pin} size="sm" />
                         {c.pinned ? 'ألغِ التثبيت' : 'ثبّت المحادثة'}
-                      </button>
-                      <button onClick={menu.close}>
+                      </Button>
+                      <Button plain onClick={menu.close}>
                         <Icon name={icons.edit} size="sm" />
                         أعد التسمية
-                      </button>
-                      <button onClick={menu.close}>
+                      </Button>
+                      <Button plain onClick={menu.close}>
                         <Icon name={icons.file} size="sm" />
                         صدّر المحادثة
-                      </button>
-                      <button className="danger" onClick={() => remove(c.id)}>
+                      </Button>
+                      <Button plain className="danger" onClick={() => remove(c.id)}>
                         <Icon name={icons.trash} size="sm" />
                         احذف المحادثة
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>

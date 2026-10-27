@@ -2,7 +2,7 @@ import { AuthRulesCard } from './AuthRulesCard'
 import { readRole } from '@/data/roles'
 import { useMemo, useState } from 'react'
 import {
-  DateText, Empty, FieldSelect, Glass, Head, Icon, icons, Num, Person, SearchBox, Select, Switch, Tabs, Tag,
+  FormField, Button, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, Num, Person, SearchBox, Select, Switch, Tabs, Tag,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
@@ -153,7 +153,7 @@ function UsersTab({ st, setSt, sel, onSel }: {
                 const c = conflicts(r, u.overrides).length
                 return (
                   <li key={u.id}>
-                    <button
+                    <Button plain
                       type="button"
                       role="option"
                       aria-selected={u.id === user?.id}
@@ -167,7 +167,7 @@ function UsersTab({ st, setSt, sel, onSel }: {
                         {n > 0 && <> · <Num>{n}</Num> تخصيص</>}
                       </span>
                       {c > 0 && <Icon name={icons.alert} size="sm" className="pm-warn" />}
-                    </button>
+                    </Button>
                   </li>
                 )
               })}
@@ -261,8 +261,7 @@ function UserEditor({ user, roles, onSave }: {
       </div>
 
       <div className="regfields">
-        <div className="regf">
-          <span className="lb">الدور</span>
+        <FormField label="الدور" as="div">
           <FieldSelect
             value={d.role}
             options={roles.map((r) => ({ value: r.key, label: r.label }))}
@@ -271,9 +270,8 @@ function UserEditor({ user, roles, onSave }: {
             disabled={self}
           />
           {self && <span className="sub">لا تغيّر دورك بنفسك</span>}
-        </div>
-        <div className="regf">
-          <span className="lb">الحساب</span>
+        </FormField>
+        <FormField label="الحساب" as="div">
           <Switch
             label={d.active ? 'مفعّل' : 'موقوف'}
             on={d.active}
@@ -281,7 +279,7 @@ function UserEditor({ user, roles, onSave }: {
             disabled={self}
             lockNote={self ? 'لا توقف حسابك بنفسك' : undefined}
           />
-        </div>
+        </FormField>
       </div>
 
       <PermMatrix
@@ -298,10 +296,10 @@ function UserEditor({ user, roles, onSave }: {
         </span>
         <span className="pc-sp" />
         {n > 0 && (
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => setD((x) => ({ ...x, overrides: {} }))}>
+          <Button type="button" variant="2" size="sm" onClick={() => setD((x) => ({ ...x, overrides: {} }))}>
             <Icon name={icons.redo} size="sm" />
             ارجع لصلاحيات الدور
-          </button>
+          </Button>
         )}
       </div>
 
@@ -336,7 +334,7 @@ function RolesTab({ st, setSt, sel, onSel }: {
                   const m = members(r.key).length
                   return (
                     <li key={r.key}>
-                      <button
+                      <Button plain
                         type="button"
                         role="option"
                         aria-selected={r.key === role.key}
@@ -348,7 +346,7 @@ function RolesTab({ st, setSt, sel, onSel }: {
                           {m > 0 ? <><Num>{m}</Num> مستخدم</> : 'بلا مستخدمين'}
                           {r.external && <> · من خارج المؤسسة</>}
                         </span>
-                      </button>
+                      </Button>
                     </li>
                   )
                 })}

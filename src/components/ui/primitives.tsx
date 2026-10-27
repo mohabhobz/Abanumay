@@ -1,3 +1,4 @@
+import { Button } from './Button'
 import { Hint } from './Hint'
 import { forwardRef, useEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -108,7 +109,7 @@ export function CopyId({ children }: { children: string }) {
   return (
     <span className="cpid">
       <span className="mono">{children}</span>
-      <button
+      <Button plain
         type="button"
         className="iact iact-sm"
         onClick={copy}
@@ -116,7 +117,7 @@ export function CopyId({ children }: { children: string }) {
         aria-label={done ? 'نُسخ الرقم المرجعي' : 'انسخ الرقم المرجعي'}
       >
         <Icon name={done ? icons.check : icons.copy} size="sm" />
-      </button>
+      </Button>
     </span>
   )
 }
@@ -220,7 +221,7 @@ export function Tabs({
   return (
     <div ref={ref} className={`tabs${pin ? ' tabs-pin' : ''}${className ? ` ${className}` : ''}`} role="tablist">
       {items.map((t) => (
-        <button
+        <Button plain
           key={t.slug}
           role="tab"
           aria-selected={t.slug === active}
@@ -230,7 +231,7 @@ export function Tabs({
           {/* `data-t` reserves the bold width so selecting a tab doesn't shift the ones after it */}
           <span data-t={typeof t.label === 'string' ? t.label : undefined}>{t.label}</span>
           {t.count !== undefined && <b className="num">{t.count}</b>}
-        </button>
+        </Button>
       ))}
     </div>
   )
@@ -310,7 +311,7 @@ export function BackTo({ to, label, onClick }: {
   return (
     <div className="waypoint">
       {onClick
-        ? <button type="button" className="backto" onClick={onClick}>{body}</button>
+        ? <Button plain type="button" className="backto" onClick={onClick}>{body}</Button>
         : <Link className="backto" to={to ?? '..'}>{body}</Link>}
       <Trail />
     </div>

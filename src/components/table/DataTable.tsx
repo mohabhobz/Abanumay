@@ -1,7 +1,7 @@
 import { useContext, useState, type ReactNode } from 'react'
 import { DoneRows } from './done'
 import { useMenu } from '@/hooks/useMenu'
-import { Icon, icons, MenuOpt, MenuPanel } from '@/components/ui'
+import { Button, Icon, icons, MenuOpt, MenuPanel } from '@/components/ui'
 import { nf, pct, unitAfter } from '@/lib/format'
 import {
   type ColSort,
@@ -121,14 +121,14 @@ export function DataTable<T>({
             <span className="num">{openKeys.size}</span> مفتوحة
           </span>
           <span className="pc-sp" />
-          <button
+          <Button
             type="button"
-            className="btn btn-ghost btn-sm"
+            variant="ghost" size="sm"
             onClick={() => setOpen({ dim, keys: allOpen ? NONE : new Set(every) })}
           >
             <Icon name={allOpen ? icons.shrink : icons.expand} size="sm" />
             {allOpen ? 'اطوِ الكل' : 'افتح الكل'}
-          </button>
+          </Button>
           <ColumnPicker all={all} cols={cols} onCols={onCols} />
         </div>
       )}
@@ -313,7 +313,7 @@ function Cap<T>({
         />
       )}
 
-      <button
+      <Button plain
         type="button"
         className="tcap-b"
         aria-expanded={!shut}
@@ -327,7 +327,7 @@ function Cap<T>({
           <span className="sub">{node.by.label}:</span> {node.key}
         </span>
         <span className="tcap-n sub num">{node.rows.length}</span>
-      </button>
+      </Button>
 
       <span className="pc-sp" />
 
@@ -456,11 +456,11 @@ function Block<T>({
                 aria-sort={sort?.key === c.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
               >
                 {onSort ? (
-                  <button type="button" className={`th-t th-sort${sort?.key === c.key ? ' on' : ''}`} onClick={() => onSort(c.key)}
+                  <Button plain type="button" className={`th-t th-sort${sort?.key === c.key ? ' on' : ''}`} onClick={() => onSort(c.key)}
                     title={`رتّب حسب ${c.label}`}>
                     {c.label}
                     {sort?.key === c.key && <Icon name={sort.dir === 'asc' ? icons.chevronUp : icons.chevronDown} size="sm" />}
-                  </button>
+                  </Button>
                 ) : <span className="th-t">{c.label}</span>}
                 {/* The handle sits on the column's inner edge — meaning the boundary between it and
                     the next one. The last column has no handle: there's no boundary after it to
@@ -581,7 +581,7 @@ function ColumnPicker<T>({
 
   return (
     <div className="tcolp" ref={box}>
-      <button
+      <Button plain
         type="button"
         className="tcolb"
         aria-haspopup="listbox"
@@ -590,7 +590,7 @@ function ColumnPicker<T>({
         onClick={() => setOpen((x: boolean) => !x)}
       >
         <Icon name={icons.plus} size="sm" />
-      </button>
+      </Button>
 
       {open && (
         /* Floated into `body`: the picker sits in the table header, and the table scrolls and clips,
@@ -600,9 +600,9 @@ function ColumnPicker<T>({
           end
           float={{ anchor: box, pop }}
           foot={
-            <button type="button" className="fclear" onClick={() => onCols(defaultCols(all))}>
+            <Button plain type="button" className="fclear" onClick={() => onCols(defaultCols(all))}>
               أعد الأعمدة الافتراضية
-            </button>
+            </Button>
           }
         >
           {all.map((c) => (

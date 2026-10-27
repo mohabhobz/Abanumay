@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DateText, Num, Person } from '@/components/ui'
+import { Button, DateText, Num, Person } from '@/components/ui'
 import { DocFile, UploadButton } from '@/components/docs'
 import { dropMore, extrasOf, replaceMore, uploadMore, useFlow } from '@/data/intake/flow'
 import { nf } from '@/lib/format'
@@ -54,7 +54,7 @@ export function OtherDocs({ projectId, me, asEntity, canUpload }: { projectId: s
                     {canUpload
                       ? <span className="dact">
                           <UploadButton label={`استبدال ${x.name}`} text="استبدال" accept={ACCEPT} maxMb={50} onPick={(fl) => replaceMore(projectId, x.id, { name: fl.name, size: fl.size }, me)} />
-                          {x.by === me && <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف ${x.name}`} onClick={() => setSaid(dropMore(projectId, x.id, me)[0] ?? '')}>احذف</button>}
+                          {x.by === me && <Button type="button" variant="ghost" size="sm" aria-label={`احذف ${x.name}`} onClick={() => setSaid(dropMore(projectId, x.id, me)[0] ?? '')}>احذف</Button>}
                         </span>
                       : <span className="sub" aria-hidden="true"> </span>}
                   </td>

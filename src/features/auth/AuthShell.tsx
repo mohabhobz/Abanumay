@@ -1,7 +1,7 @@
 import type { IconGlyph } from '@/components/ui/icons'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import Logo from '@/assets/LogoColor'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 
 /* Shared wrapper for the auth screens - written once.
 
@@ -109,9 +109,9 @@ export function AuthShell({ title, sub, children, err, notice, wait = 0 }: AuthS
         <div className="lnotice" role="status">
           <Icon name={icons.info} size="sm" />
           <span>{notice}</span>
-          <button type="button" className="lnotice-x" aria-label="إغلاق التنبيه" onClick={() => setShut(notice)}>
+          <Button plain type="button" className="lnotice-x" aria-label="إغلاق التنبيه" onClick={() => setShut(notice)}>
             <Icon name={icons.close} size="sm" />
-          </button>
+          </Button>
         </div>
       )}
 

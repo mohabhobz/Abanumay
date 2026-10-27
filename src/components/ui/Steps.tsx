@@ -1,3 +1,4 @@
+import { Button } from './Button'
 import type { ReactNode } from 'react'
 import { Icon } from './Icon'
 import { icons } from './icons'
@@ -137,14 +138,14 @@ export function Steps({ items, flow = 'ladder', onPick }: StepsProps) {
           <li key={i} className={`stp-i ${s.state}`}>
             {can
               ? (
-                <button
+                <Button plain
                   type="button"
                   className={box}
                   aria-current={s.state === 'now' ? 'step' : undefined}
                   onClick={() => onPick?.(i)}
                 >
                   {body}
-                </button>
+                </Button>
               )
               : <span className={box}>{body}</span>}
           </li>

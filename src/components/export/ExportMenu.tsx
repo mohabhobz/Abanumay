@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { createPortal } from 'react-dom'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { exportPng, exportXlsx, printArea, type Sheet } from '@/lib/export'
 import { PrintSheet } from './PrintSheet'
 
@@ -69,7 +69,7 @@ export function ExportMenu({
   return (
     <>
       <div className="fexp" ref={box}>
-        <button
+        <Button plain
           className={`fchip${open ? ' on' : ''}`}
           aria-haspopup="menu"
           aria-expanded={open}
@@ -80,20 +80,20 @@ export function ExportMenu({
           <Icon name={icons.export} size="sm" />
           <span className="tb-l">تصدير</span>
           {count ? <b className="num">{count}</b> : null}
-        </button>
+        </Button>
 
         {open && (
           <div className={`fmenu fexp-m${side === 'end' ? ' flip' : ''}`} role="menu" ref={menu}>
             {note && <div className="fexp-s sub">{note}</div>}
-            <button className="fopt" role="menuitem" onClick={pick(() => exportXlsx(sheet))}>
+            <Button plain className="fopt" role="menuitem" onClick={pick(() => exportXlsx(sheet))}>
               <span className="fopt-t">Excel · xlsx</span>
-            </button>
-            <button className="fopt" role="menuitem" onClick={pick(printArea)}>
+            </Button>
+            <Button plain className="fopt" role="menuitem" onClick={pick(printArea)}>
               <span className="fopt-t">PDF · عبر الطباعة</span>
-            </button>
-            <button className="fopt" role="menuitem" onClick={pick(() => exportPng(sheet))}>
+            </Button>
+            <Button plain className="fopt" role="menuitem" onClick={pick(() => exportPng(sheet))}>
               <span className="fopt-t">صورة · png</span>
-            </button>
+            </Button>
           </div>
         )}
       </div>

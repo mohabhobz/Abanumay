@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon, icons } from '@/components/ui'
+import { ButtonLabel, Icon, icons } from '@/components/ui'
 import { uploadRefusal } from '@/lib/upload'
 
 /* Upload button — **written once**.
@@ -37,7 +37,7 @@ export function UploadButton({
   const [err, setErr] = useState('')
   return (
     <>
-    <label className="btn btn-2 btn-sm upbtn">
+    <ButtonLabel variant="2" size="sm" className="upbtn">
       <input
         type="file"
         accept={accept}
@@ -64,7 +64,7 @@ export function UploadButton({
       />
       <Icon name={icons.upload} size="sm" />
       {text}
-    </label>
+    </ButtonLabel>
     {err && <span className="bad" role="alert">{err}</span>}
     </>
   )

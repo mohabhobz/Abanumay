@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { DateText, Glass, Head, Icon, KV, Money, Tag, icons } from '@/components/ui'
+import { ButtonLink, Button, DateText, Glass, Head, Icon, KV, Money, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
 import { holds, holdersSay } from '@/data/shared/decisions'
@@ -59,8 +59,8 @@ export function DirectCloseCard({ projectId }: { projectId: string }) {
         <div className="rowf gp-2 mt-3">
           {can
             ? why
-              ? <button type="button" className="btn btn-2 btn-sm" disabled title={why}><Icon name={icons.lock} size="sm" />إغلاق مباشر</button>
-              : <Link className="btn btn-2 btn-sm" title="يفتح طلب الإغلاق المباشر" to={ROUTES.distressNew(projectId, 'direct')}><Icon name={icons.lock} size="sm" />إغلاق مباشر</Link>
+              ? <Button type="button" variant="2" size="sm" disabled title={why}><Icon name={icons.lock} size="sm" />إغلاق مباشر</Button>
+              : <ButtonLink variant="2" size="sm" title="يفتح طلب الإغلاق المباشر" to={ROUTES.distressNew(projectId, 'direct')}><Icon name={icons.lock} size="sm" />إغلاق مباشر</ButtonLink>
             : <span className="sub">يفتح الإغلاق المباشر {holdersSay('distressBy')}.</span>}
           {can && why && <span className="sub">{why}</span>}
         </div>

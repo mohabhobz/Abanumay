@@ -7,7 +7,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { readFiles, readNeeds } from '@/data/shared/ai'
 import { useDocReads } from '@/lib/docCache'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { BankGrid, BankCard,
+import { ButtonLink, Button, BankGrid, BankCard,
   BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
   StepArc, Tabs, Tag, type GateStep, type TabItem,
 } from '@/components/ui'
@@ -159,9 +159,9 @@ export default function RequestPage() {
               <Empty
                 title="السجل غير موجود."
                 actions={
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.payments)}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.payments)}>
                     العودة إلى صندوق الصرف
-                  </button>
+                  </Button>
                 }
               />
             </Glass>
@@ -317,9 +317,9 @@ export default function RequestPage() {
             <Person name={r.owner} />
             {/* 9.2.9 · whoever raised them completes them · the entity, or the authority for an external party (9.4.5) */}
             {mayResubmit(r) && (r.origin === 'proxy' ? !asEntity && PROXY_ROLES.includes(role.key) : asEntity) && (
-              <Link className="btn btn-p btn-sm" to={`${ROUTES.paymentEdit(r.id)}${asEntity ? '?as=entity' : ''}`}>
+              <ButtonLink variant="p" size="sm" to={`${ROUTES.paymentEdit(r.id)}${asEntity ? '?as=entity' : ''}`}>
                 أكمل المتطلبات وأعد رفعها
-              </Link>
+              </ButtonLink>
             )}
             {!asEntity && r.state === 'returned' && r.origin !== 'proxy' && <span className="sub">عند الجهة لاستكمالها</span>}
           </div>
@@ -504,10 +504,10 @@ export default function RequestPage() {
                         { k: 'مصادر التمويل', v: r.sources.map((x) => `${x.name} ${pct(x.share)}`).join(' · ') },
                       ]} />
                       <div className="rowf gp-2">
-                        <Link className="btn btn-2 btn-sm" to={ROUTES.paymentOrder(r.id)}>
+                        <ButtonLink variant="2" size="sm" to={ROUTES.paymentOrder(r.id)}>
                           <Icon name={icons.doc} size="sm" />
                           افتح أمر الصرف
-                        </Link>
+                        </ButtonLink>
                       </div>
                     </>
                   ) : (

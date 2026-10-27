@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DateText, Glass, Head, Select, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, DateText, Glass, Head, Select, Tag } from '@/components/ui'
 import { useRole } from '@/hooks/useRole'
 import { readRole, ROLES, type RoleKey } from '@/data/roles'
 import { BEHALF_LOG, currentBehalf, endBehalf, startBehalf } from '@/data/behalf'
@@ -20,12 +20,12 @@ export function BehalfCard() {
       <Head title="تولّي إجراء متعثر" meta={<Tag tone="mute">مدير النظام</Tag>} />
       <div className="regfields">
         <Select label="الدور الأصلي" all="اختر الدور" value={role || undefined} options={seats.map((r) => ({ value: r.key, label: r.title }))} onChange={(v) => setRole((v ?? '') as RoleKey | '')} />
-        <label className="regf"><span className="lb">السبب (إلزامي)</span><span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التولّي" placeholder="مثل: غياب المستخدم المسؤول" /></span></label>
+        <FormField label="السبب (إلزامي)"><FieldBox><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التولّي" placeholder="مثل: غياب المستخدم المسؤول" /></FieldBox></FormField>
         <span className="rowf gp-2">
-          <button type="button" className="btn btn-2 btn-sm" onClick={() => {
+          <Button type="button" variant="2" size="sm" onClick={() => {
             const out = role ? startBehalf(role, reason, user.name) : ['اختر الدور الذي تتولاه']
             setBad(out)
-          }}>ابدأ التولّي</button>
+          }}>ابدأ التولّي</Button>
         </span>
       </div>
       {bad.map((b) => <p key={b} className="bad cnote" role="alert">{b}</p>)}
@@ -45,7 +45,7 @@ export function BehalfBar() {
     <nav className="xs-etop glass" aria-label="تولّي إجراء نيابةً">
       <Tag tone="warn">نيابةً عن {user.behalf.role}</Tag>
       <span className="sub">{b.reason} · منذ <DateText>{b.from.slice(0, 10)}</DateText></span>
-      <button type="button" className="btn btn-2 btn-sm" onClick={() => endBehalf()}>أنهِ التولّي</button>
+      <Button type="button" variant="2" size="sm" onClick={() => endBehalf()}>أنهِ التولّي</Button>
     </nav>
   )
 }

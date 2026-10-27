@@ -3,7 +3,7 @@ import { reportableEntity } from '@/data/shared/testData'
 import { meOf, readRole } from '@/data/roles'
 import { useNavigate } from 'react-router-dom'
 import {
-  DateField, Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, PAGE_SIZES, Pager, SearchBox, Segments,
+  Button, DateField, Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, PAGE_SIZES, Pager, SearchBox, Segments,
   Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -281,7 +281,7 @@ export default function EntitiesListPage() {
     const x = st(a)
     if (!x?.show) return null
     return (
-      <button key={a} className="btn btn-2 btn-sm" disabled={!x.on} title={x.why} onClick={onClick}>{label}</button>
+      <Button key={a} variant="2" size="sm" disabled={!x.on} title={x.why} onClick={onClick}>{label}</Button>
     )
   }
   const moreOne: MoreItem[] = one ? ([
@@ -441,7 +441,7 @@ export default function EntitiesListPage() {
               />
               <Toggle label="لها مشاريع تحت التشغيل" on={v.running === '1'} onChange={(on) => set({ running: on ? '1' : undefined })} />
               <Toggle label="لها طلب تحديث مفتوح" on={v.open === '1'} onChange={(on) => set({ open: on ? '1' : undefined, page: undefined })} />
-              <button
+              <Button plain
                 className={`fchip${advOpen ? ' on' : ''}`}
                 onClick={() => set({ adv: advOpen ? undefined : '1' })}
                 aria-expanded={advOpen}
@@ -449,7 +449,7 @@ export default function EntitiesListPage() {
                 <Icon name={icons.filter} size="sm" />
                 فلاتر متقدمة
                 {activeCount(NOT_FILTERS) > 0 && <b className="num">{activeCount(NOT_FILTERS)}</b>}
-              </button>
+              </Button>
               
 
               </div>
@@ -496,10 +496,10 @@ export default function EntitiesListPage() {
                   ))}
                 </div>
                 <div className="fgrid-x">
-                  <button className="fclear" onClick={() => setCustom(true)}>
+                  <Button plain className="fclear" onClick={() => setCustom(true)}>
                     <Icon name={icons.gear} size="sm" />
                     تخصيص الفلاتر
-                  </button>
+                  </Button>
                 </div>
               </>
             ))}
@@ -507,7 +507,7 @@ export default function EntitiesListPage() {
             {(chips.length > 0 || flags.length > 0) && (
               <div className="factive">
                 {chips.map((c) => (
-                  <button
+                  <Button plain
                     key={`${c.k as string}:${c.value}`}
                     className="fpill"
                     onClick={() =>
@@ -516,15 +516,15 @@ export default function EntitiesListPage() {
                   >
                     <span className="sub">{c.label}:</span> {c.value}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 ))}
                 {flags.map(([k, label]) => (
-                  <button key={k as string} className="fpill" onClick={() => set({ [k]: undefined } as Partial<Params>)}>
+                  <Button plain key={k as string} className="fpill" onClick={() => set({ [k]: undefined } as Partial<Params>)}>
                     {label}
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 ))}
-                <button className="fclear" onClick={clear}>مسح الكل</button>
+                <Button plain className="fclear" onClick={clear}>مسح الكل</Button>
               </div>
             )}
           </Glass>
@@ -533,7 +533,7 @@ export default function EntitiesListPage() {
             <Glass>
               <Empty
                 title="لا توجد جهات بهذه الفلاتر."
-                actions={<button className="btn btn-2" onClick={clear}>مسح الفلاتر</button>}
+                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
               />
             </Glass>
           ) : view === 'cards' ? (
@@ -546,12 +546,12 @@ export default function EntitiesListPage() {
                 <div className="selall sub">
                   {allMatch ? (
                     <>حُدّدت جميع الجهات المطابقة للتصفية (<span className="num">{allFiltered.length}</span>) ·{' '}
-                      <button className="lnk" onClick={() => setSelected(new Set())}>إلغاء التحديد</button></>
+                      <Button plain className="lnk" onClick={() => setSelected(new Set())}>إلغاء التحديد</Button></>
                   ) : (
                     <>حُدّدت {units.entity(pageIds.length)} في هذه الصفحة ·{' '}
-                      <button className="lnk" onClick={() => selectAll(true, allFiltered.map((e) => e.id))}>
+                      <Button plain className="lnk" onClick={() => selectAll(true, allFiltered.map((e) => e.id))}>
                         حدّد كل الجهات المطابقة للتصفية (<span className="num">{allFiltered.length}</span>)
-                      </button></>
+                      </Button></>
                   )}
                 </div>
               )}
@@ -579,7 +579,7 @@ export default function EntitiesListPage() {
           {grouped ? (
             <p className="sub" style={{ textAlign: 'center' }}>
               <span className="num">{countLeaves(groupTree(result.rows, group))}</span> مجموعات ·{' '}
-              <button className="lnk" onClick={() => set({ group: undefined })}>إلغاء التجميع</button>
+              <Button plain className="lnk" onClick={() => set({ group: undefined })}>إلغاء التجميع</Button>
             </p>
           ) : (
             <Pager
@@ -608,7 +608,7 @@ export default function EntitiesListPage() {
           >
             {one ? (
               <>
-                <button className="btn btn-2 btn-sm" onClick={() => navigate(ROUTES.entity(one.id))}>{ACT_SAY.view}</button>
+                <Button variant="2" size="sm" onClick={() => navigate(ROUTES.entity(one.id))}>{ACT_SAY.view}</Button>
                 {btn('review', goReview)}
                 {btn('ask', () => setModal('ask'))}
                 <MoreMenu items={moreOne} />
@@ -616,15 +616,15 @@ export default function EntitiesListPage() {
             ) : (
               <>
                 {bulkGrant('ask') !== 'none' && (
-                  <button className="btn btn-2 btn-sm" disabled={Boolean(bulkWhy('ask'))} title={bulkWhy('ask')} onClick={() => setModal('ask')}>{ACT_SAY.ask}</button>
+                  <Button variant="2" size="sm" disabled={Boolean(bulkWhy('ask'))} title={bulkWhy('ask')} onClick={() => setModal('ask')}>{ACT_SAY.ask}</Button>
                 )}
                 {bulkGrant('notify') !== 'none' && (
-                  <button className="btn btn-2 btn-sm" disabled={Boolean(bulkWhy('notify'))} title={bulkWhy('notify')} onClick={() => setModal('notify')}>{ACT_SAY.notify}</button>
+                  <Button variant="2" size="sm" disabled={Boolean(bulkWhy('notify'))} title={bulkWhy('notify')} onClick={() => setModal('notify')}>{ACT_SAY.notify}</Button>
                 )}
-                <button className="btn btn-2 btn-sm" onClick={exportSelected}>
+                <Button variant="2" size="sm" onClick={exportSelected}>
                   <Icon name={icons.export} size="sm" />
                   تصدير المحدد
-                </button>
+                </Button>
                 <MoreMenu items={moreMany} />
               </>
             )}

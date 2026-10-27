@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
-import { Icon, icons } from '@/components/ui'
+import { FormField, FieldBox, Modal, ModalHead, Button, icons } from '@/components/ui'
 import { OTHER, reasonsOf, type PickedReason, type ReasonKind } from '@/data/entities/reasons'
 
 /* Client meeting 23 Oct · one dialog for every «turn it down» decision in the entity module.
@@ -27,40 +26,30 @@ export function ReasonDialog({ kind, title, subject, confirm, tone = 'btn-d', on
   const [text, setText] = useState('')
   const other = reason === OTHER
   const ok = Boolean(reason) && (!other || text.trim().length > 0)
-  return createPortal(
-    <div className="bmask" role="presentation" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
-      <div className="chrome modal" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <div className="mh">
-          <Icon name={icons.alert} size="md" />
-          <b>{title}</b>
-        </div>
+  return <Modal label={title} onClose={onClose} escape>
+        <ModalHead icon={icons.alert} title={title} />
         <div className="mb col">
           {subject && <p className="sub cnote">{subject}</p>}
-          <div className="regf regf-w">
-            <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
+          <FormField label="السبب" required wide as="div">
             <div className="cfgchips" role="radiogroup" aria-label="السبب">
               {[...list, OTHER].map((r) => (
-                <button key={r} type="button" role="radio" aria-checked={reason === r} className={`cfgchip${reason === r ? ' on' : ''}`} onClick={() => setReason(r)}>
+                <Button plain key={r} type="button" role="radio" aria-checked={reason === r} className={`cfgchip${reason === r ? ' on' : ''}`} onClick={() => setReason(r)}>
                   {r}
-                </button>
+                </Button>
               ))}
             </div>
-          </div>
-          <label className="regf regf-w">
-            <span className="lb">{other ? 'اكتب السبب' : 'ملاحظة'}{other && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
-            <span className="fld fld-a">
+          </FormField>
+          <FormField label={other ? 'اكتب السبب' : 'ملاحظة'} required={other} wide>
+            <FieldBox area>
               <textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} aria-label={other ? 'نص السبب' : 'ملاحظة'} placeholder={other ? 'السبب كما يُسجَّل في سجل الطلب' : 'اختيارية · تُضاف إلى السبب في السجل'} />
-            </span>
-          </label>
+            </FieldBox>
+          </FormField>
         </div>
         <div className="mf">
-          <button type="button" className={`btn ${tone}`} disabled={!ok} title={!reason ? 'اختر السبب أولًا' : other && !text.trim() ? 'اكتب السبب' : undefined} onClick={() => onConfirm({ reason, text: text.trim() })}>
+          <Button plain type="button" className={`btn ${tone}`} disabled={!ok} title={!reason ? 'اختر السبب أولًا' : other && !text.trim() ? 'اكتب السبب' : undefined} onClick={() => onConfirm({ reason, text: text.trim() })}>
             {confirm}
-          </button>
-          <button type="button" className="btn btn-2" onClick={onClose}>تراجع</button>
+          </Button>
+          <Button type="button" variant="2" onClick={onClose}>تراجع</Button>
         </div>
-      </div>
-    </div>,
-    document.body,
-  )
+      </Modal>
 }

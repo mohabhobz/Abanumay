@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { payBlock } from '@/data/entities/store'
 import { portfolioAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { GateArc, FieldMultiSelect,
+import { ButtonLink, FormField, FieldBox, Button, GateArc, FieldMultiSelect,
   BackTo, DateText, DockActions, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Tabs, Tag, icons, MultiSelect } from '@/components/ui'
 import { CHART_COLORS, Legend, RankBars, StackBar, type Slice } from '@/components/charts'
 import { UploadButton } from '@/components/docs'
@@ -296,10 +296,10 @@ function StudyCard({ pf }: { pf: PortfolioRec }) {
                 <span className="pc-sp" />
                 <span className="stdy-scale" role="radiogroup" aria-label={`${c.label} · المحفظة`}>
                   {STUDY_SCALE.map((n) => (
-                    <button key={n} type="button" role="radio" aria-checked={scores[c.key] === n} className={`cfgchip${scores[c.key] === n ? ' on' : ''}`}
+                    <Button plain key={n} type="button" role="radio" aria-checked={scores[c.key] === n} className={`cfgchip${scores[c.key] === n ? ' on' : ''}`}
                       disabled={!editable} onClick={() => { setScores((x) => ({ ...x, [c.key]: n })); setSaid({}) }}>
                       <span className="num">{n}</span>
-                    </button>
+                    </Button>
                   ))}
                 </span>
               </li>
@@ -308,14 +308,13 @@ function StudyCard({ pf }: { pf: PortfolioRec }) {
         </div>
       ))}
       {(editable || note) && (
-        <label className="regf regf-w">
-          <span className="lb">ملاحظات الدراسة</span>
-          <span className="fld fld-a"><textarea rows={3} value={note} disabled={!editable} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظات دراسة المحفظة" /></span>
-        </label>
+        <FormField label="ملاحظات الدراسة" wide>
+          <FieldBox area><textarea rows={3} value={note} disabled={!editable} onChange={(e) => setNote(e.target.value)} aria-label="ملاحظات دراسة المحفظة" /></FieldBox>
+        </FormField>
       )}
       {editable && (
         <div className="apv-row mt-3">
-          <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = savePfStudy(pf.id, scores, note, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'دراسة المحفظة' }) }}>احفظ الدراسة</button>
+          <Button type="button" variant="p" size="sm" onClick={() => { const out = savePfStudy(pf.id, scores, note, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'دراسة المحفظة' }) }}>احفظ الدراسة</Button>
           {missing.length > 0 && <span className="sub">{missing[0]}</span>}
         </div>
       )}
@@ -345,30 +344,27 @@ function HoldCard({ pf, lineKey, setLine, lines, link, split, setSplit }: {
         <div className="regfields">
           {split.map((x, i) => (
             <div className="rowf gp-2" key={i}>
-              <label className="regf">
-                <span className="lb">البند {i + 1}</span>
+              <FormField label={<>البند {i + 1}</>}>
                 <FieldSelect value={x.key} onChange={(k) => setSplit(split.map((y, j) => (j === i ? { ...y, key: k } : y)))} label={`بند الحجز ${i + 1}`}
                   options={lines.filter((l) => l.key === x.key || !split.some((y) => y.key === l.key)).map((l) => ({ value: l.key, label: `${l.doc.name ?? l.doc.id} · ${l.node.label} · متاح ${nf.format(l.free)}` }))} />
-              </label>
-              <label className="regf">
-                <span className="lb">المبلغ</span>
-                <span className="fld"><input inputMode="numeric" value={x.amount} onChange={(e) => setSplit(split.map((y, j) => (j === i ? { ...y, amount: e.target.value.replace(/[^\d]/g, '') } : y)))} aria-label={`مبلغ بند الحجز ${i + 1}`} /></span>
-              </label>
-              <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف البند ${i + 1}`} onClick={() => setSplit(split.filter((_, j) => j !== i))}><Icon name={icons.close} size="sm" /></button>
+              </FormField>
+              <FormField label="المبلغ">
+                <FieldBox><input inputMode="numeric" value={x.amount} onChange={(e) => setSplit(split.map((y, j) => (j === i ? { ...y, amount: e.target.value.replace(/[^\d]/g, '') } : y)))} aria-label={`مبلغ بند الحجز ${i + 1}`} /></FieldBox>
+              </FormField>
+              <Button type="button" variant="ghost" size="sm" aria-label={`احذف البند ${i + 1}`} onClick={() => setSplit(split.filter((_, j) => j !== i))}><Icon name={icons.close} size="sm" /></Button>
             </div>
           ))}
           <div className="rowf gp-2">
-            <button type="button" className="btn btn-2 btn-sm" onClick={() => setSplit([...split, { key: '', amount: '' }])}><Icon name={icons.plus} size="sm" />أضف بندًا</button>
+            <Button type="button" variant="2" size="sm" onClick={() => setSplit([...split, { key: '', amount: '' }])}><Icon name={icons.plus} size="sm" />أضف بندًا</Button>
             <span className={sum === pf.total ? 'sub' : 'bad'}>المجموع {nf.format(sum)} من {nf.format(pf.total)}</span>
           </div>
         </div>
       ) : pickable ? (
         <>
-        <label className="regf">
-          <span className="lb">بند الميزانية</span>
+        <FormField label="بند الميزانية">
           <FieldSelect value={lineKey} onChange={setLine} label="بند الميزانية" options={lines.filter((l) => l.free >= pf.total).map((l) => ({ value: l.key, label: `${l.node.label} · متاح ${nf.format(l.free)}` }))} />
-        </label>
-        <button type="button" className="btn btn-ghost btn-sm mt-2" onClick={() => setSplit([{ key: lineKey, amount: '' }, { key: '', amount: '' }])}>وزّع الحجز على أكثر من بند أو ميزانية</button>
+        </FormField>
+        <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={() => setSplit([{ key: lineKey, amount: '' }, { key: '', amount: '' }])}>وزّع الحجز على أكثر من بند أو ميزانية</Button>
         </>
       ) : null}
     </Glass>
@@ -398,16 +394,16 @@ function PlanCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
       </ul>
       {id && (
         <div className="apv-row mt-3">
-          {writes && <Link className="btn btn-p btn-sm" to={`${ROUTES.planEdit(id)}${asPartner ? '?as=entity' : ''}`}>{pf.plan.phases.length ? 'أكمل الخطة' : 'أعدّ الخطة'}</Link>}
-          <Link className={`btn ${writes ? 'btn-2' : 'btn-p'} btn-sm`} to={`${ROUTES.plan(id)}${asPartner ? '?as=entity' : ''}`}>افتح الخطة · <bdi>{id}</bdi></Link>
+          {writes && <ButtonLink variant="p" size="sm" to={`${ROUTES.planEdit(id)}${asPartner ? '?as=entity' : ''}`}>{pf.plan.phases.length ? 'أكمل الخطة' : 'أعدّ الخطة'}</ButtonLink>}
+          <ButtonLink variant={writes ? '2' : 'p'} size="sm" to={`${ROUTES.plan(id)}${asPartner ? '?as=entity' : ''}`}>افتح الخطة · <bdi>{id}</bdi></ButtonLink>
         </div>
       )}
       {!asPartner && role.key === 'grants-manager' && pfActivities(pf).length > 0 && (
         <div className="cfgchips mt-2" role="radiogroup" aria-label="أثر اكتمال المشروع الفرعي على النشاط">
           {(['update', 'evidence'] as const).map((m) => (
-            <button key={m} type="button" role="radio" aria-checked={PF_ACTIVITY_MODE.mode === m} className={`cfgchip${PF_ACTIVITY_MODE.mode === m ? ' on' : ''}`} onClick={() => { setPfActivityMode(m); setSaid({ ok: 'الإعداد' }) }}>
+            <Button plain key={m} type="button" role="radio" aria-checked={PF_ACTIVITY_MODE.mode === m} className={`cfgchip${PF_ACTIVITY_MODE.mode === m ? ' on' : ''}`} onClick={() => { setPfActivityMode(m); setSaid({ ok: 'الإعداد' }) }}>
               {m === 'update' ? 'اكتمال المشاريع الفرعية يحدّث إنجاز النشاط' : 'اكتمالها دليل على النشاط فقط'}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -444,8 +440,8 @@ function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean
         </>
       )}
       <div className="apv-row mt-3">
-        {sup && (a.state === 'none' || a.state === 'returned') && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'draft', '', user.name), 'مسودة الاتفاقية')}>أعدّ المسودة من النموذج</button>}
-        {sup && a.state === 'draft' && <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'send', '', user.name), 'إرسال الاتفاقية')}>أرسل لمدير المنح</button>}
+        {sup && (a.state === 'none' || a.state === 'returned') && <Button type="button" variant="2" size="sm" onClick={() => r(actOnPfAgreement(pf.id, 'draft', '', user.name), 'مسودة الاتفاقية')}>أعدّ المسودة من النموذج</Button>}
+        {sup && a.state === 'draft' && <Button type="button" variant="p" size="sm" onClick={() => r(actOnPfAgreement(pf.id, 'send', '', user.name), 'إرسال الاتفاقية')}>أرسل لمدير المنح</Button>}
         {!asPartner && ((role.key === 'grants-manager' && a.state === 'manager') || (role.key === 'ceo' && a.state === 'executive')) && (
           /* Client 26 Oct · the decision confirms in its popup · the return's reason there */
           <DockActions
@@ -459,7 +455,7 @@ function AgreementCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean
           />
         )}
         {!asPartner && (role.key === 'grants-manager' || role.key === 'ceo') && a.state === 'foundation' && (
-          <button type="button" className="btn btn-p btn-sm" onClick={() => r(actOnPfAgreement(pf.id, 'countersign', '', user.name), 'توقيع ممثل المؤسسة')}>وقّع عن المؤسسة · تسري الاتفاقية</button>
+          <Button type="button" variant="p" size="sm" onClick={() => r(actOnPfAgreement(pf.id, 'countersign', '', user.name), 'توقيع ممثل المؤسسة')}>وقّع عن المؤسسة · تسري الاتفاقية</Button>
         )}
         {asPartner && a.state === 'partner' && <UploadButton label="الاتفاقية الموقعة" onPick={(f) => r(actOnPfAgreement(pf.id, 'sign', '', user.name, f.name), 'توقيع الاتفاقية')} />}
       </div>
@@ -534,9 +530,9 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
             {FILTERS.map((f) => {
               const n = pf.items.filter(f.test).length
               return (n > 0 || f.key === 'all') && (
-                <button key={f.key} type="button" role="radio" aria-checked={flt === f.key} className={`cfgchip${flt === f.key ? ' on' : ''}`} onClick={() => setFlt(f.key)}>
+                <Button plain key={f.key} type="button" role="radio" aria-checked={flt === f.key} className={`cfgchip${flt === f.key ? ' on' : ''}`} onClick={() => setFlt(f.key)}>
                   {f.label} <span className="num">{n}</span>
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -573,9 +569,9 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
                     <span className="tagfit"><Tag tone={SUB_STATE_TONE[x.state]}>{SUB_STATE_SAY[x.state]}</Tag></span>
                     {x.exec && isLiveSub(x) && <div className="sub">إنجاز <span className="num">{pct(x.exec.progress)}</span> · <span className="num">{nf.format(x.exec.reached)}</span> مستفيد</div>}
                     {(mgr || sup) && sel.includes(x.id) && x.state !== 'draft' && (
-                      <span className="fld mt-1"><input value={reasons[x.id] ?? ''} onChange={(e) => setReasons((r0) => ({ ...r0, [x.id]: e.target.value }))} aria-label={`ملاحظة على ${x.name}`} placeholder={mgr ? 'سبب الرفض أو ملاحظة الاعتماد' : 'ملاحظة التوصية · إلزامية للرفض'} /></span>
+                      <FieldBox className="mt-1"><input value={reasons[x.id] ?? ''} onChange={(e) => setReasons((r0) => ({ ...r0, [x.id]: e.target.value }))} aria-label={`ملاحظة على ${x.name}`} placeholder={mgr ? 'سبب الرفض أو ملاحظة الاعتماد' : 'ملاحظة التوصية · إلزامية للرفض'} /></FieldBox>
                     )}
-                    {dropper && x.state === 'draft' && <button type="button" className="btn btn-ghost btn-sm" onClick={() => { dropSub(pf.id, x.id, asPartner ? entityName(pf) : user.name); r([], 'حذف المسودة') }}>حذف المسودة</button>}
+                    {dropper && x.state === 'draft' && <Button type="button" variant="ghost" size="sm" onClick={() => { dropSub(pf.id, x.id, asPartner ? entityName(pf) : user.name); r([], 'حذف المسودة') }}>حذف المسودة</Button>}
                   </td>
                   {/* Client sheet 26 Oct (#113) · the recommendation and the note in their own column */}
                   <td>{(() => {
@@ -598,12 +594,12 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
           {mixed && <span className="sub">اختر طلبات بنفس الحالة لتظهر الإجراءات</span>}
           {!mixed && <>
           {cap && drafts.length > 0 && <span className="bad">{cap}</span>}
-          {(asPartner || sup) && drafts.length > 0 && <button type="button" className="btn btn-p btn-sm" disabled={Boolean(cap)} onClick={() => r(sendSubs(pf.id, drafts.map((x) => x.id), asPartner ? entityName(pf) : user.name), 'رفع المحدد للمراجعة')}>ارفع للمراجعة</button>}
-          {sup && sent.length > 0 && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(studySubs(pf.id, sent.map((x) => x.id), user.name, role.key), 'بدء الدراسة')}>ابدأ الدراسة</button>}
-          {sup && studied.length > 0 && <button type="button" className="btn btn-2 btn-sm" onClick={() => recommend('reject')}>أوصِ بالرفض</button>}
-          {sup && studied.length > 0 && <button type="button" className="btn btn-p btn-sm" onClick={() => recommend('approve')}>أوصِ بالاعتماد</button>}
-          {mgr && <button type="button" className="btn btn-2 btn-sm" onClick={() => decide('reject')}>ارفض المحدد</button>}
-          {mgr && <button type="button" className="btn btn-p btn-sm" onClick={() => decide('approve')}>اعتمد المحدد</button>}
+          {(asPartner || sup) && drafts.length > 0 && <Button type="button" variant="p" size="sm" disabled={Boolean(cap)} onClick={() => r(sendSubs(pf.id, drafts.map((x) => x.id), asPartner ? entityName(pf) : user.name), 'رفع المحدد للمراجعة')}>ارفع للمراجعة</Button>}
+          {sup && sent.length > 0 && <Button type="button" variant="2" size="sm" onClick={() => r(studySubs(pf.id, sent.map((x) => x.id), user.name, role.key), 'بدء الدراسة')}>ابدأ الدراسة</Button>}
+          {sup && studied.length > 0 && <Button type="button" variant="2" size="sm" onClick={() => recommend('reject')}>أوصِ بالرفض</Button>}
+          {sup && studied.length > 0 && <Button type="button" variant="p" size="sm" onClick={() => recommend('approve')}>أوصِ بالاعتماد</Button>}
+          {mgr && <Button type="button" variant="2" size="sm" onClick={() => decide('reject')}>ارفض المحدد</Button>}
+          {mgr && <Button type="button" variant="p" size="sm" onClick={() => decide('approve')}>اعتمد المحدد</Button>}
           </>}
         </div>
       )}
@@ -623,26 +619,26 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
           />
         </div>
       )}
-      {adder && !adding && <div className="apv-row mt-3"><button type="button" className="btn btn-2 btn-sm" onClick={() => setAdding(true)}>أضف مشروعًا فرعيًّا</button><span className="sub">الرصيد المتاح <span className="num">{nf.format(Math.max(0, pfMoney(pf).available))}</span></span></div>}
+      {adder && !adding && <div className="apv-row mt-3"><Button type="button" variant="2" size="sm" onClick={() => setAdding(true)}>أضف مشروعًا فرعيًّا</Button><span className="sub">الرصيد المتاح <span className="num">{nf.format(Math.max(0, pfMoney(pf).available))}</span></span></div>}
       {adder && adding && (
         <div className="ptn-form mt-3">
           <div className="regfields">
-            <label className="regf"><span className="lb">اسم المشروع الفرعي</span><span className="fld"><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} aria-label="اسم المشروع الفرعي" /></span></label>
-            <label className="regf"><span className="lb">المنطقة</span><FieldSelect value={d.region} onChange={(v) => setD({ ...d, region: v })} label="المنطقة" options={[...new Set(['عموم المملكة', ...REGIONS])]} /></label>
-            <label className="regf"><span className="lb">القيمة</span><MoneyField value={d.amount} onChange={(v) => setD({ ...d, amount: v })} label="قيمة المشروع الفرعي" /></label>
-            <label className="regf"><span className="lb">المستفيدون المستهدفون{req.includes('beneficiaries') ? '' : ' · اختياري'}</span><span className="fld"><input inputMode="numeric" value={d.beneficiaries} onChange={(e) => setD({ ...d, beneficiaries: e.target.value.replace(/\D/g, '') })} aria-label="المستفيدون المستهدفون" /></span></label>
-            <label className="regf"><span className="lb">المدينة{req.includes('city') ? '' : ' · اختياري'}</span><span className="fld"><input value={d.city} onChange={(e) => setD({ ...d, city: e.target.value })} aria-label="المدينة" /></span></label>
-            <label className="regf ptn-wide"><span className="lb">المخرجات المستهدفة{req.includes('outputs') ? '' : ' · اختياري'}</span><span className="fld"><input value={d.outputs} onChange={(e) => setD({ ...d, outputs: e.target.value })} aria-label="المخرجات المستهدفة" /></span></label>
+            <FormField label="اسم المشروع الفرعي"><FieldBox><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} aria-label="اسم المشروع الفرعي" /></FieldBox></FormField>
+            <FormField label="المنطقة"><FieldSelect value={d.region} onChange={(v) => setD({ ...d, region: v })} label="المنطقة" options={[...new Set(['عموم المملكة', ...REGIONS])]} /></FormField>
+            <FormField label="القيمة"><MoneyField value={d.amount} onChange={(v) => setD({ ...d, amount: v })} label="قيمة المشروع الفرعي" /></FormField>
+            <FormField label={<>المستفيدون المستهدفون{req.includes('beneficiaries') ? '' : ' · اختياري'}</>}><FieldBox><input inputMode="numeric" value={d.beneficiaries} onChange={(e) => setD({ ...d, beneficiaries: e.target.value.replace(/\D/g, '') })} aria-label="المستفيدون المستهدفون" /></FieldBox></FormField>
+            <FormField label={<>المدينة{req.includes('city') ? '' : ' · اختياري'}</>}><FieldBox><input value={d.city} onChange={(e) => setD({ ...d, city: e.target.value })} aria-label="المدينة" /></FieldBox></FormField>
+            <FormField label={<>المخرجات المستهدفة{req.includes('outputs') ? '' : ' · اختياري'}</>} className="ptn-wide"><FieldBox><input value={d.outputs} onChange={(e) => setD({ ...d, outputs: e.target.value })} aria-label="المخرجات المستهدفة" /></FieldBox></FormField>
             {/* v3 · 12.4.13 · the plan activity it serves · several sub-projects may serve one */}
             {pfActivities(pf).length > 0 && (
-              <label className="regf"><span className="lb">نشاط خطة المحفظة{req.includes('activity') ? '' : ' · اختياري'}</span><FieldSelect value={d.activityId} onChange={(v) => setD({ ...d, activityId: v })} label="نشاط خطة المحفظة" placeholder="اختياري" options={pfActivities(pf).map((a) => ({ value: a.id, label: a.label }))} /></label>
+              <FormField label={<>نشاط خطة المحفظة{req.includes('activity') ? '' : ' · اختياري'}</>}><FieldSelect value={d.activityId} onChange={(v) => setD({ ...d, activityId: v })} label="نشاط خطة المحفظة" placeholder="اختياري" options={pfActivities(pf).map((a) => ({ value: a.id, label: a.label }))} /></FormField>
             )}
           </div>
           <div className="apv-row mt-2">
             <span className="sub">{d.files.length ? d.files.join(' · ') : `مرفقات المشروع الفرعي${req.includes('files') ? '' : ' · اختياري'}`}</span>
             <UploadButton label="مرفق" onPick={(f) => setD((x) => ({ ...x, files: [...x.files, f.name] }))} />
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setD(EMPTY) }}>إلغاء</button>
-            <button type="button" className="btn btn-p btn-sm" onClick={add}>احفظ مسودة</button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => { setAdding(false); setD(EMPTY) }}>إلغاء</Button>
+            <Button type="button" variant="p" size="sm" onClick={add}>احفظ مسودة</Button>
           </div>
         </div>
       )}
@@ -664,9 +660,9 @@ function SettingsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean 
       <KV rows={[
         { k: 'حقول المشروع الفرعي الإلزامية', v: <FieldMultiSelect disabled={!may} values={fields} options={(Object.keys(SUB_FIELD_SAY) as SubField[]).map((f) => ({ value: f, label: SUB_FIELD_SAY[f] }))} label="حقول المشروع الفرعي الإلزامية" placeholder="الحقول الإلزامية" onChange={(xs) => setFields(xs as SubField[])} /> },
         { k: 'معايير المحفظة المعتمدة', v: <span className="rowf gp-2">{pf.criteria ? <Tag tone="ok"><Icon name={icons.clip} size="sm" /> {pf.criteria.file}</Tag> : <span className="sub">لم تُحفظ</span>}{may && <UploadButton label="احفظ المعايير (PDF)" onPick={(f) => r(attachPfCriteria(pf.id, f.name, user.name, role.key), 'معايير المحفظة')} />}</span> },
-        { k: 'قيم المشاريع الفرعية للتوزيع الجغرافي للتكلفة', v: may ? <button type="button" className={`btn btn-sm ${pf.reliable ? 'btn-2' : 'btn-ghost'}`} aria-pressed={Boolean(pf.reliable)} onClick={() => { setPfReliable(pf.id, !pf.reliable, user.name); setSaid({ ok: 'موثوقية القيم' }) }}>{pf.reliable ? 'موثوقة · تُستخدم' : 'غير موثوقة · لا تُستخدم'}</button> : <span className="sub">{pf.reliable ? 'موثوقة' : 'لا تُستخدم للتكلفة'}</span> },
+        { k: 'قيم المشاريع الفرعية للتوزيع الجغرافي للتكلفة', v: may ? <Button type="button" variant={pf.reliable ? '2' : 'ghost'} size="sm" aria-pressed={Boolean(pf.reliable)} onClick={() => { setPfReliable(pf.id, !pf.reliable, user.name); setSaid({ ok: 'موثوقية القيم' }) }}>{pf.reliable ? 'موثوقة · تُستخدم' : 'غير موثوقة · لا تُستخدم'}</Button> : <span className="sub">{pf.reliable ? 'موثوقة' : 'لا تُستخدم للتكلفة'}</span> },
       ]} />
-      {may && <div className="apv-row mt-3"><button type="button" className="btn btn-p btn-sm" onClick={() => r(savePfForm(pf.id, fields, user.name, role.key), 'نموذج المشروع الفرعي')}>احفظ النموذج</button></div>}
+      {may && <div className="apv-row mt-3"><Button type="button" variant="p" size="sm" onClick={() => r(savePfForm(pf.id, fields, user.name, role.key), 'نموذج المشروع الفرعي')}>احفظ النموذج</Button></div>}
       <Said said={said} />
     </Glass>
   )
@@ -689,7 +685,7 @@ function SessionCard({ pf }: { pf: PortfolioRec }) {
         secretary && (
           <div className="apv-row">
             <FieldSelect value={sid} onChange={setSid} label="الجلسة" placeholder="اختر جلسة قادمة" options={pfSessions(pf).map((x) => ({ value: x.id, label: `${x.title} · ${x.date}` }))} />
-            <button type="button" className="btn btn-p btn-sm" onClick={() => r(pfToSession(pf.id, sid, user.name, role.key), 'الإدراج على الجلسة')}>أدرج على الجلسة</button>
+            <Button type="button" variant="p" size="sm" onClick={() => r(pfToSession(pf.id, sid, user.name, role.key), 'الإدراج على الجلسة')}>أدرج على الجلسة</Button>
           </div>
         )
       ) : (
@@ -732,7 +728,7 @@ function PaysCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
       {payBlock(entityById(pf.entityId)) && <p className="bad cnote">{payBlock(entityById(pf.entityId))}</p>}
       {!asPartner && (
         <div className="apv-row mt-3">
-          <Link className="btn btn-2 btn-sm" to={ROUTES.partnersTab('finance')}>افتح إجراء الصرف</Link>
+          <ButtonLink variant="2" size="sm" to={ROUTES.partnersTab('finance')}>افتح إجراء الصرف</ButtonLink>
         </div>
       )}
     </Glass>
@@ -824,11 +820,11 @@ function CloseCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) 
       {pf.close.note && (st === 'returned' || st === 'evalDraft' || st === 'evalManager') && <p className="bad cnote">{pf.close.note}</p>}
       {asPartner && (pf.stage === 'approved' || (pf.stage === 'closing' && st === 'returned')) && (
         <>
-          <label className="regf mt-3"><span className="lb">التقرير الشامل للمحفظة</span><span className="fld"><textarea rows={3} value={report} onChange={(e) => setReport(e.target.value)} aria-label="التقرير الختامي للمحفظة" /></span></label>
+          <FormField label="التقرير الشامل للمحفظة" className="mt-3"><FieldBox><textarea rows={3} value={report} onChange={(e) => setReport(e.target.value)} aria-label="التقرير الختامي للمحفظة" /></FieldBox></FormField>
           <div className="apv-row mt-2">
             <span className="sub">{evidence.length ? evidence.join(' · ') : 'الشواهد'}</span>
             <UploadButton label="شاهد" onPick={(f) => setEvidence((x) => [...x, f.name])} />
-            <button type="button" className="btn btn-p btn-sm" onClick={() => r(submitPfReport(pf.id, report, evidence, entityName(pf)), 'التقرير الشامل')}>ارفع التقرير</button>
+            <Button type="button" variant="p" size="sm" onClick={() => r(submitPfReport(pf.id, report, evidence, entityName(pf)), 'التقرير الشامل')}>ارفع التقرير</Button>
           </div>
         </>
       )}
@@ -854,17 +850,17 @@ function CloseCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) 
           {mine && st === 'evalDraft' ? (
             <div className="regfields">
               {(crit.length ? crit : criteria).map((c, i) => (
-                <label key={c.key} className="regf"><span className="lb">{c.label} · الوزن {nf.format(c.weight)}</span><FieldSelect value={c.rating ? String(c.rating) : ''} onChange={(v) => setCrit((x) => (x.length ? x : criteria).map((y, j) => (j === i ? { ...y, rating: Number(v) || null } : y)))} label={`تقييم ${c.label}`} placeholder="من 5" options={['1', '2', '3', '4', '5']} /></label>
+                <FormField key={c.key} label={<>{c.label} · الوزن {nf.format(c.weight)}</>}><FieldSelect value={c.rating ? String(c.rating) : ''} onChange={(v) => setCrit((x) => (x.length ? x : criteria).map((y, j) => (j === i ? { ...y, rating: Number(v) || null } : y)))} label={`تقييم ${c.label}`} placeholder="من 5" options={['1', '2', '3', '4', '5']} /></FormField>
               ))}
-              <label className="regf ptn-wide"><span className="lb">ملاحظات التقييم</span><span className="fld"><input value={evNotes} onChange={(e) => setEvNotes(e.target.value)} aria-label="ملاحظات تقييم المحفظة" /></span></label>
+              <FormField label="ملاحظات التقييم" className="ptn-wide"><FieldBox><input value={evNotes} onChange={(e) => setEvNotes(e.target.value)} aria-label="ملاحظات تقييم المحفظة" /></FieldBox></FormField>
             </div>
           ) : (
             <KV rows={criteria.map((c) => ({ k: `${c.label} · الوزن ${nf.format(c.weight)}`, v: c.rating === null ? <span className="sub">لم يُقيَّم</span> : `${c.rating} من 5` }))} />
           )}
           {mine && (
             <div className="apv-row mt-3">
-              {st === 'evalDraft' && <button type="button" className="btn btn-2 btn-sm" onClick={() => r(savePfEval(pf.id, crit.length ? crit : criteria, evNotes, user.name, role.key), 'حفظ التقييم')}>احفظ التقييم</button>}
-              {st === 'evalDraft' && <button type="button" className="btn btn-p btn-sm" onClick={() => { savePfEval(pf.id, crit.length ? crit : criteria, evNotes, user.name, role.key); r(actOnPfEval(pf.id, 'send', '', user.name, role.key), 'إرسال التقييم لمدير المنح') }}>أرسل لمدير المنح</button>}
+              {st === 'evalDraft' && <Button type="button" variant="2" size="sm" onClick={() => r(savePfEval(pf.id, crit.length ? crit : criteria, evNotes, user.name, role.key), 'حفظ التقييم')}>احفظ التقييم</Button>}
+              {st === 'evalDraft' && <Button type="button" variant="p" size="sm" onClick={() => { savePfEval(pf.id, crit.length ? crit : criteria, evNotes, user.name, role.key); r(actOnPfEval(pf.id, 'send', '', user.name, role.key), 'إرسال التقييم لمدير المنح') }}>أرسل لمدير المنح</Button>}
               {/* Client 26 Oct · the decision confirms in its popup · the return's reason there */}
               {st !== 'evalDraft' && (
                 <DockActions
@@ -923,9 +919,9 @@ function CancelCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean })
       {rc && got < rc.due && !asPartner && (role.key === 'finance' || role.key === 'supervisor') && (
         <div className="apv-row mt-3">
           <MoneyField value={amount} onChange={setAmount} label="المبلغ المستلم" />
-          <span className="fld"><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="مرجع التحويل" placeholder="مرجع التحويل" /></span>
+          <FieldBox><input value={ref} onChange={(e) => setRef(e.target.value)} aria-label="مرجع التحويل" placeholder="مرجع التحويل" /></FieldBox>
           <UploadButton label={file || 'إشعار التحويل'} onPick={(f) => setFile(f.name)} />
-          <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = recordPfReceipt(pf.id, Number(amount) || 0, ref, file, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'استلام المبلغ' }) }}>سجّل الاستلام</button>
+          <Button type="button" variant="p" size="sm" onClick={() => { const out = recordPfReceipt(pf.id, Number(amount) || 0, ref, file, user.name, role.key); setSaid(out.length ? { bad: out } : { ok: 'استلام المبلغ' }) }}>سجّل الاستلام</Button>
         </div>
       )}
       <Said said={said} />

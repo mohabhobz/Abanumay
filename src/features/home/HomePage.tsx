@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { DateText, Glass, Icon, icons, Money, Tabs } from '@/components/ui'
+import { ButtonLink, Button, DateText, Glass, Icon, icons, Money, Tabs } from '@/components/ui'
 import { AbLeaf, HeroSuccess, IdentityBanner } from '@/components/soul'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -80,7 +80,7 @@ export default function HomePage() {
             title={`${greet}، ${first}`}
             sub={<><DateText>{new Date().toISOString().slice(0, 10)}</DateText> · {done ? 'يومك فارغ الآن، وكل ما يصلك يظهر هنا أولًا' : 'يومك مرتّب لك · ابدأ بالبطاقة الأولى'}</>}
             action={overview ? (
-              <Link className="btn btn-ghost" to={ROUTES.reports}><Icon name={icons.chart} size="sm" />نظرة المؤسسة</Link>
+              <ButtonLink variant="ghost" to={ROUTES.reports}><Icon name={icons.chart} size="sm" />نظرة المؤسسة</ButtonLink>
             ) : undefined}
           />
 
@@ -126,11 +126,11 @@ export default function HomePage() {
                 <div className="tday-focus-f">
                   <span className={`tag ${TONE_OF[next.lane]} tday-pill`}><Icon name={icons.clock} size="sm" />{next.why}</span>
                   <div className="tday-acts">
-                    {after && <button type="button" className="btn btn-ghost" onClick={() => setLater((x) => [...x, key(next)])}>لاحقًا</button>}
-                    {next.quick && <button type="button" className="btn btn-2" onClick={() => go(next)}>افتح السجل</button>}
-                    <button type="button" className="btn btn-p tday-go" onClick={() => finish(next)}>
+                    {after && <Button type="button" variant="ghost" onClick={() => setLater((x) => [...x, key(next)])}>لاحقًا</Button>}
+                    {next.quick && <Button type="button" variant="2" onClick={() => go(next)}>افتح السجل</Button>}
+                    <Button type="button" variant="p" className="tday-go" onClick={() => finish(next)}>
                       {next.quick ? next.quick.label : 'ابدأ الآن'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </Glass>
@@ -234,9 +234,9 @@ export default function HomePage() {
                     <p className="tday-empty"><Icon name={icons.check} size="sm" />لا شيء هنا</p>
                   )}
                   {rows.length > SHOW && (
-                    <button type="button" className="btn btn-ghost btn-sm tday-more" onClick={() => setOpen((o) => ({ ...o, [l]: !all }))}>
+                    <Button type="button" variant="ghost" size="sm" className="tday-more" onClick={() => setOpen((o) => ({ ...o, [l]: !all }))}>
                       {all ? 'اعرض أقل' : `اعرض الكل (${rows.length})`}
-                    </button>
+                    </Button>
                   )}
                 </Glass>
               )

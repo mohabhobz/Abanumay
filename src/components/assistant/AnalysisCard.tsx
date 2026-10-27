@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Glass, Icon, icons } from '@/components/ui'
+import { Button, Glass, Icon, icons } from '@/components/ui'
 import { MetricText, ReadingBlock, ReadingPeek } from './ReadingBlock'
 import { useOnScreen } from '@/hooks/useOnScreen'
 import { useTypedBlocks } from '@/hooks/useTypedBlocks'
@@ -124,9 +124,9 @@ export function AnalysisCard({
           {/* An assistant CTA, not a screen CTA: the main action on the project page is "recommend
               approval" in the decision bar. One primary CTA per screen — everything else is
               secondary. */}
-          <button className="btn btn-2 aishut-go" onClick={() => { setArmed(true); setOpen(true) }}>
+          <Button variant="2" className="aishut-go" onClick={() => { setArmed(true); setOpen(true) }}>
             {cta ?? (heading.includes('الجهة') ? 'حلّل ملف الجهة' : 'حلّل المشروع')}
-          </button>
+          </Button>
         </div>
       </Glass>
     )
@@ -149,16 +149,16 @@ export function AnalysisCard({
           </div>
         </div>
         {ask && (
-          <button className="btn btn-2 btn-sm" onClick={onAsk} disabled={!done}>اسأل</button>
+          <Button variant="2" size="sm" onClick={onAsk} disabled={!done}>اسأل</Button>
         )}
-        <button
+        <Button plain
           className="aifold"
           aria-expanded={open}
           aria-label={open ? 'إخفاء التحليل' : 'إظهار التحليل'}
           onClick={() => setOpen((x) => !x)}
         >
           <Icon name={open ? icons.chevronUp : icons.chevronDown} size="sm" />
-        </button>
+        </Button>
       </div>
 
       {suggest}

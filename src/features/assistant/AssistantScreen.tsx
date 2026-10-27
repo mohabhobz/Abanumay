@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import {
   AiMessage, Composer, Disclaimer, Welcome, useAssistant, type WelcomeCard,
 } from '@/components/assistant'
@@ -171,24 +171,24 @@ export function AssistantScreen({
         <header className={`chat-top${title ? '' : ' bare'}`}>
           <div className="chat-top-in">
             {mobile ? (
-              <button
+              <Button plain
                 className="aclose"
                 onClick={() => setListOpen((v) => !v)}
                 aria-label="المحادثات"
               >
                 <Icon name={icons.menu} size="sm" />
-              </button>
+              </Button>
             ) : shut && (
               /* Position of the collapsed sidebar - the button restores it from the same side it
                  left, so the motion reads as returning, not opening something new. */
-              <button
+              <Button plain
                 className="aclose aclose-list"
                 onClick={() => setShut(false)}
                 title="أظهر المحادثات"
                 aria-label="أظهر المحادثات"
               >
                 <Icon name={icons.panel} size="sm" />
-              </button>
+              </Button>
             )}
 
             {title ? (
@@ -202,9 +202,9 @@ export function AssistantScreen({
 
             {headExtra}
 
-            <button className="aclose" onClick={onClose} aria-label="أغلق المساعد">
+            <Button plain className="aclose" onClick={onClose} aria-label="أغلق المساعد">
               <Icon name={icons.close} size="sm" />
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -244,9 +244,9 @@ export function AssistantScreen({
         </div>
 
         {!atEnd && msgs.length > 0 && (
-          <button className="tobottom chrome" onClick={toEnd} aria-label="انتقل إلى آخر المحادثة">
+          <Button plain className="tobottom chrome" onClick={toEnd} aria-label="انتقل إلى آخر المحادثة">
             <Icon name={icons.down} size="sm" />
-          </button>
+          </Button>
         )}
 
         {msgs.length > 0 && (

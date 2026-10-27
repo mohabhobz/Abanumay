@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui'
 import { useEffect, useRef } from 'react'
 import { useProximity } from '@/hooks/useProximity'
 import { useMatchHeight } from '@/hooks/useMatchHeight'
@@ -53,7 +54,7 @@ export function AskDock({ open, onToggle, compact }: AskDockProps) {
   }, [])
 
   return (
-    <button
+    <Button plain
       ref={fab}
       type="button"
       className={`askfab${open ? ' on' : ''}${compact ? ' mini' : ''}`}
@@ -67,6 +68,6 @@ export function AskDock({ open, onToggle, compact }: AskDockProps) {
           the button itself is the container. */}
       <AbLeaf />
       {!compact && <span className="askfab-t">اسأل أبانمي</span>}
-    </button>
+    </Button>
   )
 }

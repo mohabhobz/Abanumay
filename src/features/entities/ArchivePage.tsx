@@ -1,5 +1,4 @@
-import { Link } from 'react-router-dom'
-import { DateText, DockActions, Empty, EntityMark, Glass, Head, Icon, Mono, SearchBox, Tag, icons } from '@/components/ui'
+import { ButtonLink, DateText, DockActions, Empty, EntityMark, Glass, Head, Icon, Mono, SearchBox, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { Crumbs } from '@/components/shell'
 import { ROUTES } from '@/app/routes'
@@ -66,7 +65,7 @@ export default function ArchivePage() {
                 </p>
                 {ev?.note && <p className="cnote">{ev.note}</p>}
                 <div className="rowf gp-2">
-                  <Link className="btn btn-2 btn-sm" to={ROUTES.entity(e.id)}><Icon name={icons.entity} size="sm" /> افتح الملف</Link>
+                  <ButtonLink variant="2" size="sm" to={ROUTES.entity(e.id)}><Icon name={icons.entity} size="sm" /> افتح الملف</ButtonLink>
                   {may && (
                     /* Client 26 Oct · the reason in the decision's popup, not a field beside the button */
                     <DockActions

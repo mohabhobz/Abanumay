@@ -7,7 +7,7 @@ import { useMemo, useState } from 'react'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { registrationAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { BankGrid, BankCard, FieldMultiSelect,
+import { ButtonLink, FormField, Button, BankGrid, BankCard, FieldMultiSelect,
   DateText, EditButton, EditModal, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, OrgName, Person, StepArc, Tabs, Tag, type EditField, type GateStep,
   blockerCount, type Blocker, type StepItem } from '@/components/ui'
 import { DocFile, DocList, UploadButton } from '@/components/docs'
@@ -27,7 +27,7 @@ import {
 } from '@/data/mock/registration'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { canAdminEdit, canDecide, decideRegistration, editRegistration, fieldLabel, regHistory, returnRegistration, useEntityFlow } from '@/data/entities/store'
-import { Modal } from '@/features/entities/SelectionActions'
+import { SheetModal } from '@/features/entities/SelectionActions'
 import { duplicates, expiredDocs, formatIssue } from '@/data/entities/validate'
 import { meOf, readRole, roleByKey } from '@/data/roles'
 import { BANKS, REG_STAGES, citiesOf } from '@/data/mock/registration'
@@ -132,9 +132,9 @@ export default function RegReviewPage() {
               <Empty
                 title="الطلب غير موجود."
                 actions={
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.entityRequests)}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.entityRequests)}>
                     العودة إلى صندوق الطلبات
-                  </button>
+                  </Button>
                 }
               />
             </Glass>
@@ -158,7 +158,7 @@ export default function RegReviewPage() {
      stands on, and where to see it */
   const noBank = r.banks.length > 0 && r.banks.every((b) => bankNo[b.id])
   const see = (to: string, at: string) => (
-    <button type="button" className="lnk" onClick={() => { setStopOpen(false); setQ({ tab: to === 'data' ? undefined : to }); setTimeout(() => document.getElementById(at)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 0) }}>عرض</button>
+    <Button plain type="button" className="lnk" onClick={() => { setStopOpen(false); setQ({ tab: to === 'data' ? undefined : to }); setTimeout(() => document.getElementById(at)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 0) }}>عرض</Button>
   )
   const stops: Blocker[] = [
     ...(clash ? [{ head: 'رقم الترخيص', text: <>مسجَّل لـ«{clash.name}» بنفس التصنيف</>, why: see('data', 'rg-def') }] : []),
@@ -408,15 +408,14 @@ export default function RegReviewPage() {
                           ? <DocFile name={b.doc} meta={BANK_DOC_LABEL} />
                           : <span className="bad">{BANK_DOC_LABEL} ناقصة</span>}
                         {open && mayApprove && (
-                          <label className="regf">
-                            <span className="lb">قرار الحساب</span>
+                          <FormField label="قرار الحساب">
                             <FieldSelect
                               value={bankNo[b.id] ?? ''}
                               options={[{ value: '', label: 'الحساب مقبول' }, ...BANK_REJECTS.map((x) => ({ value: x, label: `مرفوض · ${x}` }))]}
                               onChange={(x) => setBankNo((m) => ({ ...m, [b.id]: x }))}
                               label={`قرار الحساب ${i + 1}`}
                             />
-                          </label>
+                          </FormField>
                         )}
                       </BankCard>
                     )
@@ -564,12 +563,12 @@ export default function RegReviewPage() {
                   </span>
                 </div>
                 {taken === 'approve' && r.entityId && (
-                  <Link className="btn btn-p" to={ROUTES.entity(r.entityId)}>
+                  <ButtonLink variant="p" to={ROUTES.entity(r.entityId)}>
                     <Icon name={icons.entity} size="sm" />
                     افتح ملف الجهة
-                  </Link>
+                  </ButtonLink>
                 )}
-                <button className="btn btn-2" onClick={() => navigate(ROUTES.entityRequests)}>صندوق الطلبات</button>
+                <Button variant="2" onClick={() => navigate(ROUTES.entityRequests)}>صندوق الطلبات</Button>
               </>
             ) : !open ? (
               <div className="rowf gp-3 payact-w">
@@ -602,31 +601,31 @@ export default function RegReviewPage() {
                 <div className="payact-g">
                 <div className="rowf gp-2">
                   {mayReturn && (
-                    <button
-                      className="btn btn-2"
+                    <Button
+                      variant="2"
                       title={`يُعاد إلى الجهة مع السبب${flag.length ? ` · ويُفتح لها ${flag.map(fieldLabel).join('، ')}` : ''}`}
                       onClick={() => setAsk('return')}
                     >
                       إعادة للاستكمال
-                    </button>
+                    </Button>
                   )}
                   {mayApprove && (
-                    <button className="btn btn-d" title={/* doc rule 28 */ 'يُؤرشف بسببه'} onClick={() => setAsk('reject')}>
+                    <Button variant="d" title={/* doc rule 28 */ 'يُؤرشف بسببه'} onClick={() => setAsk('reject')}>
                       رفض وإيقاف
-                    </button>
+                    </Button>
                   )}
                   {mayApprove && (
-                    <button
-                      className="btn btn-p"
+                    <Button
+                      variant="p"
                       title={nStop ? 'يفتح ما يمنع الاعتماد' : /* doc rule 2 */ 'تُنشأ الجهة وملفها ويُرسل اسم المستخدم'}
                       onClick={() => { if (blocked || noBank) { setStopOpen(true); return } decideRegistration(r.id, 'approve', '', bankNo, me); setTaken('approve') }}
                     >
                       اعتماد وتفعيل
-                    </button>
+                    </Button>
                   )}
                 </div>
                 {mayApprove && nStop > 0 && (
-                  <button type="button" className="lnk" onClick={() => setStopOpen(true)}>ما يمنع الاعتماد · <Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)}</button>
+                  <Button plain type="button" className="lnk" onClick={() => setStopOpen(true)}>ما يمنع الاعتماد · <Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)}</Button>
                 )}
                 </div>
               </>
@@ -634,13 +633,13 @@ export default function RegReviewPage() {
           </div>
         </div>
         {stopOpen && (
-          <Modal wide title={`ما يمنع الاعتماد · ${r.name}`} icon={icons.alert} onClose={() => setStopOpen(false)}
+          <SheetModal wide title={`ما يمنع الاعتماد · ${r.name}`} icon={icons.alert} onClose={() => setStopOpen(false)}
             foot={<>
               {open && mayApprove && (
-                <button type="button" className="btn btn-p" disabled={blocked || noBank} title={nStop ? 'عالج ما يمنع الاعتماد أولًا' : undefined}
-                  onClick={() => { setStopOpen(false); decideRegistration(r.id, 'approve', '', bankNo, me); setTaken('approve') }}>اعتماد وتفعيل</button>
+                <Button type="button" variant="p" disabled={blocked || noBank} title={nStop ? 'عالج ما يمنع الاعتماد أولًا' : undefined}
+                  onClick={() => { setStopOpen(false); decideRegistration(r.id, 'approve', '', bankNo, me); setTaken('approve') }}>اعتماد وتفعيل</Button>
               )}
-              <button type="button" className="btn btn-2" onClick={() => setStopOpen(false)}>إغلاق</button>
+              <Button type="button" variant="2" onClick={() => setStopOpen(false)}>إغلاق</Button>
             </>}>
                 {nStop > 0 ? (
                   <>
@@ -716,7 +715,7 @@ export default function RegReviewPage() {
                     </>
                   )
                 })()}
-          </Modal>
+          </SheetModal>
         )}
         {editing && (
           <EditModal

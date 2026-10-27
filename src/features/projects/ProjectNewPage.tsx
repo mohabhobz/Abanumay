@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { textIssues } from '@/lib/textCheck'
 import { useNavigate } from 'react-router-dom'
-import { WeekdayPicker,
+import { FormField, FieldBox, Button, WeekdayPicker,
   DateField, DateText, BackTo, FieldSelect, Glass, Head, Icon, icons, Money, Num, Riyal, Steps, Tag, type StepItem, DockWhy, blockerCount, FieldMultiSelect } from '@/components/ui'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { blockerReadings } from '@/features/shared/blockerReadings'
@@ -76,11 +76,7 @@ function PField({
   return (
     /* 26 Oct · the multiple choice takes one column like its neighbours (it spanned the row) · and is a
        block, not a label, so a click on a chip never opens the list */
-    <Wrap className={`regf${f.kind === 'long' || f.kind === 'outputs' || f.kind === 'weekdays' || f.kind === 'stages' ? ' regf-w' : ''}`}>
-      <span className="lb">
-        {f.label}
-        {f.req && <b className="regf-r" aria-label="إلزامي">*</b>}
-      </span>
+    <FormField as={Wrap} wide={f.kind === 'long' || f.kind === 'outputs' || f.kind === 'weekdays' || f.kind === 'stages'} label={f.label} required={f.req}>
 
       {entitySlot ? (
         /* Note: an entity that hit its cap stays in the list, with the reason shown - hiding it
@@ -149,16 +145,16 @@ function PField({
           onChange={(next) => onChange(next.join(','))}
         />
       ) : f.kind === 'long' ? (
-        <span className="fld fld-a">
+        <FieldBox area>
           <textarea
             rows={4}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             aria-label={f.label}
           />
-        </span>
+        </FieldBox>
       ) : f.kind === 'num' ? (
-        <span className="fld">
+        <FieldBox>
           <input
             className="num"
             inputMode="numeric"
@@ -167,14 +163,14 @@ function PField({
             aria-label={f.label}
           />
           {f.unit === 'ريال' ? <Riyal /> : <span className="sub">{f.unit}</span>}
-        </span>
+        </FieldBox>
       ) : f.kind === 'date' ? (
         /* Note: `DateField` wraps `.fld` itself - no extra wrapper needed. */
         <DateField value={value} onChange={onChange} label={f.label} />
       ) : (
-        <span className="fld">
+        <FieldBox>
           <input value={value} onChange={(e) => onChange(e.target.value)} aria-label={f.label} />
-        </span>
+        </FieldBox>
       )}
 
       {/* 24 Oct · on the client's comment · the field's note is one line · while the text reads well
@@ -187,11 +183,11 @@ function PField({
         return (
           <span className="sub regf-h regf-1 warn" title={issues.map((y) => y.say).join(' · ')}>
             {x.say}{issues.length > 1 && <> · +<Num>{issues.length - 1}</Num></>}
-            {x.fixed !== undefined && <> · <button type="button" className="lnk" onClick={() => onChange(x.fixed!)}>صحّح</button></>}
+            {x.fixed !== undefined && <> · <Button plain type="button" className="lnk" onClick={() => onChange(x.fixed!)}>صحّح</Button></>}
           </span>
         )
       })()}
-    </Wrap>
+    </FormField>
   )
 }
 
@@ -370,10 +366,10 @@ export default function ProjectNewPage() {
                           {on ? (
                             <div className="regdoc-up">
                               <span className="sub">{docs[d.key]}</span>
-                              <button className="btn btn-ghost btn-sm" onClick={() => setDocs((x) => { const y = { ...x }; delete y[d.key]; return y })}>
+                              <Button variant="ghost" size="sm" onClick={() => setDocs((x) => { const y = { ...x }; delete y[d.key]; return y })}>
                                 <Icon name={icons.close} size="sm" />
                                 أزل الملف
-                              </button>
+                              </Button>
                             </div>
                           ) : (
                             <label className="regdrop">
@@ -418,7 +414,7 @@ export default function ProjectNewPage() {
                 {/* Client 20 Oct (#42) · the external type switches to the simplified form */}
                 {tab === 'who' && val.ptype === EXT_TYPE && !asEntity && (
                   <div className="apv-row mt-3">
-                    <button type="button" className="btn btn-p btn-sm" onClick={() => navigate(ROUTES.externalNew)}>افتح النموذج المبسّط</button>
+                    <Button type="button" variant="p" size="sm" onClick={() => navigate(ROUTES.externalNew)}>افتح النموذج المبسّط</Button>
                   </div>
                 )}
 
@@ -453,24 +449,24 @@ export default function ProjectNewPage() {
                   </span>
                   <span className="pc-sp" />
                   <div className="rowf gp-2">
-                    <button
-                      className="btn btn-2"
+                    <Button
+                      variant="2"
                       disabled={first}
                       title={first ? 'هذه الخطوة الأولى' : `العودة إلى ${STAGES[at - 1].label}`}
                       onClick={() => go(-1)}
                     >
                       <Icon name={icons.chevronBack} size="sm" />
                       السابق
-                    </button>
+                    </Button>
                     {!last && (
-                      <button
-                        className="btn btn-p"
+                      <Button
+                        variant="p"
                         title={`الانتقال إلى ${STAGES[at + 1].label}`}
                         onClick={() => go(1)}
                       >
                         التالي
                         <Icon name={icons.chevron} size="sm" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -540,7 +536,7 @@ export default function ProjectNewPage() {
                         ? <DockWhy n={blockerCount(blocks)} items={blocks} />
                         : <><span className="decsep" />جاهز للإرسال</>}
                       {draft && <><span className="decsep" />{saved ? 'حُفظت المسودة' : 'مسودة محفوظة'} <DateText>{draft.savedAt.slice(0, 10)}</DateText>
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={freshStart}>ابدأ من جديد</button></>}
+                        <Button type="button" variant="ghost" size="sm" onClick={freshStart}>ابدأ من جديد</Button></>}
                     </>}
               </span>
             </div>
@@ -548,16 +544,16 @@ export default function ProjectNewPage() {
               {!sent ? (
                 <>
                   {/* Rule 31 - saving a draft is part of the staged form. */}
-                  <button
-                    className="btn btn-2"
+                  <Button
+                    variant="2"
                     disabled={!val.entityId}
                     title={val.entityId ? 'احفظ الطلب مسودةً' : 'اختر الجهة أولًا'}
                     onClick={keepDraft}
                   >
                     احفظ المسودة
-                  </button>
-                  <button
-                    className="btn btn-p"
+                  </Button>
+                  <Button
+                    variant="p"
                     disabled={!canSend}
                     title={
                       missing.length
@@ -569,17 +565,17 @@ export default function ProjectNewPage() {
                     onClick={send}
                   >
                     أرسل للدراسة
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <>
-                  <button className="btn btn-2" onClick={() => navigate(asEntity ? `${ROUTES.entityPortal}?entity=${val.entityId}` : ROUTES.projects)}>
+                  <Button variant="2" onClick={() => navigate(asEntity ? `${ROUTES.entityPortal}?entity=${val.entityId}` : ROUTES.projects)}>
                     {asEntity ? 'العودة إلى البوابة' : 'العودة إلى المشاريع'}
-                  </button>
+                  </Button>
                   {!asEntity && sentId && (
-                    <button className="btn btn-p" onClick={() => navigate(ROUTES.project(sentId))}>
+                    <Button variant="p" onClick={() => navigate(ROUTES.project(sentId))}>
                       افتح المشروع
-                    </button>
+                    </Button>
                   )}
                 </>
               )}

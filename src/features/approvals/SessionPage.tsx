@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { expectedImpact, sessionReport } from '@/data/shared/ai'
 import { AnalysisCard } from '@/components/assistant'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Tabs, BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
+import { ButtonLabel, FormField, FieldBox, Button, Tabs, BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { HOLD_STAGE_SAY, useBudget } from '@/data/budget/store'
@@ -153,7 +153,7 @@ export default function SessionPage() {
                   <li key={p.id}>
                     <span className="apv-t"><b>{p.name}</b><span className="sub"><Money sm>{supportAmount(p)}</Money> · {p.entityName}</span></span>
                     <span className="pc-sp" />
-                    <button className="btn btn-2 btn-sm" onClick={() => setAgenda(s.id, p.id, true)}><Icon name={icons.plus} size="sm" />أدرج</button>
+                    <Button variant="2" size="sm" onClick={() => setAgenda(s.id, p.id, true)}><Icon name={icons.plus} size="sm" />أدرج</Button>
                   </li>
                 ))}
               </ul>
@@ -165,9 +165,9 @@ export default function SessionPage() {
           <div className="decdock">
             <div className="chrome decbar payact">
               <span className="decsent">قُرّر <b className="num">{decided}</b> من <b className="num">{s.items.length}</b> · الإقفال يثبّت القرارات ولا تُعدَّل إلا بجلسة جديدة</span>
-              <button className="btn btn-p" disabled={decided === 0} onClick={() => closeSession(s.id, me)}>
+              <Button variant="p" disabled={decided === 0} onClick={() => closeSession(s.id, me)}>
                 <Icon name={icons.lock} size="sm" />أقفل الجلسة
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -293,10 +293,10 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
       <div className="apv-row">
         {it.minutes ? <Tag tone="ok"><Icon name={icons.clip} size="sm" /> {it.minutes}</Tag> : <span className="sub">لا محضر بعد</span>}
         {may && !it.outcome && (
-          <label className="btn btn-2 btn-sm">
+          <ButtonLabel variant="2" size="sm">
             <Icon name={icons.upload} size="sm" />{it.minutes ? 'استبدل المحضر' : 'أرفق المحضر'}
             <input className="vis-h" type="file" accept=".pdf,.doc,.docx" onChange={(e) => { const x = e.target.files?.[0]; if (x) attachMinutes(s.id, p.id, x.name, me); e.target.value = '' }} />
-          </label>
+          </ButtonLabel>
         )}
       </div>
 
@@ -306,9 +306,9 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
         <div className="apv-dec">
           <div className="cfgchips" role="radiogroup" aria-label="القرار">
             {outcomes.map((o) => (
-              <button key={o} type="button" role="radio" aria-checked={outcome === o} className={`cfgchip${outcome === o ? ' on' : ''}`} onClick={() => { setOutcome(o); setAmt(0); setAmtWhy(''); setBen(0); setBenWhy(''); setSaid([]) }}>
+              <Button plain key={o} type="button" role="radio" aria-checked={outcome === o} className={`cfgchip${outcome === o ? ' on' : ''}`} onClick={() => { setOutcome(o); setAmt(0); setAmtWhy(''); setBen(0); setBenWhy(''); setSaid([]) }}>
                 {o === 'refer' && s.body === 'committee' ? 'موافقة وإحالة للمجلس' : OUTCOME_SAY[o]}
-              </button>
+              </Button>
             ))}
           </div>
           {outcome === 'return' && (
@@ -316,50 +316,44 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
           )}
           {(outcome === 'approve' || outcome === 'refer') && (
             <div className="regfields">
-              <label className="regf">
-                <span className="lb">مبلغ الدعم المقرر</span>
+              <FormField label="مبلغ الدعم المقرر">
                 <MoneyField value={String(decided)} label="مبلغ الدعم المقرر" onChange={(x) => setAmt(Number(x) || 0)} />
-              </label>
+              </FormField>
               {amtMoved && (
-                <label className="regf regf-w">
-                  <span className="lb">مبررات تعديل المبلغ<b className="regf-r" aria-label="إلزامي">*</b></span>
-                  <span className="fld"><input value={amtWhy} onChange={(e) => setAmtWhy(e.target.value)} aria-label="مبررات تعديل المبلغ في الجلسة" /></span>
-                </label>
+                <FormField label="مبررات تعديل المبلغ" required wide>
+                  <FieldBox><input value={amtWhy} onChange={(e) => setAmtWhy(e.target.value)} aria-label="مبررات تعديل المبلغ في الجلسة" /></FieldBox>
+                </FormField>
               )}
-              <label className="regf">
-                <span className="lb">عدد المستفيدين المقرر</span>
-                <span className="fld"><input className="num" inputMode="numeric" value={nf.format(ben > 0 ? ben : p.beneficiaries)} aria-label="عدد المستفيدين المقرر" onChange={(e) => setBen(Number(e.target.value.replace(/[^\d]/g, '')) || 0)} /></span>
-              </label>
+              <FormField label="عدد المستفيدين المقرر">
+                <FieldBox><input className="num" inputMode="numeric" value={nf.format(ben > 0 ? ben : p.beneficiaries)} aria-label="عدد المستفيدين المقرر" onChange={(e) => setBen(Number(e.target.value.replace(/[^\d]/g, '')) || 0)} /></FieldBox>
+              </FormField>
               {benMoved && (
-                <label className="regf regf-w">
-                  <span className="lb">مبررات تعديل عدد المستفيدين<b className="regf-r" aria-label="إلزامي">*</b></span>
-                  <span className="fld"><input value={benWhy} onChange={(e) => setBenWhy(e.target.value)} aria-label="مبررات تعديل عدد المستفيدين في الجلسة" /></span>
-                </label>
+                <FormField label="مبررات تعديل عدد المستفيدين" required wide>
+                  <FieldBox><input value={benWhy} onChange={(e) => setBenWhy(e.target.value)} aria-label="مبررات تعديل عدد المستفيدين في الجلسة" /></FieldBox>
+                </FormField>
               )}
             </div>
           )}
           {outcome === 'approve' && amtMoved && fin && decided - amount > fin.maxRaise && <p className="bad cnote">{/* doc 6.4.3 */}المبلغ المقرر يتجاوز الرصيد المتاح.</p>}
           {needsPay && (
-            <label className="regf regf-w"><span className="lb">توجيهات الصرف <span className="sub">اختيارية</span></span><span className="fld"><input value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="مثال: ربط الدفعة الثانية بالتقرير المرحلي" aria-label="توجيهات الصرف" /></span></label>
+            <FormField label={<>توجيهات الصرف <span className="sub">اختيارية</span></>} wide><FieldBox><input value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="مثال: ربط الدفعة الثانية بالتقرير المرحلي" aria-label="توجيهات الصرف" /></FieldBox></FormField>
           )}
-          <label className="regf regf-w">
-            <span className="lb">نص القرار<b className="regf-r" aria-label="إلزامي">*</b></span>
-            <span className="fld"><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="نص القرار" /></span>
-          </label>
-          <label className="regf regf-w">
-            <span className="lb">ملاحظات {HOLDER_LABEL[s.body]} <span className="sub">اختيارية</span></span>
-            <span className="fld"><input value={extra} onChange={(e) => setExtra(e.target.value)} aria-label="ملاحظات على القرار" /></span>
-          </label>
+          <FormField label="نص القرار" required wide>
+            <FieldBox><input value={note} onChange={(e) => setNote(e.target.value)} aria-label="نص القرار" /></FieldBox>
+          </FormField>
+          <FormField label={<>ملاحظات {HOLDER_LABEL[s.body]} <span className="sub">اختيارية</span></>} wide>
+            <FieldBox><input value={extra} onChange={(e) => setExtra(e.target.value)} aria-label="ملاحظات على القرار" /></FieldBox>
+          </FormField>
           {[...why, ...said].length > 0 && <ul className="apv-sig">{[...new Set([...why, ...said])].map((w) => <li key={w} className="no"><Icon name={icons.alert} size="sm" /><span>{w}</span></li>)}</ul>}
-          <button
-            className={`btn ${outcome === 'reject' ? 'btn-d' : 'btn-p'}`}
+          <Button
+            variant={outcome === 'reject' ? 'd' : 'p'}
             disabled={!outcome || !note.trim() || why.length > 0 || (amtMoved && !amtWhy.trim()) || (benMoved && !benWhy.trim())}
             onClick={() => outcome && setSaid(decideInSession(s.id, p.id, outcome, note.trim(), me, outcome === 'return' ? target : undefined, needsPay && plan.trim() ? { note: plan.trim() } : undefined, amtMoved ? { to: amt, reason: amtWhy.trim() } : undefined,
               { benef: benMoved ? { to: ben, reason: benWhy.trim() } : undefined, note: extra.trim() || undefined }))}
           >
             سجّل قرار {HOLDER_LABEL[s.body]}
-          </button>
-          {!it.outcome && <button className="btn btn-ghost btn-sm" onClick={() => setAgenda(s.id, p.id, false)}>أخرجه من جدول الأعمال</button>}
+          </Button>
+          {!it.outcome && <Button variant="ghost" size="sm" onClick={() => setAgenda(s.id, p.id, false)}>أخرجه من جدول الأعمال</Button>}
         </div>
       ) : null}
     </Glass>

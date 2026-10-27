@@ -4,7 +4,7 @@ import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Tabs,
+import { ButtonLink, FormField, FieldBox, Button, Tabs,
   BackTo, DateText, DockWhy, Empty, FieldSelect, Glass, Head, Icon, KV, Money, Person, Riyal, StepArc, Tag, icons,
   type GateStep,
 } from '@/components/ui'
@@ -233,12 +233,10 @@ export default function BudgetOpPage() {
                 <Head title="بيانات الطلب" meta={<span className="sub"><bdi>{/* doc 1.3.1–1.3.3 */}</bdi></span>} />
                 {editable ? (
                   <div className="regfields">
-                    <label className="regf">
-                      <span className="lb">السنة المالية<b className="regf-r" aria-label="إلزامي">*</b></span>
+                    <FormField label="السنة المالية" required>
                       <FieldSelect value={f.yearId} label="السنة المالية" options={fiscalYears.map((y) => ({ value: y.id, label: y.name }))} onChange={(v) => setF((x) => ({ ...x, yearId: v, docId: '', fromId: undefined, toId: undefined }))} />
-                    </label>
-                    <label className="regf">
-                      <span className="lb">الميزانية<b className="regf-r" aria-label="إلزامي">*</b></span>
+                    </FormField>
+                    <FormField label="الميزانية" required>
                       <FieldSelect
                         value={f.docId}
                         label="الميزانية"
@@ -248,51 +246,44 @@ export default function BudgetOpPage() {
                         onChange={(v) => setF((x) => ({ ...x, docId: v, yearId: docOf(v)?.yearId ?? x.yearId, fromId: undefined, toId: undefined, source: undefined }))}
                       />
 
-                    </label>
-                    <div className="regf regf-w">
-                      <span className="lb">العملية<b className="regf-r" aria-label="إلزامي">*</b></span>
+                    </FormField>
+                    <FormField label="العملية" required wide as="div">
                       <div className="cfgchips" role="radiogroup" aria-label="العملية">
                         {KINDS.map((k) => (
-                          <button key={k} type="button" role="radio" aria-checked={f.kind === k} className={`cfgchip${f.kind === k ? ' on' : ''}`} onClick={() => setF((x) => ({ ...x, kind: k, fromId: k === 'increase' ? undefined : x.fromId, toId: k === 'decrease' ? undefined : x.toId }))}>
+                          <Button plain key={k} type="button" role="radio" aria-checked={f.kind === k} className={`cfgchip${f.kind === k ? ' on' : ''}`} onClick={() => setF((x) => ({ ...x, kind: k, fromId: k === 'increase' ? undefined : x.fromId, toId: k === 'decrease' ? undefined : x.toId }))}>
                             {REQ_KIND_SAY[k]}
-                          </button>
+                          </Button>
                         ))}
                       </div>
 
-                    </div>
+                    </FormField>
                     {f.kind !== 'increase' && (
-                      <label className="regf regf-w">
-                        <span className="lb">{f.kind === 'transfer' ? 'من البند' : 'البند'}<b className="regf-r" aria-label="إلزامي">*</b></span>
+                      <FormField label={f.kind === 'transfer' ? 'من البند' : 'البند'} required wide>
                         <FieldSelect value={f.fromId ?? ''} label="البند المنقول منه" searchAt={6} disabled={!doc} options={doc ? leaves(doc).map((n) => opt(doc, n.id)) : []} onChange={(v) => put('fromId', v)} />
-                      </label>
+                      </FormField>
                     )}
                     {f.kind !== 'decrease' && (
-                      <label className="regf regf-w">
-                        <span className="lb">{f.kind === 'transfer' ? 'إلى البند' : 'البند'}<b className="regf-r" aria-label="إلزامي">*</b></span>
+                      <FormField label={f.kind === 'transfer' ? 'إلى البند' : 'البند'} required wide>
                         <FieldSelect value={f.toId ?? ''} label="البند المنقول إليه" searchAt={6} disabled={!doc} options={doc ? leaves(doc).filter((n) => n.id !== f.fromId).map((n) => opt(doc, n.id)) : []} onChange={(v) => put('toId', v)} />
-                      </label>
+                      </FormField>
                     )}
-                    <label className="regf">
-                      <span className="lb">المبلغ<b className="regf-r" aria-label="إلزامي">*</b></span>
-                      <span className="fld">
+                    <FormField label="المبلغ" required>
+                      <FieldBox>
                         <input type="text" inputMode="numeric" value={f.amount ? nf.format(f.amount) : ''} onChange={(e) => put('amount', digits(e.target.value))} aria-label="مبلغ العملية" />
                         <Riyal />
-                      </span>
-                    </label>
+                      </FieldBox>
+                    </FormField>
                     {doc && docSources(doc).length > 1 && f.kind !== 'transfer' && (
-                      <label className="regf">
-                        <span className="lb">مصدر التمويل<b className="regf-r" aria-label="إلزامي">*</b></span>
+                      <FormField label="مصدر التمويل" required>
                         <FieldSelect value={f.source ?? ''} label="مصدر التمويل" options={docSources(doc).map((s) => ({ value: s.code, label: sourceName(s.code) }))} onChange={(v) => put('source', v)} />
-                      </label>
+                      </FormField>
                     )}
-                    <label className="regf regf-w">
-                      <span className="lb">سبب العملية<b className="regf-r" aria-label="إلزامي">*</b></span>
-                      <span className="fld fld-a">
+                    <FormField label="سبب العملية" required wide>
+                      <FieldBox area>
                         <textarea rows={3} value={f.reason} onChange={(e) => put('reason', e.target.value)} aria-label="سبب العملية" />
-                      </span>
-                    </label>
-                    <div className="regf regf-w">
-                      <span className="lb">المرفقات الداعمة{f.amount >= BUDGET_RULES.attachAbove && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
+                      </FieldBox>
+                    </FormField>
+                    <FormField label="المرفقات الداعمة" required={f.amount >= BUDGET_RULES.attachAbove} wide as="div">
                       {f.files.length > 0 && (
                         <ul className="eprq">
                           {f.files.map((file, i) => (
@@ -300,9 +291,9 @@ export default function BudgetOpPage() {
                               <Icon name={icons.clip} size="sm" />
                               <span className="eprq-b"><b>{file}</b></span>
                               <span className="pc-sp" />
-                              <button className="btn btn-ghost btn-sm" aria-label={`أزل ${file}`} onClick={() => put('files', f.files.filter((_, j) => j !== i))}>
+                              <Button variant="ghost" size="sm" aria-label={`أزل ${file}`} onClick={() => put('files', f.files.filter((_, j) => j !== i))}>
                                 <Icon name={icons.close} size="sm" />
-                              </button>
+                              </Button>
                             </li>
                           ))}
                         </ul>
@@ -313,7 +304,7 @@ export default function BudgetOpPage() {
                         <span>أرفق مستندًا داعمًا</span>
 
                       </label>
-                    </div>
+                    </FormField>
                   </div>
                 ) : existing && doc ? (
                   <KV rows={[
@@ -389,19 +380,19 @@ export default function BudgetOpPage() {
             <div className="rowf gp-2">
               {editable && (
                 <>
-                  <button className="btn btn-2" disabled={!f.docId} onClick={() => send(false)}>احفظ المسودة</button>
-                  <button className="btn btn-p" disabled={issues.length > 0} title={issues[0] ?? 'أرسل للاعتماد'} onClick={() => send(true)}>أرسل للاعتماد</button>
+                  <Button variant="2" disabled={!f.docId} onClick={() => send(false)}>احفظ المسودة</Button>
+                  <Button variant="p" disabled={issues.length > 0} title={issues[0] ?? 'أرسل للاعتماد'} onClick={() => send(true)}>أرسل للاعتماد</Button>
                 </>
               )}
               {myStep && existing && (
                 <>
-                  <button className="btn btn-p" disabled={execBlocked.length > 0} title={execBlocked[0]} onClick={() => setDecide('ok')}>{okSay(myStep, existing.amount)}</button>
-                  <button className="btn btn-2" onClick={() => setDecide('back')}>{STEP_SAY[myStep].back}</button>
-                  <button className="btn btn-d" onClick={() => setDecide('reject')}>ارفض الطلب</button>
+                  <Button variant="p" disabled={execBlocked.length > 0} title={execBlocked[0]} onClick={() => setDecide('ok')}>{okSay(myStep, existing.amount)}</Button>
+                  <Button variant="2" onClick={() => setDecide('back')}>{STEP_SAY[myStep].back}</Button>
+                  <Button variant="d" onClick={() => setDecide('reject')}>ارفض الطلب</Button>
                 </>
               )}
               {!editable && !myStep && (
-                <Link className="btn btn-2" to={ROUTES.budgetOps}>كل الطلبات</Link>
+                <ButtonLink variant="2" to={ROUTES.budgetOps}>كل الطلبات</ButtonLink>
               )}
             </div>
           </div>

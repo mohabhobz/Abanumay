@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FieldMultiSelect, Glass, Head, Num, Switch } from '@/components/ui'
+import { FieldBox, Button, FieldMultiSelect, Glass, Head, Num, Switch } from '@/components/ui'
 import { SaveBar } from '@/components/shell'
 import { CfgNum } from '@/features/settings/CfgEdit'
 import { STAFF_ROLES, type RoleKey } from '@/data/roles'
@@ -119,8 +119,8 @@ export function EntityRulesTab() {
           <li className="itk-sup">
             <span className="cfgl"><b>مواعيد التنبيه (أيام قبل الانتهاء)</b></span>
             <span className="pc-sp" />
-            <span className="fld"><input dir="ltr" value={d.expiryOffsets.join(', ')} aria-label="مواعيد التنبيه بالأيام"
-              onChange={(e) => put('expiryOffsets', e.target.value.split(/[,،\s]+/).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0))} /></span>
+            <FieldBox><input dir="ltr" value={d.expiryOffsets.join(', ')} aria-label="مواعيد التنبيه بالأيام"
+              onChange={(e) => put('expiryOffsets', e.target.value.split(/[,،\s]+/).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0))} /></FieldBox>
           </li>
           {([
             ['expiryText', 'نص التنبيه'],
@@ -130,7 +130,7 @@ export function EntityRulesTab() {
             <li key={k} className="itk-sup">
               <span className="cfgl"><b>{t}</b></span>
               <span className="pc-sp" />
-              <span className="fld"><input value={d[k]} aria-label={t} onChange={(e) => put(k, e.target.value)} /></span>
+              <FieldBox><input value={d[k]} aria-label={t} onChange={(e) => put(k, e.target.value)} /></FieldBox>
             </li>
           ))}
         </ul>
@@ -138,7 +138,7 @@ export function EntityRulesTab() {
 
       <Glass>
         <Head title="بيانات العرض التجريبي" />
-        <button type="button" className="btn btn-2" onClick={resetEntities}>أعد ضبط بيانات الجهات</button>
+        <Button type="button" variant="2" onClick={resetEntities}>أعد ضبط بيانات الجهات</Button>
       </Glass>
 
       {dirty && (

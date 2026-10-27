@@ -1,3 +1,4 @@
+import { Button } from './Button'
 import { useId, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
@@ -17,7 +18,7 @@ export function Hint({ text }: { text: ReactNode }) {
   }
   return (
     <>
-      <button
+      <Button plain
         ref={ref}
         type="button"
         className="hint"
@@ -30,7 +31,7 @@ export function Hint({ text }: { text: ReactNode }) {
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (at) setAt(null); else show() }}
       >
         <Icon name={icons.info} size="sm" />
-      </button>
+      </Button>
       {at && createPortal(
         <span id={id} role="tooltip" className="hint-tip" style={{ left: at.x, top: at.y }}>{text}</span>,
         document.body,

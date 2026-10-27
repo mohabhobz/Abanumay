@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FieldSelect, Icon, Mono, Tag, icons } from '@/components/ui'
+import { ButtonLabel, FormField, FieldBox, Button, FieldSelect, Icon, Mono, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { entityRows } from '@/data/mock/entities'
 import { ENTITY_RULES } from '@/data/entities/rules'
 import { relinkEntity, relinksOf, useEntityFlow } from '@/data/entities/store'
 import { meOf, readRole } from '@/data/roles'
 import { readDateTime } from '@/lib/format'
-import { Modal } from './SelectionActions'
+import { SheetModal } from './SelectionActions'
 
 /* v3 · 2.4.10 · 2.4.11 · moving a project to another entity.
 
@@ -23,7 +23,7 @@ export function RelinkEntityButton({ projectId, entityId, projectName }: { proje
   if (!ENTITY_RULES.relinkEntityBy.includes(role)) return null
   return (
     <>
-      <button type="button" className="lnk" onClick={() => setOpen(true)}>تعديل الجهة</button>
+      <Button plain type="button" className="lnk" onClick={() => setOpen(true)}>تعديل الجهة</Button>
       {open && <RelinkModal projectId={projectId} entityId={entityId} projectName={projectName} onClose={() => setOpen(false)} />}
     </>
   )
@@ -39,32 +39,29 @@ function RelinkModal({ projectId, entityId, projectName, onClose }: { projectId:
     .map((e) => ({ value: e.id, label: `${e.name} · ${e.licenseNo}${e.activation === 'نشط' ? '' : ` · ${e.activation}`}` }))
   const target = entityRows.find((e) => e.id === to)
   return (
-    <Modal wide title={`تعديل الجهة المرتبطة · ${projectName}`} icon={icons.edit} onClose={onClose}
+    <SheetModal wide title={`تعديل الجهة المرتبطة · ${projectName}`} icon={icons.edit} onClose={onClose}
       foot={<>
-        <button className="btn btn-p" disabled={!to || !reason.trim()} onClick={() => { relinkEntity(projectId, to, reason.trim(), me, file || undefined); onClose() }}>انقل المشروع</button>
-        <button className="btn btn-2" onClick={onClose}>تراجع</button>
+        <Button variant="p" disabled={!to || !reason.trim()} onClick={() => { relinkEntity(projectId, to, reason.trim(), me, file || undefined); onClose() }}>انقل المشروع</Button>
+        <Button variant="2" onClick={onClose}>تراجع</Button>
       </>}>
       <p>الجهة الحالية: <b>{from?.name ?? entityId}</b> <Mono>{from?.licenseNo}</Mono></p>
-      <div className="regf">
-        <span className="lb">الجهة الصحيحة<b className="regf-r" aria-label="إلزامي">*</b></span>
+      <FormField label="الجهة الصحيحة" required as="div">
         <FieldSelect value={to} options={opts} onChange={setTo} label="الجهة الصحيحة" placeholder="اختر الجهة" />
-      </div>
+      </FormField>
       {target && target.activation !== 'نشط' && <p className="bad cnote">حساب الجهة المختارة «{target.activation}» · لا صرف لحساب غير نشط.</p>}
-      <label className="regf">
-        <span className="lb">السبب<b className="regf-r" aria-label="إلزامي">*</b></span>
-        <span className="fld"><input value={reason} onChange={(x) => setReason(x.target.value)} aria-label="سبب تعديل الجهة" /></span>
-      </label>
-      <div className="regf">
-        <span className="lb">مستند داعم</span>
+      <FormField label="السبب" required>
+        <FieldBox><input value={reason} onChange={(x) => setReason(x.target.value)} aria-label="سبب تعديل الجهة" /></FieldBox>
+      </FormField>
+      <FormField label="مستند داعم" as="div">
         <span className="apv-row">
-          <label className="btn btn-2 btn-sm">
+          <ButtonLabel variant="2" size="sm">
             <Icon name={icons.upload} size="sm" />{file ? 'استبدل الملف' : 'ارفع الملف'}
             <input className="vis-h" type="file" aria-label="مستند داعم" onChange={(x) => { const f = x.target.files?.[0]; if (f) setFile(f.name); x.target.value = '' }} />
-          </label>
+          </ButtonLabel>
           {file ? <Tag tone="ok">{file}</Tag> : <span className="sub">اختياري</span>}
         </span>
-      </div>
-    </Modal>
+      </FormField>
+    </SheetModal>
   )
 }
 

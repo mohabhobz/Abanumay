@@ -1,5 +1,7 @@
+import { FormField, FieldBox } from './FormField'
+import { Modal, ModalHead } from './Modal'
+import { Button } from './Button'
 import { useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
 import { icons } from './icons'
 import { DateField } from './DateField'
@@ -65,10 +67,8 @@ export function EditModal({ title, fields, onClose, onSave, note }: EditModalPro
     if (out.length) setBad(out)
     else onClose()
   }
-  return createPortal(
-    <div className="bmask" role="presentation" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
-      <div className="chrome modal modal-w" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <div className="mh"><Icon name={icons.edit} size="md" /><b>{title}</b></div>
+  return <Modal label={title} onClose={onClose} className="modal-w" escape>
+        <ModalHead icon={icons.edit} title={title} />
         <div className="mb col">
           {note && <p className="sub cnote">{note}</p>}
           <div className="regfields">
@@ -76,11 +76,9 @@ export function EditModal({ title, fields, onClose, onSave, note }: EditModalPro
               const v = vals[f.key] ?? ''
               const k = f.kind ?? 'text'
               const opts = f.dependsOn ? f.dependsOn.options(String(vals[f.dependsOn.key] ?? '')) : f.options ?? []
-              const lb = <span className="lb">{f.label}{f.required && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
               const wide = k === 'textarea' || k === 'lines'
               return (
-                <div key={f.key} className={`regf${wide ? ' regf-w' : ''}`}>
-                  {lb}
+                <FormField key={f.key} as="div" wide={wide} label={f.label} required={f.required}>
                   {k === 'select' ? (
                     <FieldSelect value={String(v)} options={opts} onChange={(x) => set(f.key, x)} label={f.label}
                       disabled={Boolean(f.dependsOn) && !vals[f.dependsOn!.key]} placeholder={f.dependsOn && !vals[f.dependsOn.key] ? 'اختر أولًا ما يسبقه' : 'اختر'} />
@@ -89,39 +87,35 @@ export function EditModal({ title, fields, onClose, onSave, note }: EditModalPro
                   ) : k === 'date' ? (
                     <DateField value={String(v)} onChange={(x) => set(f.key, x)} label={f.label} />
                   ) : wide ? (
-                    <span className="fld fld-a"><textarea rows={k === 'lines' ? 4 : 3} value={String(v)} onChange={(e) => set(f.key, e.target.value)} aria-label={f.label} /></span>
+                    <FieldBox area><textarea rows={k === 'lines' ? 4 : 3} value={String(v)} onChange={(e) => set(f.key, e.target.value)} aria-label={f.label} /></FieldBox>
                   ) : (
-                    <span className="fld"><input value={String(v)} dir={LTR.includes(k) ? 'ltr' : undefined} inputMode={k === 'tel' || k === 'digits' || k === 'number' ? 'numeric' : undefined}
-                      onChange={(e) => set(f.key, k === 'digits' || k === 'number' ? e.target.value.replace(/[^\d]/g, '') : e.target.value)} aria-label={f.label} /></span>
+                    <FieldBox><input value={String(v)} dir={LTR.includes(k) ? 'ltr' : undefined} inputMode={k === 'tel' || k === 'digits' || k === 'number' ? 'numeric' : undefined}
+                      onChange={(e) => set(f.key, k === 'digits' || k === 'number' ? e.target.value.replace(/[^\d]/g, '') : e.target.value)} aria-label={f.label} /></FieldBox>
                   )}
                   {(f.hint || k === 'lines') && <span className="sub regf-h">{f.hint ?? 'سطر لكل بند'}</span>}
-                </div>
+                </FormField>
               )
             })}
           </div>
-          <label className="regf regf-w">
-            <span className="lb">سبب التعديل</span>
-            <span className="fld"><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التعديل" placeholder="اختياري · يُسجَّل مع التعديل في السجل" /></span>
-          </label>
+          <FormField label="سبب التعديل" wide>
+            <FieldBox><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التعديل" placeholder="اختياري · يُسجَّل مع التعديل في السجل" /></FieldBox>
+          </FormField>
           {bad.map((b) => <p key={b} className="bad cnote" role="alert">{b}</p>)}
         </div>
         <div className="mf">
-          <button type="button" className="btn btn-p" disabled={!changes.length} title={changes.length ? undefined : 'لم يتغيّر شيء'} onClick={save}>
+          <Button type="button" variant="p" disabled={!changes.length} title={changes.length ? undefined : 'لم يتغيّر شيء'} onClick={save}>
             احفظ التعديل{changes.length ? ` · ${changes.length}` : ''}
-          </button>
-          <button type="button" className="btn btn-2" onClick={onClose}>تراجع</button>
+          </Button>
+          <Button type="button" variant="2" onClick={onClose}>تراجع</Button>
         </div>
-      </div>
-    </div>,
-    document.body,
-  )
+      </Modal>
 }
 
 /** The section's «تعديل» · sits in the section's head */
 export function EditButton({ onClick, label = 'تعديل', title }: { onClick: () => void; label?: string; title?: string }) {
   return (
-    <button type="button" className="btn btn-2 btn-sm" onClick={onClick} title={title}>
+    <Button type="button" variant="2" size="sm" onClick={onClick} title={title}>
       <Icon name={icons.edit} size="sm" />{label}
-    </button>
+    </Button>
   )
 }

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { payHref } from '@/features/agreements/ScheduleEditor'
-import { DateText, Empty, Glass, Head, Icon, Money, Mono, Num, Steps, Tag, icons } from '@/components/ui'
+import { Button, DateText, Empty, Glass, Head, Icon, Money, Mono, Num, Steps, Tag, icons } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { DocFile } from '@/components/docs'
 import type { AgreementDetail, PaymentDetail } from '@/data/mock/detail'
@@ -56,20 +56,20 @@ export function AgreementTab({
           actions={
             <>
               {onStart && (
-                <button
-                  className="btn btn-p"
+                <Button
+                  variant="p"
                   disabled={Boolean(startBlocked)}
                   title={startBlocked || 'ابدأ إعداد الاتفاقية'}
                   onClick={onStart}
                 >
                   <Icon name={icons.plus} size="sm" />
                   ابدأ إعداد الاتفاقية
-                </button>
+                </Button>
               )}
               {example && onOpenExample && (
-                <button className="btn btn-2" onClick={() => onOpenExample(example.id)}>
+                <Button variant="2" onClick={() => onOpenExample(example.id)}>
                   اعرض اتفاقية مشروع بلغ هذه المرحلة
-                </button>
+                </Button>
               )}
             </>
           }
@@ -112,10 +112,10 @@ export function AgreementTab({
         <div className="rowf" style={{ gap: 'var(--sp-3)', marginTop: 'var(--sp-5)' }}>
           <DocFile name="الاتفاقية.pdf" meta={A.no} />
           {/* Used to be a button with no action — now it opens the browser's print dialog. */}
-          <button className="btn btn-2 btn-sm" onClick={() => window.print()}>
+          <Button variant="2" size="sm" onClick={() => window.print()}>
             <Icon name={icons.doc} size="sm" />
             اطبع الاتفاقية
-          </button>
+          </Button>
         </div>
       </Glass>
 

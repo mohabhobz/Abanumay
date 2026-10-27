@@ -1,7 +1,7 @@
 import { accountSay } from '@/data/shared/decisions'
 import { Link, useNavigate } from 'react-router-dom'
 import { rowGo } from '@/lib/rowGo'
-import { EntityMark, Icon, icons, Money, Mono, Tag } from '@/components/ui'
+import { ButtonLink, EntityMark, Icon, icons, Money, Mono, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { ENTITY_DOCS_TOTAL } from '@/data/repository'
 import { activationTone } from '@/lib/tone'
@@ -73,7 +73,7 @@ export function EntityCard({ row }: { row: EntityRow }) {
             <Money sm>{row.grantedTotal}</Money>
           </span>
         </div>
-        <Link className="btn btn-2 btn-sm" to={ROUTES.entity(row.id)}>ملف الجهة</Link>
+        <ButtonLink variant="2" size="sm" to={ROUTES.entity(row.id)}>ملف الجهة</ButtonLink>
       </div>
     </article>
   )

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { BackTo, Glass, Head, Num, Select, Tabs, Tag } from '@/components/ui'
+import { FieldBox, Button, BackTo, Glass, Head, Num, Select, Tabs, Tag } from '@/components/ui'
 import { useRole } from '@/hooks/useRole'
 import { CLOSE_RULES, EVAL_CRITERIA_DEFAULT, MATRIX_SAY, RELEASE_SAY, saveCloseRules, useClosing, type CloseRules, type EvalCriterion, type MatrixKey, type MatrixRule } from '@/data/closing/store'
 import { MoneyField } from '@/components/ui'
@@ -161,7 +161,7 @@ function ReleasePolicy() {
           options={(Object.keys(RELEASE_SAY) as CloseRules['releaseMode'][]).map((k) => ({ value: k, label: RELEASE_SAY[k] }))}
           onChange={(v) => { setMode((v as CloseRules['releaseMode']) ?? 'once'); setSaved(false) }}
         />
-        <button type="button" className="btn btn-2 btn-sm" disabled={!may || mode === CLOSE_RULES.releaseMode} onClick={() => { saveCloseRules({ releaseMode: mode }, user.name); setSaved(true) }}>احفظ السياسة</button>
+        <Button type="button" variant="2" size="sm" disabled={!may || mode === CLOSE_RULES.releaseMode} onClick={() => { saveCloseRules({ releaseMode: mode }, user.name); setSaved(true) }}>احفظ السياسة</Button>
       </div>
       {saved && <p className="ok-ink cnote">حُفظت السياسة</p>}
     </Glass>
@@ -202,7 +202,7 @@ function MatrixTab() {
       </table>
       {may && (
         <div className="act-a">
-          <button type="button" className="btn btn-p btn-sm" onClick={() => { saveCloseRules({ ...CLOSE_RULES, matrix: rows }, user.name); setSaved(true) }}>احفظ المصفوفة</button>
+          <Button type="button" variant="p" size="sm" onClick={() => { saveCloseRules({ ...CLOSE_RULES, matrix: rows }, user.name); setSaved(true) }}>احفظ المصفوفة</Button>
         </div>
       )}
       {saved && <p className="ok-ink cnote">حُفظت المصفوفة · تسري على القرارات القادمة</p>}
@@ -229,17 +229,17 @@ function CriteriaTab() {
           {list.map((x, i) => (
             <tr key={x.key}>
               <td>{x.label}</td>
-              <td className="n"><span className="fld"><input className="num" inputMode="numeric" disabled={!may} value={String(x.weight)} aria-label={`وزن ${x.label}`} onChange={(e) => { const w = Number(e.target.value.replace(/\D/g, '')) || 0; setList((l) => l.map((y, j) => (j === i ? { ...y, weight: w } : y))); setSaved(false) }} /></span></td>
-              <td>{may && list.length > 1 && <button type="button" className="btn btn-2 btn-sm" onClick={() => { setList((l) => l.filter((_, j) => j !== i)); setSaved(false) }}>احذف</button>}</td>
+              <td className="n"><FieldBox><input className="num" inputMode="numeric" disabled={!may} value={String(x.weight)} aria-label={`وزن ${x.label}`} onChange={(e) => { const w = Number(e.target.value.replace(/\D/g, '')) || 0; setList((l) => l.map((y, j) => (j === i ? { ...y, weight: w } : y))); setSaved(false) }} /></FieldBox></td>
+              <td>{may && list.length > 1 && <Button type="button" variant="2" size="sm" onClick={() => { setList((l) => l.filter((_, j) => j !== i)); setSaved(false) }}>احذف</Button>}</td>
             </tr>
           ))}
         </tbody>
       </table>
       {may && (
         <div className="apv-row mt-2">
-          <span className="fld"><input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="سؤال جديد" aria-label="سؤال تقييم جديد" /></span>
-          <button type="button" className="btn btn-2 btn-sm" disabled={!label.trim()} onClick={() => { setList((l) => [...l, { key: `q${Date.now().toString(36)}`, label: label.trim(), weight: 10 }]); setLabel(''); setSaved(false) }}>أضف السؤال</button>
-          <button type="button" className="btn btn-p btn-sm" disabled={!total} onClick={() => { saveCloseRules({ ...CLOSE_RULES, evalCriteria: list }, user.name); setSaved(true) }}>احفظ الأسئلة</button>
+          <FieldBox><input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="سؤال جديد" aria-label="سؤال تقييم جديد" /></FieldBox>
+          <Button type="button" variant="2" size="sm" disabled={!label.trim()} onClick={() => { setList((l) => [...l, { key: `q${Date.now().toString(36)}`, label: label.trim(), weight: 10 }]); setLabel(''); setSaved(false) }}>أضف السؤال</Button>
+          <Button type="button" variant="p" size="sm" disabled={!total} onClick={() => { saveCloseRules({ ...CLOSE_RULES, evalCriteria: list }, user.name); setSaved(true) }}>احفظ الأسئلة</Button>
         </div>
       )}
       {saved && <p className="ok-ink cnote">حُفظت · تسري على التقييمات الجديدة</p>}

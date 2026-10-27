@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { Icon, icons } from '@/components/ui'
+import { Button, Icon, icons } from '@/components/ui'
 import { EvidenceBlock } from './EvidenceBlock'
 import { md } from './md'
 import type { AiMessageModel } from './types'
@@ -46,7 +46,7 @@ export function AiMessage({
     <div className="cmsg ai">
       {message.think.length > 0 && (
         <div className={`think${thinking ? ' live' : ''}`}>
-          <button className="th-head" onClick={() => setOpenThink((v) => !v)}>
+          <Button plain className="th-head" onClick={() => setOpenThink((v) => !v)}>
             {/* One breath when the answer finishes, then stillness. */}
             <AbLeaf className={`aispark th-spark${done ? ' breath' : ''}`} />
             <span>{thinking ? 'يفكّر' : `فكّر في ${message.think.length} خطوات`}</span>
@@ -56,7 +56,7 @@ export function AiMessage({
             {/* An explicit icon instead of rotating the chevron — the rotation direction was
                 reversed, and "up/down" should read the same in code as it looks on screen. */}
             <Icon name={openThink ? icons.chevronUp : icons.chevronDown} size="sm" />
-          </button>
+          </Button>
 
           {openThink && (
             <div className="th-body">
@@ -102,28 +102,28 @@ export function AiMessage({
       {done && (
         <div className="cact rise">
           {message.actions?.map((a) => (
-            <button type="button" className={`btn ${a.kind} btn-sm`} key={a.label} onClick={() => onFollow(a.label)}>{a.label}</button>
+            <Button plain type="button" className={`btn ${a.kind} btn-sm`} key={a.label} onClick={() => onFollow(a.label)}>{a.label}</Button>
           ))}
           <span className="cact-sp" />
-          <button className="iact" onClick={copy} title="نسخ" aria-label="نسخ">
+          <Button plain className="iact" onClick={copy} title="نسخ" aria-label="نسخ">
             <Icon name={copied ? icons.check : icons.copy} size="sm" />
-          </button>
-          <button type="button" className="iact" title="أعد توليد الإجابة" aria-label="أعد توليد الإجابة" onClick={() => onFollow('أعد صياغة الإجابة السابقة بطريقة أوضح')}>
+          </Button>
+          <Button plain type="button" className="iact" title="أعد توليد الإجابة" aria-label="أعد توليد الإجابة" onClick={() => onFollow('أعد صياغة الإجابة السابقة بطريقة أوضح')}>
             <Icon name={icons.redo} size="sm" />
-          </button>
-          <button type="button" className={`iact${rated === 'up' ? ' on' : ''}`} aria-pressed={rated === 'up'} title="إجابة مفيدة" aria-label="إجابة مفيدة" onClick={() => rate('up')}>
+          </Button>
+          <Button plain type="button" className={`iact${rated === 'up' ? ' on' : ''}`} aria-pressed={rated === 'up'} title="إجابة مفيدة" aria-label="إجابة مفيدة" onClick={() => rate('up')}>
             <Icon name={icons.up} size="sm" />
-          </button>
-          <button type="button" className={`iact${rated === 'down' ? ' on' : ''}`} aria-pressed={rated === 'down'} title="إجابة غير مفيدة" aria-label="إجابة غير مفيدة" onClick={() => rate('down')}>
+          </Button>
+          <Button plain type="button" className={`iact${rated === 'down' ? ' on' : ''}`} aria-pressed={rated === 'down'} title="إجابة غير مفيدة" aria-label="إجابة غير مفيدة" onClick={() => rate('down')}>
             <Icon name={icons.downv} size="sm" />
-          </button>
+          </Button>
         </div>
       )}
 
       {done && message.follow && message.follow.length > 0 && (
         <div className="chips rise mt-4">
           {message.follow.map((f) => (
-            <button className="chip" key={f} onClick={() => onFollow(f)}>{f}</button>
+            <Button plain className="chip" key={f} onClick={() => onFollow(f)}>{f}</Button>
           ))}
         </div>
       )}

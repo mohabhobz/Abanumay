@@ -4,7 +4,7 @@ import { textIssues } from '@/lib/textCheck'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BackTo, CopyId, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, DockWhy,
+  Button, BackTo, CopyId, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, DockWhy,
   DateText,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
@@ -346,8 +346,8 @@ export default function RegisterPage() {
   const nav = (
     <div className="rowf gp-2">
       {phase === 'terms' && (
-        <button
-          className="btn btn-p"
+        <Button
+          variant="p"
           disabled={!agreed}
           title={agreed ? 'تابع إلى إنشاء حساب الجهة' : 'أقرّ بالضوابط أولًا'}
           /* Note: the guardrails lead to the account screen, not the form - the account is the
@@ -355,7 +355,7 @@ export default function RegisterPage() {
           onClick={() => navigate(ROUTES.entityRegisterAccount)}
         >
           تابع إلى إنشاء الحساب
-        </button>
+        </Button>
       )}
 
       {phase === 'form' && (
@@ -363,16 +363,16 @@ export default function RegisterPage() {
           {/* Rule 12 · a draft is saved against the account created before the form, so its owner
               comes back to it from the account screen (2.2.5 · 2.4.12) */}
           {(inside || regAccount.email) && (
-            <button className="btn btn-2" onClick={saveDraft} title="يُحفظ على حساب الجهة ويُستكمل في أي وقت">
+            <Button variant="2" onClick={saveDraft} title="يُحفظ على حساب الجهة ويُستكمل في أي وقت">
               احفظ مسودة
-            </button>
+            </Button>
           )}
 
           {/* Note: "Previous" is present and disabled on the first step, not hidden - a button that
               appears and disappears makes "Next"'s position jump between steps, forcing the hand to
               search for it each time. */}
-          <button
-            className="btn btn-2"
+          <Button
+            variant="2"
             disabled={first}
             title={first ? 'هذه أول خطوة' : `ارجع إلى ${FORM_STAGES[at - 1].label}`}
             onClick={() => go(-1)}
@@ -380,26 +380,26 @@ export default function RegisterPage() {
             {/* In RTL, the chevron points right - `chevronBack` draws it. */}
             <Icon name={icons.chevronBack} size="sm" />
             السابق
-          </button>
+          </Button>
 
           {/* Note: "Next" doesn't lock on missing fields. Rule 4 blocks submission on gaps, not
               navigation, and the entity fills the form over multiple visits and comes back. Only
               submission locks, and the reason is stated. */}
           {!last ? (
-            <button
-              className="btn btn-p"
+            <Button
+              variant="p"
               title={`انتقل إلى ${FORM_STAGES[at + 1].label}`}
               onClick={() => go(1)}
             >
               التالي
               <Icon name={icons.chevron} size="sm" />
-            </button>
+            </Button>
           ) : (
             /* v3 · 2.2.7 · 2.7.1 · send stops while a required item is missing (a setting ·
                on by default) or the license clashes with a registered entity · the title and the
                dock counter say what is left */
-            <button
-              className="btn btn-p"
+            <Button
+              variant="p"
               disabled={blocked}
               title={
                 blocked
@@ -413,7 +413,7 @@ export default function RegisterPage() {
               onClick={() => { idOf(); setPhase('otp') }}
             >
               أرسل الطلب
-            </button>
+            </Button>
           )}
         </>
       )}
@@ -424,12 +424,12 @@ export default function RegisterPage() {
           no access to - they return to the login page to await their credentials. */}
       {phase === 'sent' && (
         inside
-          ? <button className="btn btn-2" onClick={() => navigate(ROUTES.entityRequests)}>
+          ? <Button variant="2" onClick={() => navigate(ROUTES.entityRequests)}>
               افتح صندوق الطلبات
-            </button>
-          : <button className="btn btn-2" onClick={() => navigate(ROUTES.login)}>
+            </Button>
+          : <Button variant="2" onClick={() => navigate(ROUTES.login)}>
               العودة إلى صفحة الدخول
-            </button>
+            </Button>
       )}
     </div>
   )
@@ -456,9 +456,9 @@ export default function RegisterPage() {
                 <span className="sub">مؤسسة سليمان أبانمي الأهلية</span>
               </div>
               <span className="pc-sp" />
-              <button className="btn btn-2 btn-sm" onClick={() => navigate(ROUTES.login)}>
+              <Button variant="2" size="sm" onClick={() => navigate(ROUTES.login)}>
                 لديك حساب؟ سجّل الدخول
-              </button>
+              </Button>
             </div>
           )}
 
@@ -633,13 +633,13 @@ export default function RegisterPage() {
                                         block
                                         download={false}
                                       />
-                                      <button
-                                        className="btn btn-ghost btn-sm"
+                                      <Button
+                                        variant="ghost" size="sm"
                                         onClick={() => clearDoc(d.key)}
                                       >
                                         <Icon name={icons.close} size="sm" />
                                         أزل الملف
-                                      </button>
+                                      </Button>
                                     </div>
                                   ) : (
                                     <>
@@ -705,7 +705,7 @@ export default function RegisterPage() {
                       {s.fields.filter((f) => f.kind === 'text').flatMap((f) => textIssues(val[f.key] ?? '').map((x, i) => (
                         <p key={`${f.key}-${i}`} className="sub cnote">
                           <b>{f.label}</b>: {x.say}
-                          {x.fixed !== undefined && <> · <button type="button" className="lnk" onClick={() => setField(f.key, x.fixed!)}>صحّح إلى «{x.fixed}»</button></>}
+                          {x.fixed !== undefined && <> · <Button plain type="button" className="lnk" onClick={() => setField(f.key, x.fixed!)}>صحّح إلى «{x.fixed}»</Button></>}
                         </p>
                       )))}
                       {s.key === 'id' && clash && (

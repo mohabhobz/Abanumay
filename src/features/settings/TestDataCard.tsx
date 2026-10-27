@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FieldSelect, Glass, Head, Tag } from '@/components/ui'
+import { FieldBox, Button, FieldSelect, Glass, Head, Tag } from '@/components/ui'
 import { toast } from '@/data/feedback'
 import { useRole } from '@/hooks/useRole'
 import { entityById } from '@/data/mock/entities'
@@ -48,8 +48,8 @@ export function TestDataCard() {
       {admin && (
         <div className="apv-row mt-2">
           <FieldSelect label="النوع" value={kind} options={(Object.keys(TEST_KIND_SAY) as TestKind[]).map((v) => ({ value: v, label: TEST_KIND_SAY[v] }))} onChange={(v) => setKind(v as TestKind)} />
-          <span className="fld"><input value={id} onChange={(e) => setId(e.target.value)} aria-label="رقم السجل التجريبي" placeholder={kind === 'entity' ? 'رقم الجهة' : 'رقم المشروع'} /></span>
-          <button type="button" className="btn btn-2" onClick={add}>علّمه تجريبيًا</button>
+          <FieldBox><input value={id} onChange={(e) => setId(e.target.value)} aria-label="رقم السجل التجريبي" placeholder={kind === 'entity' ? 'رقم الجهة' : 'رقم المشروع'} /></FieldBox>
+          <Button type="button" variant="2" onClick={add}>علّمه تجريبيًا</Button>
         </div>
       )}
       {flagged.length > 0 ? (
@@ -60,7 +60,7 @@ export function TestDataCard() {
               <span className="sub">{nameOf(k, x)}</span>
               <span className="pc-sp" />
               <Tag tone="mute">تجريبي</Tag>
-              {admin && <button type="button" className="btn btn-ghost btn-sm" onClick={() => drop(k, x)}>أعده للإنتاج</button>}
+              {admin && <Button type="button" variant="ghost" size="sm" onClick={() => drop(k, x)}>أعده للإنتاج</Button>}
             </li>
           ))}
         </ul>

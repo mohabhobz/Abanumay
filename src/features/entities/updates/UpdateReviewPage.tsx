@@ -2,8 +2,8 @@ import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { accountLine, accountSay } from '@/data/shared/decisions'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { BankGrid, BankCard, StopsPopup, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tabs, Tag, blockerCount, type Blocker } from '@/components/ui'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ButtonLink, FormField, Button, BankGrid, BankCard, StopsPopup, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tabs, Tag, blockerCount, type Blocker } from '@/components/ui'
 import { DocList } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -66,7 +66,7 @@ export default function UpdateReviewPage() {
             <Crumbs items={[{ label: 'الجهات', to: ROUTES.entities }, { label: 'طلبات التحديث', to: ROUTES.entityUpdates }]} />
             <Glass>
               <Empty title="الطلب غير موجود."
-                actions={<button className="btn btn-2" onClick={() => navigate(ROUTES.entityUpdates)}>العودة إلى طلبات التحديث</button>} />
+                actions={<Button variant="2" onClick={() => navigate(ROUTES.entityUpdates)}>العودة إلى طلبات التحديث</Button>} />
             </Glass>
           </div>
         </div>
@@ -178,15 +178,14 @@ export default function UpdateReviewPage() {
                           {!ibanValid(b.iban) && <span className="bad">الآيبان غير صحيح</span>}
                           <DocList label={`وثيقة ${b.bankName}`} rows={[{ name: b.doc || 'وثيقة الحساب البنكي.pdf', uploaded: Boolean(b.doc), required: true }]} />
                           {open && (
-                            <label className="regf">
-                              <span className="lb">قرار الحساب</span>
+                            <FormField label="قرار الحساب">
                               <FieldSelect
                                 value={bankNo[b.id] ?? ''}
                                 options={[{ value: '', label: 'الحساب مقبول' }, ...BANK_REJECTS.map((x) => ({ value: x, label: `مرفوض · ${x}` }))]}
                                 onChange={(x) => setBankNo((m) => ({ ...m, [b.id]: x }))}
                                 label={`قرار الحساب ${i + 1}`}
                               />
-                            </label>
+                            </FormField>
                           )}
                         </BankCard>
                       )
@@ -229,9 +228,9 @@ export default function UpdateReviewPage() {
                     { k: 'صلاحية التقديم', v: e.canApply ? 'مفعّلة' : 'موقوفة حتى القرار' },
                     { k: 'نهاية الترخيص', v: <DateText>{e.licenseEndsAt}</DateText> },
                   ]} />
-                  <Link className="btn btn-2 btn-sm" to={ROUTES.entity(e.id, 'requests')}>
+                  <ButtonLink variant="2" size="sm" to={ROUTES.entity(e.id, 'requests')}>
                     <Icon name={icons.entity} size="sm" /> ملف الجهة وطلباتها
-                  </Link>
+                  </ButtonLink>
                 </Glass>
               )}
 
@@ -303,21 +302,21 @@ export default function UpdateReviewPage() {
                     </label>
                   )}
                   <div className="rowf gp-2">
-                    <button className="btn btn-2" onClick={() => setAsk('return')}>
+                    <Button variant="2" onClick={() => setAsk('return')}>
                       إعادة للاستكمال
-                    </button>
-                    <button className="btn btn-d" onClick={() => setAsk('reject')}>
+                    </Button>
+                    <Button variant="d" onClick={() => setAsk('reject')}>
                       رفض التحديث
-                    </button>
-                    <button
-                      className="btn btn-p"
+                    </Button>
+                    <Button
+                      variant="p"
                       title={blocked ? 'يفتح ما يمنع الاعتماد' : 'تُطبَّق التعديلات وتُحفظ القيم السابقة في سجل الجهة'}
                       onClick={() => { if (blocked) { setStopOpen(true); return } decideUpdate(u.id, 'approve', '', me, bankNo) }}
                     >
                       اعتماد وتطبيق
-                    </button>
+                    </Button>
                   </div>
-                  {nStop > 0 && <button type="button" className="lnk" onClick={() => setStopOpen(true)}>ما يمنع الاعتماد · <Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)}</button>}
+                  {nStop > 0 && <Button plain type="button" className="lnk" onClick={() => setStopOpen(true)}>ما يمنع الاعتماد · <Num>{nStop}</Num> {nounAfter(nStop, STOP_NOUN)}</Button>}
                 </div>
               </>
             )}

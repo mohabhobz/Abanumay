@@ -1,4 +1,3 @@
-import { createPortal } from 'react-dom'
 import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { Related } from '@/components/related/Related'
@@ -7,8 +6,8 @@ import { useMemo, useRef, useState } from 'react'
 import { forecastPlan } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TONE } from '@/lib/tone'
-import { DockActions,
-  BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, StepArc, Tabs, Tag,
+import { ButtonLink, FormField, FieldBox, Modal, ModalHead, Button, DockActions,
+  BackTo, DateText, Empty, Glass, Head, KV, Money, Mono, Num, StepArc, Tabs, Tag,
   icons, type GateStep,
 } from '@/components/ui'
 import { AnalysisCard } from '@/components/assistant/AnalysisCard'
@@ -136,9 +135,9 @@ export default function PlanPage() {
               <Empty
                 title="لا توجد خطة بهذا الرقم."
                 actions={
-                  <button className="btn btn-2" onClick={() => navigate(ROUTES.plans)}>
+                  <Button variant="2" onClick={() => navigate(ROUTES.plans)}>
                     العودة إلى صندوق الخطط
-                  </button>
+                  </Button>
                 }
               />
             </Glass>
@@ -316,7 +315,7 @@ export default function PlanPage() {
 
           {canDraft && (
             <Glass>
-              <Head title={p.stage === 'returned' ? 'الخطة مُعادة للتعديل' : 'مسودة الخطة'} meta={<Link className="btn btn-p btn-sm" to={`${ROUTES.planEdit(p.id)}${asEntity ? '?as=entity' : ''}`}>{p.stage === 'returned' ? 'عدّل الخطة' : 'حرّر الخطة'}</Link>} />
+              <Head title={p.stage === 'returned' ? 'الخطة مُعادة للتعديل' : 'مسودة الخطة'} meta={<ButtonLink variant="p" size="sm" to={`${ROUTES.planEdit(p.id)}${asEntity ? '?as=entity' : ''}`}>{p.stage === 'returned' ? 'عدّل الخطة' : 'حرّر الخطة'}</ButtonLink>} />
               {p.note && <p className="sub cnote">{isolate(p.note)}</p>}
             </Glass>
           )}
@@ -414,8 +413,8 @@ export default function PlanPage() {
                     <Num>{p.phases.reduce((s, ph) => s + ph.activities.length, 0)}</Num> {nounAfter(p.phases.reduce((s, ph) => s + ph.activities.length, 0), NOUN.activity)} ·{' '}
                     <Money sm>{cost}</Money>
                   </span>
-                  {mayAsk && <Link className="btn btn-2 btn-sm" to={`${ROUTES.planEdit(p.id)}?mode=change${asEntity ? '&as=entity' : ''}`}>طلب تعديل الخطة</Link>}
-                  {mayAsk && <Link className="btn btn-ghost btn-sm" to={`${ROUTES.planEdit(p.id)}?mode=cancel${asEntity ? '&as=entity' : ''}`}>طلب إلغاء الخطة</Link>}
+                  {mayAsk && <ButtonLink variant="2" size="sm" to={`${ROUTES.planEdit(p.id)}?mode=change${asEntity ? '&as=entity' : ''}`}>طلب تعديل الخطة</ButtonLink>}
+                  {mayAsk && <ButtonLink variant="ghost" size="sm" to={`${ROUTES.planEdit(p.id)}?mode=cancel${asEntity ? '&as=entity' : ''}`}>طلب إلغاء الخطة</ButtonLink>}
                 </span>
               }
             />
@@ -495,9 +494,9 @@ export default function PlanPage() {
                             <span className="pc-sp" />
                             <span className="sub"><Num>{v.phases.reduce((n, ph) => n + ph.activities.length, 0)}</Num> {nounAfter(v.phases.reduce((n, ph) => n + ph.activities.length, 0), NOUN.activity)}</span>
                             {next && (
-                              <button type="button" className="btn btn-ghost btn-sm" aria-expanded={cmp === `v${v.no}`} onClick={() => setCmp(cmp === `v${v.no}` ? null : `v${v.no}`)}>
+                              <Button type="button" variant="ghost" size="sm" aria-expanded={cmp === `v${v.no}`} onClick={() => setCmp(cmp === `v${v.no}` ? null : `v${v.no}`)}>
                                 {cmp === `v${v.no}` ? 'أخفِ المقارنة' : `قارن بالنسخة ${ver(next.no)}`}
-                              </button>
+                              </Button>
                             )}
                           </div>
                           {cmp === `v${v.no}` && (diff.length === 0
@@ -554,7 +553,7 @@ export default function PlanPage() {
                           })()}
                           {c.state === 'returned' && (asEntity || c.from !== 'entity') && (
                             <div className="act-a">
-                              <Link className="btn btn-2 btn-sm" to={`${ROUTES.planEdit(p.id)}?change=${c.id}&mode=${c.mode ?? 'change'}${asEntity ? '&as=entity' : ''}`}>استكمل الطلب وأعد إرساله</Link>
+                              <ButtonLink variant="2" size="sm" to={`${ROUTES.planEdit(p.id)}?change=${c.id}&mode=${c.mode ?? 'change'}${asEntity ? '&as=entity' : ''}`}>استكمل الطلب وأعد إرساله</ButtonLink>
                             </div>
                           )}
                           {/* v3 · 12.4.15 · operational changes are made in the plan · contractual ones go to the agreement */}
@@ -626,26 +625,12 @@ export default function PlanPage() {
             the user's hand as they type. Same modal shape as the budget line item exactly (`.bmask`
             + `.chrome.modal`). */}
         {reject && (
-          createPortal(
-          <div className="bmask" role="presentation" onClick={() => setReject(null)}>
-            <div
-              className="chrome modal"
-              role="dialog"
-              aria-modal="true"
-              aria-label="إعادة النشاط إلى الجهة"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="mh">
-                <Icon name={icons.chat} size="md" />
-                <b>إعادة النشاط إلى الجهة</b>
-              </div>
+          <Modal label="إعادة النشاط إلى الجهة" onClose={() => setReject(null)}>
+              <ModalHead icon={icons.chat} title="إعادة النشاط إلى الجهة" />
 
               <div className="mb col">
-                <label className="regf">
-                  <span className="lb">
-                    سبب الإعادة<b className="regf-r" aria-label="إلزامي">*</b>
-                  </span>
-                  <span className="fld">
+                <FormField label="سبب الإعادة" required>
+                  <FieldBox>
                     <input
                       autoFocus
                       value={reject.note}
@@ -653,13 +638,13 @@ export default function PlanPage() {
                       aria-label="سبب الإعادة"
                       placeholder="مثال: التقرير لا يتضمن كشف المستفيدين"
                     />
-                  </span>
-                </label>
+                  </FieldBox>
+                </FormField>
               </div>
 
               <div className="mf">
-                <button
-                  className="btn btn-p"
+                <Button
+                  variant="p"
                   disabled={!reject.note.trim()}
                   onClick={() => {
                     const e = rejectActivityBy(p.id, reject.id, reject.note.trim(), user.name)
@@ -669,13 +654,10 @@ export default function PlanPage() {
                   }}
                 >
                   أعد النشاط
-                </button>
-                <button className="btn btn-2" onClick={() => setReject(null)}>إلغاء</button>
+                </Button>
+                <Button variant="2" onClick={() => setReject(null)}>إلغاء</Button>
               </div>
-            </div>
-          </div>,
-          document.body,
-          )
+            </Modal>
         )}
 
         {/* Note: the decision dock belongs to the institution alone - the entity has no approval

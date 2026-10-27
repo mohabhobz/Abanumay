@@ -1,5 +1,7 @@
+import { FormField, FieldBox } from './FormField'
+import { Modal, ModalHead } from './Modal'
+import { Button } from './Button'
 import { useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
 import { icons } from './icons'
 
@@ -51,13 +53,8 @@ export function DecisionDialog({
     if (out && out.length) { setBad(out); return }
     onClose()
   }
-  return createPortal(
-    <div className="bmask decsheet" role="presentation" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
-      <div className="chrome modal" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <div className="mh">
-          <Icon name={tone === 'btn-d' ? icons.alert : icons.check} size="md" />
-          <b>{title}</b>
-        </div>
+  return <Modal label={title} onClose={onClose} mask="decsheet" escape>
+        <ModalHead icon={tone === 'btn-d' ? icons.alert : icons.check} title={title} />
         <div className="mb col">
           {subject && <p className="sub cnote">{subject}</p>}
           {[...stops, ...bad].length > 0 && (
@@ -69,26 +66,22 @@ export function DecisionDialog({
           )}
           {children}
           {note && (
-            <label className="regf regf-w">
-              <span className="lb">{label}{must && <b className="regf-r" aria-label="إلزامي">*</b>}</span>
-              <span className="fld fld-a">
+            <FormField label={label} required={must} wide>
+              <FieldBox area>
                 <textarea autoFocus rows={3} value={text} onChange={(e) => setText(e.target.value)} aria-label={label}
                   placeholder={notePlaceholder ?? (must ? 'يُسجَّل مع القرار ويصل إلى صاحب الخطوة' : 'اختيارية · تُسجَّل مع القرار')} />
-              </span>
-            </label>
+              </FieldBox>
+            </FormField>
           )}
           {!note && stops.length === 0 && <p className="sub cnote">يُسجَّل القرار باسمك ووقته في سجل الإجراء.</p>}
         </div>
         <div className="mf">
-          <button type="button" className={`btn ${tone === 'btn-d' ? 'btn-d' : 'btn-p'}`} disabled={off} title={why} onClick={go}>
+          <Button type="button" variant={tone === 'btn-d' ? 'd' : 'p'} disabled={off} title={why} onClick={go}>
             {confirmLabel ?? `تأكيد: ${title}`}
-          </button>
-          <button type="button" className="btn btn-2" onClick={onClose}>تراجع</button>
+          </Button>
+          <Button type="button" variant="2" onClick={onClose}>تراجع</Button>
         </div>
-      </div>
-    </div>,
-    document.body,
-  )
+      </Modal>
 }
 
 export interface DockAction {
@@ -117,10 +110,10 @@ export function DockActions<T extends DockAction>({ actions, subject, onRun, pla
     <>
       <div className="rowf gp-2">
         {order.map((a) => (
-          <button key={a.label} type="button" className={`btn ${a.kind}`} data-needs-note={a.needsNote ? '' : undefined}
+          <Button plain key={a.label} type="button" className={`btn ${a.kind}`} data-needs-note={a.needsNote ? '' : undefined}
             disabled={Boolean(a.stops?.length)} title={a.stops?.[0] ?? a.why} onClick={() => setPick(a)}>
             {a.label}
-          </button>
+          </Button>
         ))}
       </div>
       {pick && (

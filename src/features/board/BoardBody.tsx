@@ -1,5 +1,5 @@
 import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Hint, Glass, Head, Icon, Money, icons } from '@/components/ui'
+import { Button, Hint, Glass, Head, Icon, Money, icons } from '@/components/ui'
 import { SAUDI_REGIONS, SAUDI_VIEW } from '@/components/charts/saudi-regions'
 import { usePayments } from '@/data/payments/store'
 import { useClosing } from '@/data/closing/store'
@@ -150,7 +150,7 @@ function GeoPanel({ regions, sel, onSel, spot }: {
           <div className="gb-spot-h">
             <h4>{spot.name}</h4>
             {/* always in the row, hidden when there's nothing to clear · so picking a region never moves what's below */}
-            <button type="button" className={`btn btn-ghost btn-sm gb-spot-x${all ? ' off' : ''}`} tabIndex={all ? -1 : undefined} aria-hidden={all || undefined} onClick={() => sel && onSel(sel)}>عرض المملكة كلها</button>
+            <Button plain type="button" className={`btn btn-ghost btn-sm gb-spot-x${all ? ' off' : ''}`} tabIndex={all ? -1 : undefined} aria-hidden={all || undefined} onClick={() => sel && onSel(sel)}>عرض المملكة كلها</Button>
           </div>
           <div className="gb-spot-m">
             <span className="gb-spot-k">المنح المعتمدة</span>
@@ -239,14 +239,14 @@ function GeoPanel({ regions, sel, onSel, spot }: {
               const w = Math.max(2, (r.granted / top) * 100)
               return (
                 <li key={r.name}>
-                  <button type="button" className={`gb-bar${r.name === sel ? ' on' : ''}`} aria-pressed={r.name === sel} onClick={() => onSel(r.name)}>
+                  <Button plain type="button" className={`gb-bar${r.name === sel ? ' on' : ''}`} aria-pressed={r.name === sel} onClick={() => onSel(r.name)}>
                     <span className="gb-bar-n">{r.name}</span>
                     <span className="gb-bar-v num">{mil(r.granted)}</span>
                     <svg className="gb-bar-s" aria-hidden="true">
                       <rect className="gb-bar-t" width="100%" height="100%" />
                       <rect className="gb-bar-f" x={`${100 - w}%`} width={`${w}%`} height="100%" fill={`url(#${uid}-b)`} />
                     </svg>
-                  </button>
+                  </Button>
                 </li>
               )
             })}

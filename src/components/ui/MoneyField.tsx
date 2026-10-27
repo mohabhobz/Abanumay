@@ -1,3 +1,4 @@
+import { FieldBox } from './FormField'
 import { nf } from '@/lib/format'
 import { Riyal } from './primitives'
 
@@ -20,7 +21,7 @@ export function MoneyField({
 }) {
   const n = Number(String(value).replace(/\D/g, ''))
   return (
-    <span className="fld">
+    <FieldBox>
       <input
         className="num"
         inputMode="numeric"
@@ -31,6 +32,6 @@ export function MoneyField({
         aria-label={label}
       />
       <Riyal />
-    </span>
+    </FieldBox>
   )
 }

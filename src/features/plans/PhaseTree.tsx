@@ -1,6 +1,5 @@
-import { createPortal } from 'react-dom'
 import { useEffect, useState } from 'react'
-import { DateField, DateText, Icon, Money, Mono, Num, Tag, icons } from '@/components/ui'
+import { ButtonLabel, FormField, FieldBox, Modal, ModalHead, Button, DateField, DateText, Icon, Money, Mono, Num, Tag, icons } from '@/components/ui'
 import { phaseDone } from '@/data/mock/plans'
 import { pct } from '@/lib/format'
 import type { PlanActivity, PlanPhase } from '@/types/domain'
@@ -75,7 +74,7 @@ export function PhaseTree(props: PhaseTreeProps) {
 
         return (
           <section className="phase" key={ph.id}>
-            <button type="button" className="phase-h" aria-expanded={!shut} onClick={() => onToggle(ph.id)}>
+            <Button plain type="button" className="phase-h" aria-expanded={!shut} onClick={() => onToggle(ph.id)}>
               <Icon name={shut ? icons.chevronDown : icons.chevronUp} size="sm" />
               <span className="phase-n num">{i + 1}</span>
               <span className="phase-t">{ph.name || 'مرحلة بلا اسم'}</span>
@@ -86,7 +85,7 @@ export function PhaseTree(props: PhaseTreeProps) {
               {queue > 0 && <span className="sub"><b><Num>{queue}</Num></b> بانتظار</span>}
               {late > 0 && <span className="sub"><b><Num>{late}</Num></b> متأخّر</span>}
               {stuck > 0 && <span className="sub"><b><Num>{stuck}</Num></b> متعثّر</span>}
-            </button>
+            </Button>
 
             {!shut && (ph.activities.length === 0 ? (
               <p className="sub cnote acttbl-empty">المرحلة بلا أنشطة.</p>
@@ -125,35 +124,35 @@ export function PhaseTree(props: PhaseTreeProps) {
                           <td className="acttbl-2 acttbl-d"><span><DateText>{a.from}</DateText></span><span className="sub">حتى <DateText>{a.to}</DateText></span></td>
                           <td><Tag tone={PROGRESS_TONE[st]}>{PROGRESS_SAY[st]}</Tag></td>
                           <td className="acttbl-2">
-                            <button type="button" className="tlink acttbl-l" onClick={() => setSheet(a.id)}
+                            <Button plain type="button" className="tlink acttbl-l" onClick={() => setSheet(a.id)}
                               aria-label={`المرفقات · ${a.name}`}>
                               <Num>{a.evidence.length}</Num> {a.evidence.length === 1 ? 'مرفق' : 'مرفقات'}
-                            </button>
+                            </Button>
                             {missing.length > 0 && <span className="sub bad-ink">ينقص <Num>{missing.length}</Num></span>}
                           </td>
                           <td>{vf ? <Tag tone={vf === 'ok' ? 'ok' : vf === 'no' ? 'no' : 'warn'}>{VERIFY_SAY[vf]}</Tag> : <span className="sub">—</span>}</td>
                           <td>
                             {notes.length > 0
-                              ? <button type="button" className="tlink acttbl-l" title={lastNote?.say} onClick={() => setSheet(a.id)}><Num>{notes.length}</Num> · {lastNote?.say}</button>
+                              ? <Button plain type="button" className="tlink acttbl-l" title={lastNote?.say} onClick={() => setSheet(a.id)}><Num>{notes.length}</Num> · {lastNote?.say}</Button>
                               : <span className="sub">—</span>}
                           </td>
                           <td>
                             <span className="acttbl-a">
                               {live && canReview && a.state === 'claimed' && (
                                 <>
-                                  <button type="button" className="btn btn-p btn-sm" disabled={missing.length > 0}
+                                  <Button type="button" variant="p" size="sm" disabled={missing.length > 0}
                                     title={missing.length ? `ينقص: ${missing.join(' · ')}` : 'يُحتسب إنجازًا من لحظة القبول'}
-                                    onClick={() => onAccept?.(a.id)}>اقبل النشاط</button>
-                                  <button type="button" className="btn btn-2 btn-sm" onClick={() => onReject?.(a.id)}>أعده بملاحظة</button>
+                                    onClick={() => onAccept?.(a.id)}>اقبل النشاط</Button>
+                                  <Button type="button" variant="2" size="sm" onClick={() => onReject?.(a.id)}>أعده بملاحظة</Button>
                                 </>
                               )}
                               {live && canClaim && a.state === 'todo' && onStart && st !== 'notYet' && (
-                                <button type="button" className="btn btn-ghost btn-sm" onClick={() => onStart(a.id)}>ابدأ</button>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => onStart(a.id)}>ابدأ</Button>
                               )}
                               {live && canClaim && (a.state === 'doing' || a.state === 'todo' || a.state === 'rejected') && (
-                                <button type="button" className="btn btn-2 btn-sm" disabled={missing.length > 0}
+                                <Button type="button" variant="2" size="sm" disabled={missing.length > 0}
                                   title={missing.length ? 'ارفع الشواهد المطلوبة من «المرفقات» أولًا' : 'يذهب لمشرف المنح للتحقق ولا يُحتسب قبل قبوله'}
-                                  onClick={() => onClaim?.(a.id)}>مكتمل</button>
+                                  onClick={() => onClaim?.(a.id)}>مكتمل</Button>
                               )}
                             </span>
                           </td>
@@ -184,14 +183,10 @@ function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me =
     return () => window.removeEventListener('keydown', esc)
   }, [onClose])
   return (
-    createPortal(
-    <div className="bmask" role="presentation" onClick={onClose}>
-      <div className="chrome modal" role="dialog" aria-modal="true" aria-label={`مرفقات النشاط · ${a.name}`} onClick={(e) => e.stopPropagation()}>
-        <div className="mh">
-          <Icon name={icons.upload} size="md" />
-          <b>{a.name}</b>
+    <Modal label={`مرفقات النشاط · ${a.name}`} onClose={onClose}>
+        <ModalHead icon={icons.upload} title={a.name}>
           <span className="sub mono">{serial}</span>
-        </div>
+        </ModalHead>
         <div className="mb col">
           <h4 className="fnd-h">المرفقات</h4>
           {/* Upload sits next to the specific evidence item · the button already knows its type */}
@@ -204,7 +199,7 @@ function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me =
                   <span>{need}</span>
                   <span className="sub act-f">{got ? got.fileName : 'لم يُرفع'}</span>
                   {edit && onUpload && (
-                    <label className="btn btn-ghost btn-sm act-up">
+                    <ButtonLabel variant="ghost" size="sm" className="act-up">
                       <Icon name={icons.upload} size="sm" />
                       {got ? 'استبدل' : 'ارفع الشاهد'}
                       <input className="vis-h" type="file" aria-label={`${got ? 'استبدل' : 'ارفع'} ${need} · ${a.name}`} onChange={(e) => {
@@ -212,12 +207,12 @@ function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me =
                         if (f) onUpload(a.id, need, f.name, got?.id)
                         e.target.value = ''
                       }} />
-                    </label>
+                    </ButtonLabel>
                   )}
                   {edit && got && onDrop && (
-                    <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف ${got.fileName}`} onClick={() => onDrop(a.id, got.id)}>
+                    <Button type="button" variant="ghost" size="sm" aria-label={`احذف ${got.fileName}`} onClick={() => onDrop(a.id, got.id)}>
                       <Icon name={icons.close} size="sm" />
-                    </button>
+                    </Button>
                   )}
                 </li>
               )
@@ -228,16 +223,16 @@ function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me =
                 <span>{e.kind}</span>
                 <span className="sub act-f">{e.fileName}</span>
                 {edit && onDrop && (
-                  <button type="button" className="btn btn-ghost btn-sm" aria-label={`احذف ${e.fileName}`} onClick={() => onDrop(a.id, e.id)}>
+                  <Button type="button" variant="ghost" size="sm" aria-label={`احذف ${e.fileName}`} onClick={() => onDrop(a.id, e.id)}>
                     <Icon name={icons.close} size="sm" />
-                  </button>
+                  </Button>
                 )}
               </li>
             ))}
             {a.needs.length === 0 && extra.length === 0 && <li className="sub">لا يطلب النشاط شاهدًا ولا مرفقات عليه</li>}
           </ul>
           {edit && onUpload && (
-            <label className="btn btn-2 btn-sm act-up">
+            <ButtonLabel variant="2" size="sm" className="act-up">
               <Icon name={icons.plus} size="sm" />
               أضف مرفقًا آخر
               <input className="vis-h" type="file" aria-label={`أضف مرفقًا · ${a.name}`} onChange={(e) => {
@@ -245,7 +240,7 @@ function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me =
                 if (f) onUpload(a.id, 'مرفق إضافي', f.name)
                 e.target.value = ''
               }} />
-            </label>
+            </ButtonLabel>
           )}
 
           <h4 className="fnd-h">بيانات التنفيذ</h4>
@@ -260,12 +255,9 @@ function ActSheet({ a, serial, live, canClaim, onUpload, onDrop, onComment, me =
           {(a.notes ?? []).length === 0 && !(onComment && live) && <p className="sub">لا ملاحظات</p>}
         </div>
         <div className="mf">
-          <button type="button" className="btn btn-2" onClick={onClose}>إغلاق</button>
+          <Button type="button" variant="2" onClick={onClose}>إغلاق</Button>
         </div>
-      </div>
-    </div>,
-    document.body,
-    )
+      </Modal>
   )
 }
 
@@ -279,26 +271,23 @@ function ActData({ a, edit, onSave }: { a: PlanActivity; edit: boolean; onSave: 
   if (open) {
     return (
       <div className="regfields mt-2">
-        <label className="regf">
-          <span className="lb">ما نُفّذ</span>
-          <span className="fld"><input value={text} onChange={(e) => setText(e.target.value)} aria-label={`ما نُفّذ · ${a.name}`} /></span>
-        </label>
-        <label className="regf">
-          <span className="lb">المستفيدون الفعليون</span>
-          <span className="fld"><input inputMode="numeric" value={reached} onChange={(e) => setReached(e.target.value.replace(/[^\d]/g, ''))} aria-label={`المستفيدون الفعليون · ${a.name}`} /></span>
-        </label>
-        <label className="regf">
-          <span className="lb">تاريخ التنفيذ الفعلي</span>
+        <FormField label="ما نُفّذ">
+          <FieldBox><input value={text} onChange={(e) => setText(e.target.value)} aria-label={`ما نُفّذ · ${a.name}`} /></FieldBox>
+        </FormField>
+        <FormField label="المستفيدون الفعليون">
+          <FieldBox><input inputMode="numeric" value={reached} onChange={(e) => setReached(e.target.value.replace(/[^\d]/g, ''))} aria-label={`المستفيدون الفعليون · ${a.name}`} /></FieldBox>
+        </FormField>
+        <FormField label="تاريخ التنفيذ الفعلي">
           <DateField value={doneOn} onChange={setDoneOn} label={`تاريخ التنفيذ الفعلي · ${a.name}`} />
-        </label>
+        </FormField>
         {err.length > 0 && <p className="bad">{err.join(' · ')}</p>}
         <div className="rowf gp-2">
-          <button type="button" className="btn btn-p btn-sm" onClick={() => {
+          <Button type="button" variant="p" size="sm" onClick={() => {
             const e = onSave({ text, reached: reached ? Number(reached) : null, doneOn })
             setErr(e)
             if (!e.length) setOpen(false)
-          }}>احفظ بيانات النشاط</button>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setOpen(false); setErr([]) }}>إلغاء</button>
+          }}>احفظ بيانات النشاط</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => { setOpen(false); setErr([]) }}>إلغاء</Button>
         </div>
       </div>
     )
@@ -313,9 +302,9 @@ function ActData({ a, edit, onSave }: { a: PlanActivity; edit: boolean; onSave: 
         </>
       ) : 'لم تُسجَّل بيانات التنفيذ بعد'}
       {edit && (
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(true)}>
           <Icon name={icons.edit} size="sm" />{a.actual ? 'عدّل بيانات النشاط' : 'سجّل بيانات النشاط'}
-        </button>
+        </Button>
       )}
     </div>
   )

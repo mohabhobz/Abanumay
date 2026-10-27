@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DateField, MoneyField } from '@/components/ui'
+import { FormField, FieldBox, Button, DateField, MoneyField } from '@/components/ui'
 import { amendRequest, flowOf, parseOutputs } from '@/data/intake/flow'
 import { projectById } from '@/data/mock/projects'
 import { OutputsEditor } from '@/features/projects/OutputsEditor'
@@ -27,44 +27,36 @@ export function ReturnedEdit({ id, by, onDone }: { id: string; by: string; onDon
   return (
     <span className="ptl-edit">
       <span className="regfields">
-        <label className="regf">
-          <span className="lb">اسم المشروع</span>
-          <span className="fld"><input value={v.name} aria-label="اسم المشروع" onChange={(e) => put('name', e.target.value)} /></span>
-        </label>
-        <label className="regf">
-          <span className="lb">المبلغ المطلوب</span>
+        <FormField label="اسم المشروع">
+          <FieldBox><input value={v.name} aria-label="اسم المشروع" onChange={(e) => put('name', e.target.value)} /></FieldBox>
+        </FormField>
+        <FormField label="المبلغ المطلوب">
           <MoneyField value={v.amountRequested ?? ''} label="المبلغ المطلوب" onChange={(x) => put('amountRequested', String(x))} />
-        </label>
-        <label className="regf">
-          <span className="lb">عدد المستفيدين المتوقَّع</span>
-          <span className="fld"><input className="num" inputMode="numeric" value={v.reach} aria-label="عدد المستفيدين المتوقَّع" onChange={(e) => put('reach', e.target.value.replace(/[^\d]/g, ''))} /></span>
-        </label>
-        <label className="regf">
-          <span className="lb">تاريخ بدء التنفيذ المتوقع</span>
+        </FormField>
+        <FormField label="عدد المستفيدين المتوقَّع">
+          <FieldBox><input className="num" inputMode="numeric" value={v.reach} aria-label="عدد المستفيدين المتوقَّع" onChange={(e) => put('reach', e.target.value.replace(/[^\d]/g, ''))} /></FieldBox>
+        </FormField>
+        <FormField label="تاريخ بدء التنفيذ المتوقع">
           <DateField value={v.startAt ?? ''} onChange={(x) => put('startAt', x)} label="تاريخ بدء التنفيذ المتوقع" />
-        </label>
+        </FormField>
         {/* Client 21 Oct (#28) · the end is a date · the duration follows the two dates */}
-        <label className="regf">
-          <span className="lb">تاريخ انتهاء التنفيذ المتوقع</span>
+        <FormField label="تاريخ انتهاء التنفيذ المتوقع">
           <DateField value={v.endAt ?? ''} onChange={(x) => put('endAt', x)} label="تاريخ انتهاء التنفيذ المتوقع" />
-        </label>
-        <label className="regf regf-w">
-          <span className="lb">وصف المشروع</span>
-          <span className="fld fld-a"><textarea rows={3} value={v.summary} aria-label="وصف المشروع" onChange={(e) => put('summary', e.target.value)} /></span>
-        </label>
-        <label className="regf regf-w">
-          <span className="lb">الأهداف التفصيلية</span>
-          <span className="fld fld-a"><textarea rows={3} value={v.objectives} aria-label="الأهداف التفصيلية" onChange={(e) => put('objectives', e.target.value)} /></span>
-        </label>
-        <span className="regf regf-w">
-          <span className="lb">مخرجات المشروع</span>
+        </FormField>
+        <FormField label="وصف المشروع" wide>
+          <FieldBox area><textarea rows={3} value={v.summary} aria-label="وصف المشروع" onChange={(e) => put('summary', e.target.value)} /></FieldBox>
+        </FormField>
+        <FormField label="الأهداف التفصيلية" wide>
+          <FieldBox area><textarea rows={3} value={v.objectives} aria-label="الأهداف التفصيلية" onChange={(e) => put('objectives', e.target.value)} /></FieldBox>
+        </FormField>
+        <FormField label="مخرجات المشروع" wide as="span">
           <OutputsEditor list={parseOutputs(v.outputs)} onChange={(x) => put('outputs', JSON.stringify(x))} />
-        </span>
+        </FormField>
       </span>
       {bad.map((b) => <span key={b} className="bad cnote">{b}</span>)}
       <span className="apv-row mt-2">
-        <button type="button" className="btn btn-p btn-sm" onClick={() => { const out = amendRequest(id, v, by); setBad(out); if (!out.length) onDone() }}>احفظ التعديلات</button>
-        <button type="button" className="btn btn-2 btn-sm" onClick={onDone}>تراجع</button>
+        <Button type="button" variant="p" size="sm" onClick={() => { const out = amendRequest(id, v, by); setBad(out); if (!out.length) onDone() }}>احفظ التعديلات</Button>
+        <Button type="button" variant="2" size="sm" onClick={onDone}>تراجع</Button>
       </span>
     </span>
   )
