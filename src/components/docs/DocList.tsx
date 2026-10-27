@@ -130,7 +130,7 @@ export function DocList({ rows, label, heads }: DocListProps) {
                   sitting mid-table at the end of the status cell */}
               {acts && (
                 <td className="n">
-                  <span className="dact">{r.uploaded && <DocDownload name={r.name} />}{r.action}</span>
+                  <span className="dact">{r.uploaded ? <DocDownload name={r.name} /> : <span className="dfile-dl dl-slot" aria-hidden="true" />}{r.action}</span>
                 </td>
               )}
             </tr>

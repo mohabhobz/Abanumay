@@ -200,3 +200,6 @@
 /* Meeting 20 Oct · the project header leads with its code and its owner */
 .pid{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3) var(--sp-5);margin-bottom:var(--sp-3)}
 .pid-o{display:inline-flex;align-items:center;gap:var(--sp-3)}
+/* Client 27 Oct · a sub-section's title row carries its add action at the row's end */
+.stdy-hr{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin:0 0 var(--sp-3)}
+.stdy-hr>.stdy-h{margin:0}

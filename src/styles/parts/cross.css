@@ -52,12 +52,32 @@
 .nstep-p{margin:0;line-height:var(--lh-text)}
 .nstep-why{margin:0;padding-inline-start:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-1);color:var(--t2);line-height:var(--lh-text)}
 .nstep-o{display:flex;flex-direction:column;gap:var(--sp-2)}
-.nstep-r{display:flex;flex-direction:column;gap:var(--sp-1)}
-.nstep .nstep-b{justify-content:space-between;gap:var(--sp-3);inline-size:100%;text-align:start}
-.nstep-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nstep-x{padding-inline:var(--sp-4);line-height:var(--lh-text)}
 
 /* 17 Oct · a record card opens its record from anywhere on it, like a table row */
 .glass.clickable{cursor:pointer}
 /* Client 27 Oct · the assistant's suggestion sits on the assistant card itself · no white box inside it */
 .nstep{background:none;padding:0;border-radius:0}
+
+/* Client 27 Oct · «اختياراتك» · one option per row · a round mark for its kind, the label, an arrow
+   to the decision popup · the suggested option lifted in the action tone, a refusing one in red,
+   a locked one muted with why it is locked under its label */
+.nstep-list{display:flex;flex-direction:column;gap:var(--sp-2)}
+.nstep-c{display:flex;align-items:center;gap:var(--sp-3);inline-size:100%;min-block-size:var(--h-md);padding:var(--sp-3) var(--sp-4);
+  border:0;border-radius:var(--r1);background:var(--fl-1);box-shadow:inset 0 0 0 1px var(--edge-1);color:var(--t1);
+  font:inherit;text-align:start;cursor:pointer;transition:background var(--mo-2) var(--ease-out),box-shadow var(--mo-2) var(--ease-out)}
+.nstep-c:hover:not(:disabled){background:var(--ctl-tone-h);box-shadow:inset 0 0 0 1px var(--ctl-tone-line)}
+.nstep-c:focus-visible{outline:2px solid var(--solid);outline-offset:2px}
+.nstep-m{flex:none;display:grid;place-items:center;inline-size:var(--sp-8);block-size:var(--sp-8);border-radius:50%;
+  background:var(--fl-3);color:var(--t2)}
+.nstep-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-1)}
+.nstep-l{display:flex;align-items:center;gap:var(--sp-2);font-weight:600;min-width:0}
+.nstep-d{line-height:var(--lh-text)}
+.nstep-go{flex:none;color:var(--t3);transition:transform var(--mo-2) var(--ease-out)}
+.nstep-c:hover:not(:disabled) .nstep-go{transform:translateX(-2px);color:var(--solid)}
+.nstep-c.best{background:var(--ctl-tone);box-shadow:inset 0 0 0 1px var(--ctl-tone-line)}
+.nstep-c.best .nstep-m{background:var(--solid);color:var(--on-solid)}
+.nstep-c.dng .nstep-m{background:rgba(192,67,42,.10);color:var(--no-ink)}
+.nstep-c.dng:hover:not(:disabled){background:rgba(192,67,42,.06);box-shadow:inset 0 0 0 1px rgba(192,67,42,.28)}
+.nstep-c.dng:hover:not(:disabled) .nstep-go{color:var(--no-ink)}
+.nstep-c:disabled{cursor:not-allowed;background:none;box-shadow:inset 0 0 0 1px var(--edge-d);color:var(--t3)}
+.nstep-c:disabled .nstep-m{background:var(--fl-2);color:var(--t3)}

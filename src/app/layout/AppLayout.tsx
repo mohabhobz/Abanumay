@@ -9,6 +9,7 @@ import { BehalfBar } from '@/features/cross/Behalf'
 import { TodayReturn } from '@/features/home/TodayReturn'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useEvenKpis } from '@/hooks/useEvenKpis'
+import { useTagCols } from '@/hooks/useTagCols'
 import { useTrimTip } from '@/hooks/useTrimTip'
 import { useHashScroll } from '@/hooks/useHashScroll'
 import { ROUTES } from '@/app/routes'
@@ -69,6 +70,7 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
   useFreshVisit(pathname)
   useHashScroll()
   useEvenKpis()
+  useTagCols()
   useTrimTip()
 
   const toggleAssistant = useCallback(() => setAssistantOpen((v) => !v), [])

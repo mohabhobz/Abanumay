@@ -658,6 +658,17 @@ export default function ProjectsListPage() {
             ) : (
               <>
                 <div className="fgrid">
+                  {/* Client 27 Oct · the status in the combined filters too · the same `status` key as the
+                      bar's status picker, so the two always agree */}
+                  <div className="fgrid-i">
+                    <MultiSelect
+                      label="الحالة"
+                      values={readList(v.status)}
+                      all="كل الحالات"
+                      options={STATUS_GROUPS.filter((g) => counts[g]).map((g) => ({ value: g, label: `${g} (${counts[g]})` }))}
+                      onChange={(x) => set({ status: writeList(x), page: undefined })}
+                    />
+                  </div>
                   {fOrder.map((k) => (
                     <div key={k} className="fgrid-i">{FILTERS[k]}</div>
                   ))}

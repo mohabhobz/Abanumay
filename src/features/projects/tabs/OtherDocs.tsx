@@ -20,9 +20,16 @@ export function OtherDocs({ projectId, me, asEntity, canUpload }: { projectId: s
   const list = extrasOf(projectId).filter((x) => !(asEntity && x.internal))
   return (
     <div className="stdy-g">
-      <h3 className="stdy-h">
-        مرفقات أخرى <span className="sub"><Num>{list.length}</Num> {list.length === 1 ? 'ملف' : 'ملفات'}</span>
-      </h3>
+      {/* Client 27 Oct · the add button sits on the section's title row · it no longer floats alone under the list */}
+      <div className="stdy-hr">
+        <h3 className="stdy-h">
+          مرفقات أخرى <span className="sub"><Num>{list.length}</Num> {list.length === 1 ? 'ملف' : 'ملفات'}</span>
+        </h3>
+        {canUpload && (
+          <UploadButton label="ارفع مرفقات أخرى" text="أضف مرفقات" accept={ACCEPT} maxMb={50} onPick={() => undefined}
+            onPickMany={(files) => { setSaid(''); uploadMore(projectId, files.map((f) => ({ name: f.name, size: f.size })), me) }} />
+        )}
+      </div>
       {list.length > 0 ? (
         <div className="dlist">
           <table className="tbl" aria-label="مرفقات أخرى">
@@ -58,12 +65,6 @@ export function OtherDocs({ projectId, me, asEntity, canUpload }: { projectId: s
         </div>
       ) : (
         <p className="sub cnote">لا مرفقات أخرى بعد.</p>
-      )}
-      {canUpload && (
-        <div className="apv-row">
-          <UploadButton label="ارفع مرفقات أخرى" accept={ACCEPT} maxMb={50} onPick={() => undefined}
-            onPickMany={(files) => { setSaid(''); uploadMore(projectId, files.map((f) => ({ name: f.name, size: f.size })), me) }} />
-        </div>
       )}
       {said && <p className="bad cnote" role="alert">{said}</p>}
     </div>

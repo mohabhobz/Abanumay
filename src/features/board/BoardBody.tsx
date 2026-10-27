@@ -73,7 +73,7 @@ function Kpi({ icon, label, value, note }: { icon: keyof typeof icons; label: st
   )
 }
 
-/* ── Rings · compact: a small donut with its label beside it, the percent on the arc's knob ── */
+/* ── Rings · compact: a small donut with its label beside it, the percent in its centre ── */
 function RingsPanel({ rings }: { rings: RingDatum[] }) {
   return (
     <Glass className="gb-rings">
@@ -91,9 +91,6 @@ function Ring({ r }: { r: RingDatum }) {
   const C = 44
   const R = 32
   const v = Math.max(0, Math.min(100, r.value))
-  const a = (v / 100) * Math.PI * 2 - Math.PI / 2
-  const kx = C + R * Math.cos(a)
-  const ky = C + R * Math.sin(a)
   const money = r.unit === 'ريال'
   return (
     <div className={`gb-ring h${r.hue}`}>
@@ -113,15 +110,12 @@ function Ring({ r }: { r: RingDatum }) {
               strokeDasharray={`${v} 100`} transform={`rotate(-90 ${C} ${C})`}
             />
           )}
-          <g className="gb-knob" transform={`translate(${kx} ${ky})`}>
-            <circle r="16" />
-            <text dy="0.35em">{pct(v)}</text>
-          </g>
         </svg>
-        <span className="gb-ring-i"><Icon name={icons[r.icon]} size="sm" /></span>
+        {/* Client 27 Oct · the percent sits in the ring's centre on every ring · it no longer rides the arc's end */}
+        <b className="gb-ring-v num">{pct(v)}</b>
       </div>
       <div className="gb-ring-l">
-        <b>{r.label}</b>
+        <b className="gb-ring-k"><Icon name={icons[r.icon]} size="sm" />{r.label}</b>
         <span className="sub">{money ? `${mil(r.part)} من ${mil(r.whole)} ريال` : `${nf.format(r.part)} من ${nf.format(r.whole)} ${r.unit}`}</span>
       </div>
     </div>

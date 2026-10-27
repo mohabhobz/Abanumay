@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DecisionDialog, Tag } from '@/components/ui'
+import { DecisionDialog, Icon, icons, Tag } from '@/components/ui'
 import { toast } from '@/data/feedback'
 import { pct } from '@/lib/format'
 import type { AgentAct, SuggestOpt, Suggestion } from '@/data/shared/agent'
@@ -35,21 +35,30 @@ export function NextStep<A extends AgentAct>({ s, exec }: {
       {s.options.length > 0 && (
         <div className="nstep-o">
           <span className="sub">اختياراتك</span>
-          {s.options.map((o) => (
-            <div key={o.action.label} className="nstep-r">
-              <button
-                type="button"
-                className={`btn ${o.blocked ? 'btn-ghost' : 'btn-2'} nstep-b`}
-                disabled={Boolean(o.blocked)}
-                title={o.blocked ?? (o.mustNote ? 'يفتح نافذة القرار لكتابة السبب' : 'يفتح نافذة تأكيد القرار')}
-                onClick={() => setPick(o)}
-              >
-                <span className="nstep-l">{o.action.label}</span>
-                {o.best && <Tag tone="teal">المقترح</Tag>}
-              </button>
-              {o.blocked && <span className="sub nstep-x">{o.blocked}</span>}
-            </div>
-          ))}
+          {/* Client 27 Oct · each option is a clear row · a mark for its kind, the label (and why it is
+              locked, when it is), the suggested one lifted, and an arrow saying it opens the decision popup */}
+          <div className="nstep-list">
+            {s.options.map((o) => {
+              const danger = Boolean(o.action.kind?.includes('btn-d'))
+              return (
+                <button
+                  key={o.action.label}
+                  type="button"
+                  className={`nstep-c${o.best ? ' best' : ''}${danger ? ' dng' : ''}`}
+                  disabled={Boolean(o.blocked)}
+                  title={o.blocked ?? undefined}
+                  onClick={() => setPick(o)}
+                >
+                  <span className="nstep-m" aria-hidden><Icon name={o.blocked ? icons.lock : danger ? icons.close : o.best ? icons.check : icons.edit} size="sm" /></span>
+                  <span className="nstep-t">
+                    <span className="nstep-l">{o.action.label}{o.best && <Tag tone="teal">المقترح</Tag>}</span>
+                    {o.blocked && <span className="sub nstep-d">{o.blocked}</span>}
+                  </span>
+                  {!o.blocked && <Icon name={icons.chevron} size="sm" className="nstep-go" />}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
       {bad.length > 0 && <p className="bad nstep-p">{bad.join(' · ')}</p>}

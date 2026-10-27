@@ -9314,3 +9314,16 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .tbl td:has(>.sub.unit){white-space:nowrap}
 .tbl td:has(>.sub.unit)>:is(.num,.sub.unit){vertical-align:baseline;display:inline;line-height:inherit}
 .glass>.tblwrap+dl.kv{padding-top:var(--sp-5);box-shadow:inset 0 1px 0 var(--edge-1)}
+
+/* Client 27 Oct · an attachment list reads in fixed lanes · the status tag sits at the end of a
+   status lane of one width (so «مرفوع» and «اختياري، غير مرفوع» end on one edge, across the entity
+   and internal lists alike), then the download slot, then the action at one width whether it says
+   «ارفع» or «استبدال» */
+.dlist .dstat{justify-content:flex-end;min-inline-size:calc(var(--sp-12) * 1.75)}
+.dlist .dact{justify-content:flex-end}
+.dlist .dact>.btn,.dlist .dact>label.btn{min-inline-size:calc(var(--sp-12) * 1.5);justify-content:center}
+/* Client 27 Oct · a column of status tags ends on one edge · header and cells (see useTagCols) */
+.tbl th.tcol-end,.tbl td.tcol-end{text-align:end}
+.tbl td.tcol-end>.dstat{justify-content:flex-end}
+/* Client 27 Oct · a KPI card's (i) sits at the end of its title row · the icon and the name stay together at the start */
+.stat>.lb>.hint,.gb-kpi-k>.hint,.pfi-kpi .lb>.hint{margin-inline-start:auto}
