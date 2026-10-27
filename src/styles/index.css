@@ -2520,6 +2520,8 @@ input[type="checkbox"]:focus-visible{outline:2px solid var(--teal);outline-offse
 .fan.skip .fancap{fill:var(--t3);opacity:.75}
 /* Decision owner: same surface, just a clearer name. */
 .fan.dec .fanrole{fill:var(--t1)}
+/* Client 27 Oct · the sector the project stands at keeps its light ink even when it is also the decider */
+.fan.now.dec .fanrole{fill:#F2F8F5}
 /* Arc interior: a single reading that changes with whichever segment is under the
    pointer. */
 @keyframes fholein{from{opacity:0;transform:translateY(var(--mo-rise))}
