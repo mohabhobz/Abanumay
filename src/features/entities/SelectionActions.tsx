@@ -1,3 +1,4 @@
+import { useFloat } from '@/hooks/useFloat'
 import { useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
@@ -267,15 +268,18 @@ export function BatchResult({ batch, byId, onClose }: { batch: Batch; byId: (id:
 export interface MoreItem { label: string; onClick: () => void; why?: string }
 
 export function MoreMenu({ items }: { items: MoreItem[] }) {
-  const { open, setOpen, box } = useMenu<HTMLDivElement>()
+  const { open, setOpen, box, pop } = useMenu<HTMLDivElement>()
+  /* Client 27 Oct · the bar sits at the screen's foot · the menu floats over the page (portaled, so
+     no card clips it) and opens above the button when there is no room under it */
+  useFloat(open, box, pop, true, true)
   if (!items.length) return null
   return (
     <div className="fexp" ref={box}>
       <button className={`btn btn-2 btn-sm${open ? ' on' : ''}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((x) => !x)}>
         المزيد <Icon name={icons.dots} size="sm" />
       </button>
-      {open && (
-        <div className="fmenu fexp-m selmore" role="menu">
+      {open && createPortal(
+        <div ref={pop} className="fmenu float selmore" role="menu">
           {items.map((it) => (
             <button key={it.label} className="fopt" role="menuitem" disabled={Boolean(it.why)} title={it.why}
               onClick={() => { setOpen(false); it.onClick() }}>
@@ -283,7 +287,8 @@ export function MoreMenu({ items }: { items: MoreItem[] }) {
               {it.why && <span className="fopt-n sub">{it.why}</span>}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
