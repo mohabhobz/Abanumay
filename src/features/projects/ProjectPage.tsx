@@ -63,7 +63,6 @@ import { useQueryParams } from '@/hooks/useQueryParams'
 import type { AuthorityMatrix, DecisionAction, ProjectRow } from '@/types/domain'
 import { isDropped, statusLine, statusOf, subStatusOf } from '@/data/status'
 import { projectOutcome } from '@/data/shared/outcome'
-import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { OTHER } from '@/data/intake/reasons'
 import { SPLIT, canEditProject, projectEditEvents, projectEdited, useProjectEdits } from '@/data/projects/edits'
 
@@ -218,6 +217,7 @@ export default function ProjectPage() {
   /* B-5 · the seat the project sits at decides the fan and the bar's buttons — not the signed-in
      role alone. Out of study, the fan shows the full path as passed. */
   const holder = row && !closed ? holderOf(row) : null
+  const ended = row ? projectOutcome(row.statusGroup) : undefined
   const authority = row ? withStageAmounts(authorityFor(supportAmount(row), holder), row) : fixtures.authority
   useApprovals()
   useAgreements()
@@ -465,11 +465,11 @@ export default function ProjectPage() {
                   the level it stands at reads on hover and in «التعريف» */}
               <div className="ehead-t">
                 <h1 className="ptitle">{project.name}</h1>
-                {row && <span className="ehead-st"><Tag tone={groupTone(row.statusGroup)}>{statusOf(row)}</Tag></span>}
-                {/* Client sheet 24 Oct (#95) · the outcome once the project ends */}
-                {row && <OutcomeTag outcome={projectOutcome(row.statusGroup)} />}
+                {/* Client 27 Oct · an ended project reads its final outcome in the approval arc's centre ·
+                    the status tag, the outcome tag and the level no longer repeat it beside the name */}
+                {row && !ended && <span className="ehead-st"><Tag tone={groupTone(row.statusGroup)}>{statusOf(row)}</Tag></span>}
                 {/* Client 24 Oct · the level it stands at reads here, once · «التعريف» no longer repeats it */}
-                {row && !asEntity && (subStatusOf(row) || (row.stage !== statusOf(row) ? row.stage : '')) && <span className="sub">{subStatusOf(row) || row.stage}</span>}
+                {row && !ended && !asEntity && (subStatusOf(row) || (row.stage !== statusOf(row) ? row.stage : '')) && <span className="sub">{subStatusOf(row) || row.stage}</span>}
               </div>
 
               <div className="pamt">
@@ -488,6 +488,7 @@ export default function ProjectPage() {
                 amount={project.amountRequested}
                 authority={authority}
                 compact={mobile}
+                outcome={ended}
                 standing={
                   breach && {
                     by: breach.by,

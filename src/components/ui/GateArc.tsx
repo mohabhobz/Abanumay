@@ -3,6 +3,7 @@ import { nf, NOUN, nounAfter } from '@/lib/format'
 import { Money } from './primitives'
 import { Person } from './Person'
 import type { AuthorityMatrix, AuthorityRole } from '@/types/domain'
+import { OUTCOME_SAY, OUTCOME_TONE, type Outcome } from '@/data/shared/outcome'
 
 /* Approval arc
 
@@ -50,6 +51,8 @@ export interface GateArcProps {
   /** Wraps role names to two lines · details sit below the arc either way */
   compact?: boolean
   standing?: CurrentStandingInfo
+  /** Client 27 Oct · the record's final outcome · read in the arc's centre, not beside the title */
+  outcome?: Outcome
 }
 
 interface Detail {
@@ -66,7 +69,7 @@ const R_IN = 192
 const R_TEXT = 262
 const GAP = 4
 
-export function GateArc({ amount, authority, compact = false, standing }: GateArcProps) {
+export function GateArc({ amount, authority, compact = false, standing, outcome }: GateArcProps) {
   const roles = authority.roles
 
   // Approver: the first tier with a ceiling that covers the amount
@@ -239,10 +242,11 @@ export function GateArc({ amount, authority, compact = false, standing }: GateAr
     <Fan
       slots={slots}
       compact={compact}
-      aria={`مسار الاعتماد، صاحب القرار ${decided.role}`}
+      aria={`مسار الاعتماد، ${outcome ? `الحالة النهائية ${OUTCOME_SAY[outcome]}` : `صاحب القرار ${decided.role}`}`}
       restK="صاحب القرار في هذا المبلغ"
       restT={decided.role}
       rest={fallback}
+      outcome={outcome}
     />
   )
 }
@@ -277,6 +281,8 @@ export interface StepArcProps {
   compact?: boolean
   /** Accessible name of the whole chart */
   aria: string
+  /** Client 27 Oct · the final outcome, read in the centre */
+  outcome?: Outcome
 }
 
 const STEP_KEY: Record<GateStepState, string> = {
@@ -293,7 +299,7 @@ const STEP_CLS: Record<GateStepState, SlotCls> = {
   skip: 'skip',
 }
 
-export function StepArc({ steps, holderKey, holder, rest = [], compact = false, aria }: StepArcProps) {
+export function StepArc({ steps, holderKey, holder, rest = [], compact = false, aria, outcome }: StepArcProps) {
   const slots: Slot[] = steps.map((s, i) => ({
     /* one seat may hold two steps (the supervisor approves the requirements, then writes the permit) */
     key: `${i}:${s.label}`,
@@ -306,7 +312,7 @@ export function StepArc({ steps, holderKey, holder, rest = [], compact = false, 
     dec: false,
     detail: { k: STEP_KEY[s.state], t: s.title ?? s.label, lines: s.lines ?? [], src: s.src ?? '' },
   }))
-  return <Fan slots={slots} compact={compact} aria={aria} restK={holderKey} restT={holder} rest={rest} />
+  return <Fan slots={slots} compact={compact} aria={aria} restK={holderKey} restT={holder} rest={rest} outcome={outcome} />
 }
 
 /* Shared renderer */
@@ -339,9 +345,10 @@ interface FanProps {
   restK: string
   restT: string
   rest: (ReactNode | null)[]
+  outcome?: Outcome
 }
 
-function Fan({ slots, compact, aria, restK, restT, rest }: FanProps) {
+function Fan({ slots, compact, aria, restK, restT, rest, outcome }: FanProps) {
   const [hover, setHover] = useState<number | null>(null)
   const span = 180 / slots.length
 
@@ -476,8 +483,19 @@ function Fan({ slots, compact, aria, restK, restT, rest }: FanProps) {
           detail goes below the arc, exactly like the compact layout already does. Both layouts are
           now one behavior, so the bug can't come back through the other one. */}
       <div className="fanhole" key={hover === null ? 'base' : hover}>
-        <div className="fhk">{active ? active.k : restK}</div>
-        <div className="fht">{active ? active.t : restT}</div>
+        {/* Client 27 Oct · once the record ends, its outcome (مكتمل · مرفوض · ملغي) is what the centre
+            reads at rest · a hovered step still reads its own story */}
+        {!active && outcome ? (
+          <>
+            <div className="fhk">الحالة النهائية</div>
+            <div className={`fht fho ${OUTCOME_TONE[outcome]}`}>{OUTCOME_SAY[outcome]}</div>
+          </>
+        ) : (
+          <>
+            <div className="fhk">{active ? active.k : restK}</div>
+            <div className="fht">{active ? active.t : restT}</div>
+          </>
+        )}
       </div>
       </div>
 

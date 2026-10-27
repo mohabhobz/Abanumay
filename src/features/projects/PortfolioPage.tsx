@@ -3,8 +3,8 @@ import { useState } from 'react'
 import { payBlock } from '@/data/entities/store'
 import { portfolioAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { FieldMultiSelect,
-  BackTo, DateText, DockActions, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Steps, Tabs, Tag, icons, type StepItem, MultiSelect } from '@/components/ui'
+import { GateArc, FieldMultiSelect,
+  BackTo, DateText, DockActions, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Tabs, Tag, icons, MultiSelect } from '@/components/ui'
 import { CHART_COLORS, Legend, RankBars, StackBar, type Slice } from '@/components/charts'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -31,6 +31,8 @@ import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { Checks, Said, SlotsEditor } from '@/features/partners/parts'
 import type { Reading } from '@/components/assistant/reading'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { authorityFor, type Holder } from '@/data/holders'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { outcomeMatches, outcomeOptions, portfolioOutcome, subOutcome } from '@/data/shared/outcome'
 
 /* A portfolio · a strategic partner's parent record with sub-projects under it (BPD-013).
@@ -59,6 +61,7 @@ export default function PortfolioPage() {
   const fromPartners = params.get('from') === 'partners'
   usePartners()
   const { role, user } = useRole()
+  const mobile = useIsMobile()
   const pf = id ? pfById(id) : undefined
   const [line, setLine] = useState('')
   const [split, setSplit] = useState<{ key: string; amount: string }[]>([])
@@ -91,13 +94,13 @@ export default function PortfolioPage() {
   const partner = pf.entityId
 
 
-  const steps: StepItem[] = [
-    { label: 'الطلب', note: pf.origin === 'partner' ? 'من بوابة الشريك' : 'مشرف المنح', state: pf.stage === 'draft' || pf.stage === 'returned' ? 'now' : 'done' },
-    { label: 'الدراسة والاعتماد', state: ['supervisor', 'manager', 'ceo', 'committee', 'board'].includes(pf.stage) ? 'now' : ['draft', 'returned', 'rejected'].includes(pf.stage) ? 'todo' : 'done' },
-    { label: 'الخطة والاتفاقية', state: pf.stage !== 'approved' && pf.stage !== 'closing' && pf.stage !== 'closed' ? 'todo' : gate.ok || pf.stage !== 'approved' ? 'done' : 'now' },
-    { label: 'المشاريع الفرعية', note: `${m.approvedCount} معتمد`, state: gate.ok ? 'now' : pf.stage === 'closing' || pf.stage === 'closed' ? 'done' : 'todo' },
-    { label: pf.stage === 'cancelled' ? 'ملغاة' : 'الإغلاق', state: pf.stage === 'closed' || pf.stage === 'cancelled' ? 'done' : pf.stage === 'closing' ? 'now' : 'todo' },
-  ]
+  /* Client 27 Oct · a portfolio passes every approval seat a regular project does · the same arc, the
+     seat read from its stage, the amount its value */
+  const PF_SEAT: Partial<Record<typeof pf.stage, Holder>> = { draft: 'supervisor', returned: 'supervisor', supervisor: 'supervisor', manager: 'manager', ceo: 'exec', committee: 'committee', board: 'board' }
+  const pfBase = authorityFor(pf.total, PF_SEAT[pf.stage] ?? null)
+  /* each seat reads the portfolio's value at it, like a project's stage amounts */
+  const pfAuthority = { ...pfBase, roles: pfBase.roles.map((r) => ({ ...r, amount: r.kind === 'submit' || r.state === 'done' || r.state === 'now' ? pf.total : null })) }
+  const ended = portfolioOutcome(pf.stage)
 
   /* The tabs open with the portfolio's life · the plan, agreement, indicators, payments and closing
      exist once it is finally approved, and the partner never sees the study and the hold */
@@ -147,11 +150,15 @@ export default function PortfolioPage() {
               <p className="sub mt-1">
                 <span className="num">{pf.id}</span> · {asPartner ? 'محفظتك' : <Link className="tlink" to={ROUTES.entity(partner)}>{entityName(pf)}</Link>} · {pf.track} · {pf.field} · فُتحت <DateText>{pf.openedAt}</DateText>
               </p>
-              <div className="gt-tag rowf gp-2">
-                <Tag tone={PF_STAGE_TONE[pf.stage]}>{PF_STAGE_SAY[pf.stage]}</Tag>
-                {/* Client sheet 24 Oct (#95) · the portfolio's outcome once it ends */}
-                <OutcomeTag outcome={portfolioOutcome(pf.stage)} />
-              </div>
+              {/* Client 27 Oct · an ended portfolio reads its outcome in the arc's centre, not here */}
+              {!ended && (
+                <div className="gt-tag rowf gp-2">
+                  <Tag tone={PF_STAGE_TONE[pf.stage]}>{PF_STAGE_SAY[pf.stage]}</Tag>
+                </div>
+              )}
+            </div>
+            <div className="pgates">
+              <GateArc amount={pf.total} authority={pfAuthority} compact={mobile} outcome={ended} />
             </div>
           </header>
 
@@ -170,11 +177,6 @@ export default function PortfolioPage() {
             <div className="col">
               {on('data') && (
                 <>
-                  <Glass>
-                    <Head title="مسار المحفظة" />
-                    <Steps items={steps} flow="ladder" />
-                  </Glass>
-
                   <Glass>
                     <Head title="بيانات المحفظة" />
                     <KV rows={[
