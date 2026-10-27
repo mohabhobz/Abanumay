@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { FieldSelect } from '@/components/ui'
+import { DateField, FieldSelect } from '@/components/ui'
 import { citiesOf, type RegField } from '@/data/mock/registration'
 
 /**
@@ -52,6 +52,9 @@ export function Field({
           label={f.label}
           placeholder={locked ? 'اختر المنطقة أولًا' : 'اختر'}
         />
+      ) : f.kind === 'date' ? (
+        /* Client 27 Oct · the system's own calendar · the browser's one read in English and its own style */
+        <DateField value={value} onChange={(x) => onChange(x)} label={f.label} disabled={disabled} />
       ) : (
         <span className="fld">
           {/* Note: `type="password"` isn't decoration, it's behavior. This field takes a password,
@@ -64,8 +67,7 @@ export function Field({
           <input
             id={`rf-${f.key}`}
             type={
-              f.kind === 'date' ? 'date'
-                : f.kind === 'number' ? 'number'
+              f.kind === 'number' ? 'number'
                   : f.kind === 'password' ? 'password'
                     : f.kind === 'email' ? 'email' : 'text'
             }

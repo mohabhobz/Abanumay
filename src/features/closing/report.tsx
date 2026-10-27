@@ -54,13 +54,13 @@ export function TargetActual({
             return (
               <tr key={r.key}>
                 <td className="tva-w"><b className="tva-k">{r.label}</b></td>
-                <td className="n">{r.money ? <Money sm>{r.target}</Money> : <><Num>{r.target}</Num> <span className="sub">{unitAfter(r.target, r.unit ?? '')}</span></>}</td>
+                <td className="n">{r.money ? <Money sm>{r.target}</Money> : <><Num>{r.target}</Num> <span className="sub unit">{unitAfter(r.target, r.unit ?? '')}</span></>}</td>
                 <td className="n">
                   {edit
                     ? r.money
                       ? <MoneyField value={v} onChange={(x) => onValue?.(r.key, x)} label={`${r.label} · الفعلي`} />
                       : <span className="fld"><input inputMode="numeric" value={v} onChange={(e) => onValue?.(r.key, e.target.value.replace(/\D/g, ''))} aria-label={`${r.label} · الفعلي`} placeholder="0" /></span>
-                    : actual === null ? <span className="sub">لم يُدخل</span> : r.money ? <Money sm>{actual}</Money> : <><Num>{actual}</Num> <span className="sub">{unitAfter(actual, r.unit ?? '')}</span></>}
+                    : actual === null ? <span className="sub">لم يُدخل</span> : r.money ? <Money sm>{actual}</Money> : <><Num>{actual}</Num> <span className="sub unit">{unitAfter(actual, r.unit ?? '')}</span></>}
                 </td>
                 {!edit && (
                   <td className="n">

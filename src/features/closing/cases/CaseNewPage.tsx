@@ -1,7 +1,7 @@
 import { holds, holdersSay } from '@/data/shared/decisions'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { BackTo, Empty, Glass, Head, KV, Money, MoneyField, Select, Tag } from '@/components/ui'
+import { DateField, BackTo, Empty, Glass, Head, KV, Money, MoneyField, Select, Tag } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -160,7 +160,7 @@ export default function CaseNewPage() {
                     </label>
                     <label className="regf">
                       <span className="lb">تاريخ استحقاقها</span>
-                      <span className="fld"><input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} aria-label="تاريخ استحقاق الدفعة الإضافية" /></span>
+                      <DateField value={dueAt} onChange={setDueAt} label="تاريخ استحقاق الدفعة الإضافية" />
                     </label>
                   </div>
                 )}

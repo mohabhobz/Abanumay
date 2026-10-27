@@ -271,7 +271,7 @@ export const REG_STAGES: RegStage[] = [
          is true of city: optional for them, required for us, kept required on purpose: geographic
          distribution feeds reports and indicators, and an empty city would leave rows with no city
          in every regional report (a deliberate decision, not an oversight). */
-      { key: 'licensor', label: 'جهة الإشراف الفني', kind: 'select', req: true, options: SUPERVISORS, wide: true },
+      { key: 'licensor', label: 'جهة الإشراف الفني', kind: 'select', req: true, options: SUPERVISORS },
       { key: 'region', label: 'المنطقة', kind: 'select', req: true, options: REGIONS, nl: true },
       { key: 'city', label: 'المحافظة / المدينة', kind: 'select', req: true, dependsOn: 'region' },
       { key: 'licenseNo', label: 'رقم الترخيص', kind: 'digits', req: true },

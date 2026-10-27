@@ -1,5 +1,5 @@
 import { nf } from '@/lib/format'
-import { Money } from '@/components/ui'
+import { Money, Riyal } from '@/components/ui'
 import type { EvidenceBlock as Block } from './types'
 
 /**
@@ -38,8 +38,13 @@ export function EvidenceBlock({ block }: { block: Block }) {
           {block.items.map((s) => (
             <div key={s.k}>
               <div className="lb">{s.k}</div>
-              <div className="cb-n num">{s.v}</div>
-              {s.u && <div className="sub">{s.u}</div>}
+              {/* Client 27 Oct · a unit (one word, or the riyal) sits beside the number · a note under it */}
+              {s.u && (s.u === '\u20C1' || !/\s/.test(s.u.trim()))
+                ? <div className="cb-n"><span className="num">{s.v}</span>{s.u === '\u20C1' ? <Riyal /> : <small>{s.u}</small>}</div>
+                : <>
+                    <div className="cb-n"><span className="num">{s.v}</span></div>
+                    {s.u && <div className="sub">{s.u}</div>}
+                  </>}
             </div>
           ))}
         </div>
