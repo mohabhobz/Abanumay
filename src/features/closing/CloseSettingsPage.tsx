@@ -221,10 +221,10 @@ function CriteriaTab() {
   const total = list.reduce((n, x) => n + x.weight, 0)
   return (
     <Glass className="tblcard">
-      <Head title="أسئلة تقييم المشروع وأوزانها" hint="تُقيَّم كل مسألة من 5 وتُحسب الدرجة من 100 بأوزانها" meta={<span className="sub">مجموع الأوزان <Num>{total}</Num></span>} />
+      <Head title="أسئلة تقييم المشروع ونقاطها" hint="يُعطي كل مقيِّم (مشرف المنح · مدير المنح · المدير التنفيذي) كل سؤال نقاطًا من حدّه · ويُحسب التقييم من 100" meta={<span className="sub">مجموع النقاط <Num>{total}</Num></span>} />
       <table className="tbl">
         <colgroup><col /><col /><col /></colgroup>
-        <thead><tr><th><span className="th-t">السؤال</span></th><th className="n"><span className="th-t">الوزن</span></th><th><span className="th-t" /></th></tr></thead>
+        <thead><tr><th><span className="th-t">السؤال</span></th><th className="n"><span className="th-t">النقاط</span></th><th><span className="th-t" /></th></tr></thead>
         <tbody>
           {list.map((x, i) => (
             <tr key={x.key}>
@@ -238,7 +238,7 @@ function CriteriaTab() {
       {may && (
         <div className="apv-row mt-2">
           <FieldBox><input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="سؤال جديد" aria-label="سؤال تقييم جديد" /></FieldBox>
-          <Button type="button" variant="2" size="sm" disabled={!label.trim()} onClick={() => { setList((l) => [...l, { key: `q${Date.now().toString(36)}`, label: label.trim(), weight: 10 }]); setLabel(''); setSaved(false) }}>أضف السؤال</Button>
+          <Button type="button" variant="2" size="sm" disabled={!label.trim()} onClick={() => { setList((l) => [...l, { key: `q${Date.now().toString(36)}`, label: label.trim(), weight: 10, points: true }]); setLabel(''); setSaved(false) }}>أضف السؤال</Button>
           <Button type="button" variant="p" size="sm" disabled={!total} onClick={() => { saveCloseRules({ ...CLOSE_RULES, evalCriteria: list }, user.name); setSaved(true) }}>احفظ الأسئلة</Button>
         </div>
       )}

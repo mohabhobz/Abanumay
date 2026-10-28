@@ -18,7 +18,9 @@ const STANDING: Record<HoldStage, string> = {
   planned: 'مربوط بلا حجز', initial: 'محجوز مبدئيًا', final: 'محجوز نهائيًا', closed: 'مُحرَّر · أُعيد الوفر',
 }
 
-export function FundingTab({ row }: { row: ProjectRow }) {
+/* Client 28 Oct · on a payment the tab reads where the money sits, not how much · each budget line
+   with its budget, track, field and goal, and no link card (the link is the project's to manage) */
+export function FundingTab({ row, pay = false }: { row: ProjectRow; pay?: boolean }) {
   useBudget()
   const l = linkOf(row.id)
   const plan = planOf(row.id)
@@ -36,8 +38,42 @@ export function FundingTab({ row }: { row: ProjectRow }) {
     ? [...new Set(rep.rows.map((r) => (r.doc ? yearById(r.doc.yearId)?.name : '') ?? ''))].filter(Boolean).join('، ')
     : multi ? multi.years.map((y) => yearById(y.yearId)?.name ?? '').filter(Boolean).join('، ') : ''
 
+  /* the line's own track · field · goal · named by the node's category when the tree has one, else by
+     depth (the budget · its track · the track's field · the field's goal), else the project's own */
+  const pathRows = (r: NonNullable<typeof rep>['rows'][number]) => {
+    const chain: NonNullable<typeof r.doc>['nodes'] = []
+    let cur = r.doc?.nodes.find((n) => n.id === r.share.nodeId)
+    while (cur) {
+      chain.unshift(cur)
+      const pid = cur.parentId
+      cur = pid ? r.doc?.nodes.find((n) => n.id === pid) : undefined
+    }
+    const up: Record<string, string> = {}
+    for (const n of chain) if (n.category && !up[n.category]) up[n.category] = n.label
+    if (!Object.keys(up).length) (['track', 'field', 'goal'] as const).forEach((k, i) => { const n = chain[i + 1]; if (n) up[k] = n.label })
+    const line = r.node?.label ?? r.share.nodeId
+    return [
+      /* the line itself only when it isn't the goal it already reads as */
+      ...(line !== up.goal ? [{ k: 'البند', v: line }] : []),
+      { k: 'الميزانية', v: r.doc ? docTitle(r.doc) : r.share.docId },
+      { k: 'المسار', v: up.track ?? row.track },
+      { k: 'المجال', v: up.field ?? row.field },
+      { k: 'الهدف', v: up.goal ?? row.goal },
+    ]
+  }
+
+  const impactPath = (
+    <Glass>
+      <Head title="أثر الربط على البنود" />
+      {rep && rep.rows.length > 0
+        ? rep.rows.map((r, i) => <KV key={`${r.share.docId}-${r.share.nodeId}-${i}`} rows={pathRows(r)} />)
+        : <KV rows={[{ k: 'المسار', v: row.track }, { k: 'المجال', v: row.field }, { k: 'الهدف', v: row.goal }]} />}
+    </Glass>
+  )
+
   return (
     <>
+      {pay && impactPath}
       <StatRow title="الربط المالي">
         <Stat label="حالة الربط المالي" value={status} note={l ? `نوع الحجز: ${HOLD_STAGE_SAY[l.stage]}` : undefined} />
         <Stat label="المبلغ المرتبط" value={<Num>{rep?.totals.amount ?? multi?.years.reduce((a, y) => a + y.amount, 0) ?? 0}</Num>} unit={<Riyal />} note={years ? `ميزانية ${years}` : '—'} />
@@ -46,16 +82,16 @@ export function FundingTab({ row }: { row: ProjectRow }) {
       </StatRow>
 
       {/* Client 27 Oct · the budget path the project sits on · track, field and goal */}
-      <Glass>
+      {!pay && <Glass>
         <Head title="بند الميزانية" />
         <KV rows={[
           { k: 'المسار', v: row.track },
           { k: 'المجال', v: row.field },
           { k: 'الهدف', v: row.goal },
         ]} />
-      </Glass>
+      </Glass>}
 
-      {rep && rep.rows.length > 0 && (
+      {!pay && rep && rep.rows.length > 0 && (
         <Glass>
           <Head title="أثر الربط على البنود" />
           <KV
@@ -82,7 +118,7 @@ export function FundingTab({ row }: { row: ProjectRow }) {
       )}
 
       {/* the link itself · shares, checks, relocation and its history, with the allowed actions */}
-      <FundingCard row={row} />
+      {!pay && <FundingCard row={row} />}
 
     </>
   )

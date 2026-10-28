@@ -4,7 +4,11 @@ import { RecordFiles } from '@/features/shared/RecordFiles'
 import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { closeScore } from '@/data/shared/ai'
-import { Related } from '@/components/related/Related'
+import { RecordEntityCard, RecordProjectCard } from '@/features/shared/RecordParties'
+import { PaymentsTab } from '@/features/projects/tabs/PaymentsTab'
+import { paymentsOfProject } from '@/data/payments/projectPayments'
+import { evalOf, mySeat, seatsOf } from '@/data/closing/evalSeats'
+import { EvalSummary } from './EvalSummary'
 import { useMemo, useRef, useState } from 'react'
 import { closingAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -22,16 +26,16 @@ import { useRole } from '@/hooks/useRole'
 import { useFillHeight } from '@/hooks/useFillHeight'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { assistFor } from '@/data/mock/assistant'
-import { isolate, MISSING_ITEM, nf, NOUN, nounAfter, pct, unitAfter, withUnit } from '@/lib/format'
+import { isolate, MISSING_ITEM, nf, NOUN, nounAfter } from '@/lib/format'
 import {
   CLOSE_DOCS, CLOSE_LIMIT, CLOSE_STAGES, canStartEval,
   closeById, closeCycle, closeStageLabel, closeStageWho, evalApproved, reportApproved,
   STOPPED_DOCS, needsComms, reportBlockers, reportGap,
 } from '@/data/mock/closing'
 import {
-  actOnClosing, approverFor, attachDoc, closeActions, closeSayOf, closeStops, evalScore, sendClosingReport, useClosing, type CloseAct,
+  actOnClosing, approverFor, attachDoc, closeActions, closeSayOf, closeStops, paidToDate, sendClosingReport, useClosing, type CloseAct,
 } from '@/data/closing/store'
-import { ExceptionCard, FeedbackCard, FinanceCard, RecoveryCard, RedirectCard, ReopenCard, RequirementsCard, VersionsCard } from './parts'
+import { ExceptionCard, FeedbackCard, FinanceCard, RecoveryCard, RedirectCard, ReopenCard, VersionsCard } from './parts'
 import { ReportFiles, TargetActual } from './report'
 import { closeKindSay } from './reportData'
 import { projectById } from '@/data/mock/projects'
@@ -233,8 +237,12 @@ export default function ClosePage() {
   const tabs: TabItem[] = [
     { slug: 'report', label: 'التقرير الختامي' },
     { slug: 'eval', label: 'التقييم' },
-    { slug: 'needs', label: 'المتطلبات والمالية' },
+    { slug: 'needs', label: 'الحالة المالية' },
     { slug: 'versions', label: 'الإصدارات' },
+    /* Client 28 Oct · the project's payments whatever their state, then the project and the entity */
+    { slug: 'payments', label: 'الدفعات' },
+    { slug: 'project', label: 'المشروع' },
+    { slug: 'entity', label: 'الجهة' },
     /* Client 27 Oct · the attachments and the log close every record's tabs */
     { slug: 'files', label: 'المرفقات' },
     { slug: 'log', label: 'سجل الإغلاق' },
@@ -273,7 +281,6 @@ export default function ClosePage() {
                   <> · الإصدار <span className="num">{c.versions.length}</span></>
                 )}
               </p>
-              <Related plain={asEntity} links={[{ kind: 'project', id: c.projectId, label: c.projectName }, { kind: 'entity', id: c.entityId, label: c.entityName }]} />
               <div className="gt-tag rowf gp-2">
                 <Tag tone="mute">{closeSayOf(c)}</Tag>
                 {/* Client sheet 24 Oct (#95) · the closing's outcome once it ends */}
@@ -398,65 +405,35 @@ export default function ClosePage() {
               </>}
 
               {tab === 'eval' && <>
-              {/* Evaluation - second cycle */}
-              <Glass>
-                <Head
-                  title="تقييم المشروع"
-                  meta={c.evaluation
-                    ? <Tag tone={closed ? 'ok' : 'teal'}>
-                      {closed ? 'معتمَد' : closeStageLabel(c.stage)}
-                    </Tag>
-                    : <Tag tone="mute">{canStartEval(c) ? 'جاهز للبدء' : 'لم يبدأ'}</Tag>}
-                />
-
-                {c.evaluation ? (
-                  <>
-                    <KV
-                      rows={c.evaluation.indicators.map((i) => ({
-                        k: `${i.name} · المستهدف ${withUnit(i.target, i.unit)}`,
-                        v: i.actual === null
-                          ? <span className="sub">بلا قيمة متحقّقة</span>
-                          : <span className={i.actual < i.target ? 'bad' : undefined}>
-                            {/* "%" stays inside the number's own block - it used to be a word in
-                                `.sub` and would flip direction. */}
-                            <span className="num">{i.unit === '%' ? pct(i.actual) : nf.format(i.actual)}</span>
-                            {i.unit !== '%' && <span className="sub"> {unitAfter(i.actual, i.unit)}</span>}
-                          </span>,
-                      })).concat([
-                        {
-                          k: c.evaluation.criteria?.length ? 'الدرجة الموزونة' : 'التقدير العام · استرشادي',
-                          v: evalScore(c.evaluation) === null
-                            ? <span className="sub">لم يُحدَّد</span>
-                            : <><span className="num">{evalScore(c.evaluation)}</span>
-                              <span className="sub"> من 100{/* doc 10.4.31 */}</span></>,
-                        },
-                        ...(c.evaluation.criteria ?? []).map((k) => ({
-                          k: `${k.label} · الوزن ${nf.format(k.weight)}`,
-                          v: k.rating === null ? <span className="sub">لم يُقيَّم</span> : <><span className="num">{k.rating}</span><span className="sub"> من 5</span></>,
-                        })),
-                        /* audit P07 · rows of the list, like the report's outcomes */
-                        ...(c.evaluation.impact ? [{ k: 'الأثر المرصود', v: <>{isolate(c.evaluation.impact)}</> }] : []),
-                        ...(c.evaluation.lessons ? [{ k: 'الدروس المستفادة', v: <>{isolate(c.evaluation.lessons)}</> }] : []),
-                      ])}
-                    />
-                    {!asEntity && !closed && (
-                      <div className="act-a">
-                        <ButtonLink variant="2" size="sm" to={ROUTES.closingEval(c.id)}>
-                          حرّر التقييم
-                          <Icon name={icons.chevron} size="sm" />
-                        </ButtonLink>
-                      </div>
-                    )}
-                  </>
-                ) : null}
-              </Glass>
-
+              {/* Client 28 Oct · each evaluator's evaluation under its own title · the supervisor's, the
+                  grants manager's and the executive's, in the order of the evaluation's path */}
+              {!c.evaluation ? (
+                <Glass>
+                  <Head title="تقييم المشروع" meta={<Tag tone="mute">{canStartEval(c) ? 'جاهز للبدء' : 'لم يبدأ'}</Tag>} />
+                </Glass>
+              ) : seatsOf(c).map((x, i, all) => {
+                const e = evalOf(c, x.who)
+                const now = all.findIndex((y) => y.stage === c.stage)
+                const ahead = !closed && now >= 0 && i > now
+                return (
+                  <EvalSummary key={x.who} title={x.title} ev={e} by={e?.by ?? (x.who === 'supervisor' ? c.owner : undefined)}
+                    meta={e ? <Tag tone={closed ? 'ok' : 'teal'}>{closed ? 'معتمَد' : x.stage === c.stage ? 'قيد التقييم' : 'قيّم'}</Tag> : <Tag tone="mute">{ahead ? 'لم يصل إليه' : 'لم يقيّم'}</Tag>}
+                    empty={ahead ? `يقيّم ${x.seat} حين يصل إليه التقييم.` : `لم يسجّل ${x.seat} تقييمه.`} />
+                )
+              })}
+              {c.evaluation && !asEntity && (
+                <div className="act-a">
+                  <ButtonLink variant="2" size="sm" to={ROUTES.closingEval(c.id)}>
+                    {!closed && mySeat(c, role.key) ? 'حرّر تقييمك' : 'افتح التقييمات وسجلها'}
+                    <Icon name={icons.chevron} size="sm" />
+                  </ButtonLink>
+                </div>
+              )}
               </>}
 
               {tab === 'needs' && <>
               {/* 10.4.8 · 10.4.18 · the requirements, named · the financial report and its savings */}
               <ExceptionCard c={c} asEntity={asEntity} />
-              <RequirementsCard c={c} asEntity={asEntity} />
               <FinanceCard c={c} asEntity={asEntity} />
               {c.recovery && <RecoveryCard rec={c.recovery} owner={{ kind: 'close', id: c.id }} asEntity={asEntity} />}
               <RedirectCard c={c} asEntity={asEntity} />
@@ -464,6 +441,13 @@ export default function ClosePage() {
 
               {/* Versions with their content and the two separate logs - rules 11, 15, 17 and 19 */}
               {tab === 'versions' && <VersionsCard c={c} />}
+              {tab === 'payments' && (() => {
+                const pays = paymentsOfProject(c.projectId)
+                return <PaymentsTab payments={pays} granted={pr ? pr.amountGranted || pr.amountRequested : 0} projectId={c.projectId}
+                  paidBefore={pays.length ? 0 : paidToDate(c.projectId)} />
+              })()}
+              {tab === 'project' && <RecordProjectCard projectId={c.projectId} projectName={c.projectName} />}
+              {tab === 'entity' && <RecordEntityCard entityId={c.entityId} entityName={c.entityName} />}
               {tab === 'files' && <RecordFiles record={`close:${c.id}`} me={asEntity ? c.entityName : user.name} canUpload={c.stage !== 'closed'}
                 seed={[...Object.values(c.report?.files ?? {}).map((n) => ({ name: n, meta: 'مستندات التقرير الختامي' })), ...(c.report?.uploads ?? []).map((u) => ({ name: u.name, meta: 'ملفات التنفيذ' }))]} />}
               {/* the two cycles' entries in one log · each named by its cycle */}

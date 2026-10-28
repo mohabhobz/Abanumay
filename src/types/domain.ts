@@ -743,7 +743,8 @@ export interface PayRequest {
   /** Finance approved the disbursement order — step 15 · the transfer waits for it (rule 9). */
   order?: { at: string; by: string }
   /** The executed transfer — step 17 · its proof is mandatory. */
-  transfer?: { at: string; by: string; bank: string; iban: string; proof: string }
+  /** `ref` · the transfer's number (رقم الحوالة) · client 28 Oct */
+  transfer?: { at: string; by: string; bank: string; iban: string; proof: string; ref?: string }
   /** Who the last return went back to · a manager's return reaches the supervisor, finance's the manager. */
   returnedBy?: 'supervisor' | 'manager' | 'finance'
   /** Decision date on a final rejection — rule 15. */
@@ -1079,6 +1080,9 @@ export interface ReportUpload {
  * is approved. It doesn't start before the executive director's
  * approval (Rule 6).
  */
+/** Client 28 Oct · the seats that evaluate a project · the supervisor writes `evaluation`, the others a review each */
+export type EvalSeat = 'manager' | 'ceo'
+
 export interface ProjectEval {
   /** Performance indicators — target versus achieved. */
   indicators: { name: string; target: number; actual: number | null; unit: string }[]
@@ -1090,7 +1094,7 @@ export interface ProjectEval {
   score: number | null
   /** v3 · 10.4.31 · the questions and weights in force when the evaluation started · rated 1–5 each ·
       the score out of 100 is read from them · an older evaluation keeps its own */
-  criteria?: { key: string; label: string; weight: number; rating: number | null }[]
+  criteria?: { key: string; label: string; weight: number; rating: number | null; points?: boolean }[]
 }
 
 /**
@@ -1145,6 +1149,8 @@ export interface CloseRow {
   basis?: 'ended' | 'complete' | 'stopped'
   /** The evaluation's own log — rule 17 keeps the two cycles' notes and decisions apart. */
   evalAudit?: CloseAudit[]
+  /** Client 28 Oct · each approver's own evaluation of the project, beside the supervisor's (`evaluation`) */
+  evalReviews?: Partial<Record<EvalSeat, ProjectEval & { by: string; at: string }>>
   /** Each version's content, so a previous one can be read and compared (10.4.15 · 10.4.19). */
   snapshots?: CloseSnapshot[]
   /** The final financial report and its settlements (10.1.input-3). */

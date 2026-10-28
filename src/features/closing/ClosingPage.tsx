@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ButtonLink, Button, StatRow,
-  DateText, Empty, Glass, Head, Icon, icons, MultiSelect, GroupPicker, Num, Person, SearchBox, Segments, Select, Stat,
-  Tag, Toggle, ViewToggle,
+import { useNavigate } from 'react-router-dom'
+import { ButtonLink, Button,
+  Empty, Glass, Icon, icons, MultiSelect, GroupPicker, SearchBox, Segments, Select,
+  Toggle, ViewToggle,
 } from '@/components/ui'
-import { PARTNER_CLOSE_SAY, partnerClosings, usePartners } from '@/data/partners/store'
-import { countOf, NOUN, nounAfter, pct, REQUEST_NOUN } from '@/lib/format'
+import { countOf, NOUN, nounAfter, REQUEST_NOUN } from '@/lib/format'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { useStickyGroup } from '@/hooks/useStickyGroup'
@@ -20,7 +19,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { readClosings } from '@/data/readings'
 import { OWNERS } from '@/data/mock/taxonomy'
 import {
-  CLOSE_STAGES, CLOSE_TARGET_DAYS, closeKpi, closeLate, closeRows, reportBlockers,
+  CLOSE_STAGES, closeKpi, closeLate, closeRows, reportBlockers,
 } from '@/data/mock/closing'
 import type { CloseRow, CloseStage } from '@/types/domain'
 import type { Sheet } from '@/lib/export'
@@ -165,8 +164,6 @@ export default function ClosingPage() {
     })),
   )
 
-  usePartners()
-  const partners = partnerClosings()
   return (
     <AppLayout assistantContext={assistFor.page('إغلاق المشاريع')}>
       <div className="viewstack">
@@ -193,32 +190,7 @@ export default function ClosingPage() {
             empty="لا يوجد طلب إغلاق متوقف في النطاق الحالي."
           />
 
-          {/* The document's four indicators, per 10.8 - not four arbitrary numbers. */}
-          <StatRow title="مؤشرات الإغلاق">
-            <Stat
-              label="متوسط مدة إغلاق المشروع"
-              value={k.avg === null ? '—' : <Num>{k.avg}</Num>}
-              unit={k.avg === null ? undefined : 'يومًا'}
-              hint={/* doc KPI 1 */ "من فتح الطلب حتى الإغلاق النهائي"}
-            />
-            <Stat
-              label="المغلقة ضمن المدة المستهدفة"
-              value={k.inTimePct === null ? '—' : <Num>{pct(k.inTimePct)}</Num>}
-              hint={/* doc KPI 2 */ `المدة المستهدفة ${countOf(CLOSE_TARGET_DAYS, NOUN.day)}`}
-              bar={k.inTimePct === null ? undefined : { w: `${k.inTimePct}%`, c: 'var(--teal)' }}
-            />
-            <Stat
-              label="متوسط مدة إعداد التقرير"
-              value={k.prepDays === null ? '—' : <Num>{k.prepDays}</Num>}
-              unit={k.prepDays === null ? undefined : 'يومًا'}
-              hint={/* doc KPI 3 */ "من فتح الطلب حتى إرسال الجهة"}
-            />
-            <Stat
-              label="المغلقة بعد استكمال المتطلبات"
-              value={k.fullPct === null ? '—' : <Num>{pct(k.fullPct)}</Num>}
-              bar={k.fullPct === null ? undefined : { w: `${k.fullPct}%`, c: 'var(--ok)' }}
-            />
-          </StatRow>
+          {/* Client 28 Oct · the closing indicators row is gone, like the plans' and the payments' */}
 
           <Segments
             active={readList(v.stage).length === 1 ? readList(v.stage)[0] : ''}
@@ -419,42 +391,7 @@ export default function ClosingPage() {
             })
           )}
 
-          {/* Batch 4 · 8 Oct · the partners' closings (an Ehsan project 11.2.21 · a portfolio 13.2.26) ·
-              their own procedure, so their own section, each linked to the page that closes it */}
-          {partners.length > 0 && (
-            <Glass className="tblcard">
-              <Head
-                title="إغلاقات الشركاء"
-                meta={<span className="sub"><Num>{partners.filter((x) => x.state === 'closing').length}</Num> بانتظار الإغلاق</span>}
-              />
-              <div className="tblwrap">
-                <table className="tbl">
-                  <thead>
-                    <tr>
-                      <th><span className="th-t">المشروع أو المحفظة</span></th>
-                      <th><span className="th-t">النوع</span></th>
-                      <th><span className="th-t">الشريك</span></th>
-                      <th><span className="th-t">المشرف</span></th>
-                      <th><span className="th-t">الإغلاق</span></th>
-                      <th><span className="th-t">التاريخ</span></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {partners.map((x) => (
-                      <tr key={`${x.kind}-${x.id}`}>
-                        <td><Link className="lnk" to={x.href}>{x.name}</Link></td>
-                        <td>{x.kind === 'portfolio' ? 'محفظة' : 'مشروع لجهة خارجية'}</td>
-                        <td>{x.partner}</td>
-                        <td>{x.owner ? <Person name={x.owner} /> : '—'}</td>
-                        <td><Tag tone={x.state === 'closed' ? 'ok' : x.state === 'closing' ? 'warn' : 'mute'}>{PARTNER_CLOSE_SAY[x.state]}</Tag></td>
-                        <td>{x.at ? <DateText>{x.at}</DateText> : '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Glass>
-          )}
+          {/* Client 28 Oct · the partners' closings card is gone · a portfolio or an Ehsan project closes from its own page */}
 
         </div>
       </div>

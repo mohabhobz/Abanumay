@@ -18,3 +18,7 @@
 .payacts col.c-pay{width:13%}
 .payacts tr.on td{background:color-mix(in srgb, var(--teal) 6%, transparent)}
 .payacts-save{padding:var(--sp-3) var(--sp-4) var(--sp-4);border-top:1px solid var(--edge-f)}
+
+/* Client 28 Oct · «إثبات الصرف» · each proof's files under its row */
+.payproof-fs{list-style:none;margin:var(--sp-2) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.payproof .payproof-f{flex-direction:row;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:0;border:0;background:none}

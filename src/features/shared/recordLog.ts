@@ -34,11 +34,11 @@ export function recordLog(prefix: string, dept: string, items: LogItem[], newest
 }
 
 /** The files added on a record and removed from it, as log entries · the entity's own uploads read as the entity's */
-export const fileMoves = (record: string, entityName: string): LogItem[] =>
+export const fileMoves = (record: string, entityName: string, place = 'المرفقات'): LogItem[] =>
   fileOpsOf(record).map((o) => ({
     at: o.at, by: o.by,
-    what: o.op === 'add' ? `أرفق «${o.name}» في المرفقات` : `حذف «${o.name}» من المرفقات`,
+    what: o.op === 'add' ? `أرفق «${o.name}» في ${place}` : `حذف «${o.name}» من ${place}`,
     actor: o.by === entityName ? 'entity' as const : 'staff' as const,
-    dept: 'المرفقات',
+    dept: place,
     fields: [{ k: 'الملف', v: o.name }],
   }))

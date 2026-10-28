@@ -82,6 +82,9 @@ export const setExternalSchedule = (f: typeof externalSchedule) => {
   emit()
 }
 /** Who may raise an external party's requirements on its behalf (9.4.5) */
+/** The bank transfer's number · on the server the bank's own reference, kept with the transfer */
+export const transferRef = (id: string): string => `TRF-${id.replace('SR-', '')}`
+
 export const PROXY_ROLES: RoleKey[] = ['supervisor', 'grants-manager']
 
 export function agreementOk(projectId: string): boolean {
@@ -776,7 +779,7 @@ function applyOp(o: Op) {
           if (r.state !== 'finance' || !r.order || !o.file) return
           const own = accountOf(r.entityId)
           const b = own && own.bank === r.bank.name ? own : banksOf(r.entityId).find((x) => x.bank === r.bank.name) ?? own
-          r.transfer = { at: day(o.at), by: o.by, bank: r.bank.name, iban: b?.iban ?? '', proof: o.file }
+          r.transfer = { at: day(o.at), by: o.by, bank: r.bank.name, iban: b?.iban ?? '', proof: o.file, ref: transferRef(r.id) }
           r.paidAt = day(o.at)
           r.docs.push({ name: o.file, kind: 'إثبات التحويل', at: day(o.at), size: '—' })
           move(r, 'paid')
@@ -889,7 +892,7 @@ function seed() {
       const at = r.log.find((e) => e.step === 14)?.at ?? r.paidAt ?? r.at
       r.order = { at, by: 'ريم الشمري' }
       const b = banksOf(r.entityId).find((x) => x.bank === r.bank.name)
-      r.transfer = { at: r.paidAt ?? at, by: 'ريم الشمري', bank: r.bank.name, iban: b?.iban ?? '', proof: 'إشعار التحويل البنكي.pdf' }
+      r.transfer = { at: r.paidAt ?? at, by: 'ريم الشمري', bank: r.bank.name, iban: b?.iban ?? '', proof: 'إشعار التحويل البنكي.pdf', ref: transferRef(r.id) }
     }
   }
   /* v3 · 9.2.7 · two records whose requirements the supervisor approved · «مؤهلة للصرف», the permit his to create */

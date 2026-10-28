@@ -24,7 +24,7 @@ import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
 import type {
   CaseKind, CaseRow, CaseStage, CloseAudit, CloseFinance, CloseRow, CloseStage, EntityFeedback, FinalReport,
-  ProjectEval, Recovery, RecoveryReceipt, ReportUpload, SupportRedirect,
+  EvalSeat, ProjectEval, Recovery, RecoveryReceipt, ReportUpload, SupportRedirect,
 } from '@/types/domain'
 import { isDone, isLive } from '@/data/status'
 
@@ -59,7 +59,8 @@ export const MATRIX_SAY: Record<MatrixKey, string> = {
   report: 'اعتماد التقرير الختامي', eval: 'اعتماد تقييم المشروع', stop: 'إيقاف المشروع أو إلغاؤه',
   reduce: 'تخفيض قيمة المشروع', increase: 'زيادة قيمة المشروع', savings: 'القرار النهائي في الوفر غير المسترد', redirect: 'إعادة توجيه الدعم',
 }
-export interface EvalCriterion { key: string; label: string; weight: number }
+/** `points` · client 28 Oct · the question takes points out of its weight (the old system's way) instead of a 1–5 rating */
+export interface EvalCriterion { key: string; label: string; weight: number; points?: boolean }
 export interface CloseRules {
   /** 10.9.3 · 10.9.8 · recovered money goes back to the line at once when the recovery completes, or with each receipt */
   releaseMode: 'once' | 'gradual'
@@ -69,12 +70,25 @@ export interface CloseRules {
   /** v3 · 10.4.31 · the evaluation's questions and weights · for evaluations started after the change */
   evalCriteria?: EvalCriterion[]
 }
+/* Client 28 Oct · the old system's evaluation questions, each with its points · asked of every evaluator
+   (the supervisor, the grants manager, the executive) · the score is the points' sum out of 100 */
 export const EVAL_CRITERIA_DEFAULT: EvalCriterion[] = [
+  { key: 'time', label: 'مدى التطابق بين الخطة الزمنية الأساسية والفعلية للمشروع', weight: 20, points: true },
+  { key: 'outputs', label: 'مدى التطابق بين مخرجات المشروع الأساسية والفعلية', weight: 20, points: true },
+  { key: 'budget', label: 'مدى التطابق بين الموازنة المالية الأساسية والفعلية للمشروع', weight: 20, points: true },
+  { key: 'reach', label: 'مدى التطابق بين عدد المستفيدين الأساسي والفعلي من المشروع بشكل مباشر', weight: 10, points: true },
+  { key: 'reports', label: 'جودة تقارير المشروع', weight: 20, points: true },
+  { key: 'engage', label: 'مدى تفاعل الجهة في استكمال متطلبات المشروع', weight: 10, points: true },
+]
+/** The earlier weighted 1–5 questions · what a portfolio's closing keeps asking */
+export const EVAL_CRITERIA_LEGACY: EvalCriterion[] = [
   { key: 'goals', label: 'تحقيق الأهداف والمخرجات المتفق عليها', weight: 40 },
   { key: 'quality', label: 'جودة التنفيذ', weight: 25 },
   { key: 'time', label: 'الالتزام بمدة التنفيذ', weight: 15 },
   { key: 'money', label: 'كفاءة استخدام المنحة', weight: 20 },
 ]
+/** The questions a new evaluation asks · the settings' list, else the default */
+export const evalCriteriaNow = (): EvalCriterion[] => CLOSE_RULES.evalCriteria ?? EVAL_CRITERIA_DEFAULT
 export const CLOSE_RULES: CloseRules = { releaseMode: 'once', redirectBy: ['ceo'], matrix: {}, evalCriteria: EVAL_CRITERIA_DEFAULT }
 /** Who approves an item last for this project · its value read against the rule */
 export function approverFor(key: MatrixKey, projectId: string, value?: number): 'ceo' | 'grants-manager' {
@@ -391,7 +405,8 @@ export function evalScore(e: ProjectEval | null | undefined): number | null {
     const rated = e.criteria.filter((x) => x.rating !== null)
     if (rated.length !== e.criteria.length) return null
     const w = e.criteria.reduce((s, x) => s + x.weight, 0) || 1
-    return Math.round(e.criteria.reduce((s, x) => s + x.weight * ((x.rating ?? 0) / 5), 0) / w * 100)
+    /* a points question counts its points · a 1–5 question its share of its weight */
+    return Math.round(e.criteria.reduce((s, x) => s + (x.points ? Math.min(x.rating ?? 0, x.weight) : x.weight * ((x.rating ?? 0) / 5)), 0) / w * 100)
   }
   return e.score === null ? null : e.score * 20
 }
@@ -423,6 +438,7 @@ type Op = { at: string; by: string } & (
   | { op: 'evalStart'; id: string }
   | { op: 'evalSave'; id: string; evaluation: ProjectEval }
   | { op: 'evalSend'; id: string }
+  | { op: 'evalReview'; id: string; seat: EvalSeat; evaluation: ProjectEval }
   | { op: 'evalAct'; id: string; act: 'approve' | 'return'; note: string }
   | { op: 'feedback'; id: string; feedback: Omit<EntityFeedback, 'at' | 'by'> }
   | { op: 'rules'; rules: CloseRules }
@@ -678,6 +694,14 @@ function applyOp(o: Op) {
       if (!c || c.stage !== 'evalDraft') return
       c.evaluation = structuredClone(o.evaluation)
       elog(c, o.by, 'حفظ التقييم', o.at)
+      return
+    }
+    /* Client 28 Oct · the grants manager and the executive each evaluate the project at their own stage */
+    case 'evalReview': {
+      const c = closeById(o.id)
+      if (!c || c.stage !== (o.seat === 'manager' ? 'evalManager' : 'evalExecutive')) return
+      ;(c.evalReviews ??= {})[o.seat] = { ...structuredClone(o.evaluation), by: o.by, at: day(o.at) }
+      elog(c, o.by, o.seat === 'manager' ? 'حفظ تقييم مدير المنح' : 'حفظ تقييم المدير التنفيذي', o.at)
       return
     }
     case 'evalSend': {
@@ -1130,7 +1154,8 @@ hydrate()
 
 setOpenGate(openGate)
 /* v3 · 13.2.30 · a portfolio closes by this procedure's matrix and evaluation questions */
-setPfCloseRules((k, v) => approverFor(k, '', v), () => CLOSE_RULES.evalCriteria ?? EVAL_CRITERIA_DEFAULT)
+/* a portfolio's closing keeps its 1–5 questions · the points questions are the project evaluation's */
+setPfCloseRules((k, v) => approverFor(k, '', v), () => { const l = evalCriteriaNow(); return l.some((x) => x.points) ? EVAL_CRITERIA_LEGACY : l })
 setReqGate((c) => {
   if (c.stage === 'closed') return { ok: true, say: 'اكتملت المتطلبات المالية والإدارية' }
   const miss = requirementsOf(c).filter((x) => !x.ok)
@@ -1292,6 +1317,8 @@ export function verifyInvoices(id: string, amount: number, note: string, by: str
   return []
 }
 export const saveEvaluation = (id: string, evaluation: ProjectEval, by: string) => run({ op: 'evalSave', id, evaluation, by, at: now() })
+/** Client 28 Oct · an approver's own evaluation · at his stage only */
+export const saveEvalReview = (id: string, seat: EvalSeat, evaluation: ProjectEval, by: string) => run({ op: 'evalReview', id, seat, evaluation, by, at: now() })
 export function sendFeedback(id: string, scores: Record<string, number>, comment: string, by: string): string[] {
   if (FEEDBACK_ITEMS.some((x) => !scores[x.key])) return ['قيّم كل البنود']
   run({ op: 'feedback', id, feedback: { scores, comment }, by, at: now() })

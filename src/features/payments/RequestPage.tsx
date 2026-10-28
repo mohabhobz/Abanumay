@@ -4,6 +4,7 @@ import { RecordFiles } from '@/features/shared/RecordFiles'
 import { RecordEntityCard, RecordProjectCard } from '@/features/shared/RecordParties'
 import { useFiles } from '@/data/shared/files'
 import { PayActivities } from './PayActivities'
+import { PayProofs } from './PayProofs'
 import { payActOps, usePayActs } from '@/data/payments/payActs'
 import { NextStep } from '@/components/assistant/NextStep'
 import { extDocsOf, isExternalParty } from '@/data/partners/store'
@@ -25,8 +26,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { payRequestById, payStateWho } from '@/data/mock/disbursements'
 import { isolate, NOUN, nounAfter, pct, readDate } from '@/lib/format'
 import {
-  PAY_PROOFS,
-  bankIssues, banksOf,
+  bankIssues, banksOf, proofRecords,
 } from '@/data/mock/payEntity'
 import type { PayRequest } from '@/types/domain'
 import { ActionDock } from './ActionDock'
@@ -34,7 +34,7 @@ import { PayExceptions } from './PayExceptions'
 import { PayeeCard } from './PayeeCard'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import { readPayRequest } from '@/data/recordReadings'
-import { PROXY_ROLES, actOnPay, grantLeft, mayResubmit, payActions, payStops, usePayments, type PayAction } from '@/data/payments/store'
+import { PROXY_ROLES, transferRef, actOnPay, grantLeft, mayResubmit, payActions, payStops, usePayments, type PayAction } from '@/data/payments/store'
 import { PlanTab } from '@/features/projects/tabs/PlanTab'
 import { FundingTab } from '@/features/projects/tabs/FundingTab'
 import { planOfProject } from '@/data/mock/plans'
@@ -229,13 +229,11 @@ export default function RequestPage() {
 
   /* v3 · 9.2.10 · the permit exists once the supervisor created it */
   const permitOn = Boolean(r.permitAt)
-  const orderNo = `PO-${r.id.replace('SR-', '')}`
-  const orderReady = r.state === 'finance' || r.state === 'paid'
   const prow = projectById(r.projectId)
   const tabs: TabItem[] = [
     { slug: 'data', label: 'بيانات الدفعة' },
     { slug: 'needs', label: 'المتطلبات' },
-    ...(asEntity ? [] : [{ slug: 'order', label: 'أمر الصرف والتحويل' }]),
+    ...(asEntity ? [] : [{ slug: 'order', label: 'التحويل ومرفقاته' }]),
     { slug: 'plan', label: 'الخطة' },
     ...(asEntity ? [] : [{ slug: 'funding', label: 'الربط المالي' }]),
     { slug: 'project', label: 'المشروع' },
@@ -448,72 +446,24 @@ export default function RequestPage() {
               </>}
 
               {tab === 'order' && <>
-                <Glass>
-                  <Head
-                    title={`أمر الصرف · ${orderNo}`}
-                    meta={
-                      r.state === 'paid'
-                        ? <Tag tone="ok">نُفّذ</Tag>
-                        : r.order
-                          ? <Tag tone="teal">معتمد · جاهز للتنفيذ</Tag>
-                          : orderReady
-                            ? <Tag tone="warn">مسودة · بانتظار اعتماد المالية</Tag>
-                            : <Tag tone="mute">لم يُنشأ بعد</Tag>
-                    }
-                  />
-                  {orderReady ? (
-                    <>
-                      <KV rows={[
-                        { k: 'قيمة الأمر', v: <Money sm>{r.asked}</Money> },
-                        { k: 'الحساب المعتمد', v: <>{r.bank.name}{r.bank.active ? '' : <span className="bad"> · غير نشط</span>}</> },
-                        { k: 'مصادر التمويل', v: r.sources.map((x) => `${x.name} ${pct(x.share)}`).join(' · ') },
-                      ]} />
-                      <div className="rowf gp-2">
-                        <ButtonLink variant="2" size="sm" to={ROUTES.paymentOrder(r.id)}>
-                          <Icon name={icons.doc} size="sm" />
-                          افتح أمر الصرف
-                        </ButtonLink>
-                      </div>
-                    </>
-                  ) : (
-                    <Empty title="يُنشأ أمر الصرف بعد اعتماد الإدارة المالية." />
-                  )}
-                </Glass>
-
-                {/* 9.2.17 · 9.1.output-2 - the executed transfer, with its proof. */}
+                {/* Client 28 Oct · «التحويل ومرفقاته» · the order card is gone · the executed transfer
+                    with its number and date (9.2.17 · 9.1.output-2), then its proofs */}
                 <Glass>
                   <Head title="التحويل المنفَّذ" meta={r.transfer ? <Tag tone="ok">تم الصرف</Tag> : <Tag tone="mute">لم يُنفَّذ</Tag>} />
-                  {r.transfer ? (
-                    <KV
-                      rows={[
-                        { k: 'تاريخ التحويل', v: <DateText>{r.transfer.at}</DateText> },
+                  <KV
+                    rows={[
+                      { k: 'رقم الحوالة', v: r.transfer ? <Mono>{r.transfer.ref ?? transferRef(r.id)}</Mono> : <span className="sub">يُسجَّل عند التحويل</span> },
+                      { k: 'تاريخ الحوالة', v: r.transfer ? <DateText>{r.transfer.at}</DateText> : <span className="sub">يُسجَّل عند التحويل</span> },
+                      ...(r.transfer ? [
                         { k: 'البنك', v: r.transfer.bank },
                         { k: 'الحساب', v: <span className="num">{r.transfer.iban}</span> },
                         { k: 'نفّذه', v: <Person name={r.transfer.by} /> },
-                        { k: 'إثبات التحويل', v: <span className="trim1">{r.transfer.proof}</span> },
-                      ]}
-                    />
-                  ) : <Empty title="لم يُنفَّذ التحويل بعد." />}
+                      ] : []),
+                    ]}
+                  />
                 </Glass>
 
-                {/* === H-4 - the two documents aren't the same type === */}
-                <Glass>
-                  <Head title="إثبات الصرف" />
-                  <ul className="payproof">
-                    {PAY_PROOFS.map((x) => (
-                      <li key={x.key}>
-                        <span className="payproof-h">
-                          <b>{x.label}</b>
-                          <span className="sub">· {x.by}</span>
-                          <span className="pc-sp" />
-                          <Tag tone={x.required ? 'warn' : 'mute'}>
-                            {x.required ? 'إلزامي' : 'اختياري'}
-                          </Tag>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </Glass>
+                <PayProofs r={r} me={asEntity ? r.entityName : user.name} asEntity={asEntity} />
               </>}
 
               {tab === 'project' && <RecordProjectCard projectId={r.projectId} projectName={r.projectName} />}
@@ -573,7 +523,7 @@ export default function RequestPage() {
                     ))}
                   </ul>
                 </Glass>
-                {prow && <FundingTab row={prow} />}
+                {prow && <FundingTab row={prow} pay />}
               </>}
 
               {tab === 'files' && <RecordFiles record={`pay:${r.id}`} me={asEntity ? r.entityName : user.name} canUpload={r.state !== 'paid'}
@@ -587,6 +537,7 @@ export default function RequestPage() {
                   fields: e.notified ? [{ k: 'الإشعار', v: e.notified }] : [],
                 })),
                 ...fileMoves(`pay:${r.id}`, r.entityName),
+                ...proofRecords(r.id).flatMap((x) => fileMoves(x.record, r.entityName, x.place)),
                 ...actMoves(r),
               ].sort((a, b) => a.at.localeCompare(b.at)))} />}
             </div>

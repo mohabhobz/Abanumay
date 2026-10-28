@@ -1,6 +1,6 @@
 import { holds } from '@/data/shared/decisions'
 import { useState } from 'react'
-import { FormField, FieldBox, Button, DockActions, DateText, Glass, Head, Icon, KV, Money, MoneyField, Num, Person, Select, Tabs, Tag, icons } from '@/components/ui'
+import { FormField, FieldBox, Button, DockActions, DateText, Glass, Head, Icon, KV, Mono, Money, MoneyField, Num, Person, Select, Tabs, Tag, icons } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { useRole } from '@/hooks/useRole'
 import { isolate, nf } from '@/lib/format'
@@ -12,6 +12,9 @@ import {
   closeSayOf, EXC_FIELDS, mayException, recordException, type ExcField, mayReopen, reopenClosing,
 } from '@/data/closing/store'
 import { settleSlot, unsettledSlots } from '@/data/payments/store'
+import { PAY_SLOT_SAY } from '@/data/mock/disbursements'
+import { Link } from 'react-router-dom'
+import { ROUTES } from '@/app/routes'
 import type { CloseRow, CloseSnapshot, FinalReport, Recovery } from '@/types/domain'
 
 /* Closing parts (BPD-010) · the cards the closing page and the distress page share.
@@ -43,6 +46,12 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
   /* v3 · 10.4.6 · the spend is approved at the supervisor's review · locked once the report goes on */
   const mayVerify = !asEntity && role.key === 'supervisor' && c.stage === 'supervisor'
   const mayClaim = !asEntity && role.key === 'supervisor' && c.stage !== 'closed'
+  /* Client 28 Oct · the payments still not paid or settled read under the figures, with the settle
+     action the requirements card used to carry (10.4.2) */
+  const slots = unsettledSlots(c.projectId)
+  const open = [...slots.due, ...slots.future]
+  const settleable = open.filter((s) => s.state !== 'pending')
+  const maySettle = !asEntity && role.key === 'supervisor' && c.stage !== 'closed'
   return (
     <Glass>
       <Head
@@ -51,10 +60,9 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
       />
       <KV
         rows={[
-          ...(f?.lines ?? []).map((l) => ({
-            k: `${l.label} · المعتمد ${nf.format(l.approved)}`,
-            v: l.spent === null ? <span className="sub">لم يُدخل بعد</span> : <span className={l.spent > l.approved ? 'bad' : undefined}><Num>{l.spent}</Num></span>,
-          })),
+          /* Client 28 Oct · each figure beside its own name · the line's approved amount reads as itself,
+             its spend lives in the report's table and in the approved spend below */
+          ...(f?.lines ?? []).map((l) => ({ k: `${l.label} المعتمد`, v: <Money sm>{l.approved}</Money> })),
           { k: 'المصروف للجهة حتى الآن', v: <Money sm>{paid}</Money> },
           ...(settled > 0 ? [{ k: 'سُوّي بقرار الحالة (استرداد أو توجيه)', v: <Money sm>{settled}</Money> }] : []),
           { k: 'المصروف المعتمد من التقرير المالي', v: f?.verified == null ? <span className="sub">لم يعتمده المشرف بعد</span> : <><Money sm>{f.verified}</Money>{f.verifiedBy && <span className="sub"> · {f.verifiedBy}</span>}</> },
@@ -71,6 +79,46 @@ export function FinanceCard({ c, asEntity }: { c: CloseRow; asEntity: boolean })
             subject={<>{c.projectName} · المصروف الفعلي {nf.format(Number(amount) || 0)} ريال</>}
             onRun={(_x, n) => { const out = verifyInvoices(c.id, Number(amount), n, user.name); setBad(out); if (!out.length) setAmount(''); return out }}
           />
+        </div>
+      )}
+      {open.length > 0 && (
+        <div className="cl-open mt-3">
+          <h3 className="cl-open-t">الدفعات غير المكتملة <span className="sub">· <Num>{open.length}</Num></span></h3>
+          <div className="tblwrap">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th><span className="th-t">الدفعة</span></th>
+                  <th><span className="th-t">المبلغ</span></th>
+                  <th><span className="th-t">تاريخ الاستحقاق</span></th>
+                  <th><span className="th-t">الحالة</span></th>
+                  <th><span className="th-t">طلب الصرف</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {open.map((s) => (
+                  <tr key={s.no}>
+                    <td>الدفعة <Num>{s.no}</Num> من <Num>{s.of}</Num></td>
+                    <td><Money sm>{s.amount}</Money></td>
+                    <td><DateText>{s.dueAt}</DateText></td>
+                    <td><Tag tone={slots.due.includes(s) ? 'warn' : 'mute'}>{PAY_SLOT_SAY[s.state].label}</Tag></td>
+                    <td>{s.requestId ? <Link className="tlink" to={ROUTES.payment(s.requestId)}><Mono>{s.requestId}</Mono></Link> : <span className="sub">—</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {maySettle && settleable.length > 0 && (
+            <div className="apv-row mt-2">
+              {/* Client 26 Oct · the reason in the decision's popup */}
+              <DockActions
+                actions={settleable.map((s) => ({ label: `سوِّ الدفعة ${s.no}`, kind: 'btn-2 btn-sm', needsNote: true, no: s.no }))}
+                subject={<>{c.projectName} · تُسوّى بقرار بدل صرفها ويُحرَّر محجوزها عند الإغلاق</>}
+                placeholder="سبب التسوية"
+                onRun={(x, n) => { const out = settleSlot(c.projectId, x.no, n, user.name); setBad(out); return out }}
+              />
+            </div>
+          )}
         </div>
       )}
       {due > 0 && !c.recovery && mayClaim && (

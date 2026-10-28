@@ -48,9 +48,9 @@ import { journeys } from '@/data/journey'
 import { BudgetLinkAction } from '@/features/budget/BudgetLink'
 import { FundingTab } from './tabs/FundingTab'
 import { useBudget } from '@/data/budget/store'
-import { scheduleOf, usePayments } from '@/data/payments/store'
-import { PAY_SLOT_SAY, payRequestById } from '@/data/mock/disbursements'
+import { usePayments } from '@/data/payments/store'
 import type { PaymentDetail } from '@/data/mock/detail'
+import { paymentsOfProject } from '@/data/payments/projectPayments'
 import { authorityFor, holderOf } from '@/data/holders'
 import { APPROVAL_MATRIX } from '@/data/approval'
 import { appFlowOf, approvalEvents, decide as decideApproval, seatOptions, supportAmount, useApprovals } from '@/data/approvals/store'
@@ -333,18 +333,7 @@ export default function ProjectPage() {
   /* Re-audit 7 Oct · the payments tab reads the payment store's schedule · it read a generator */
   usePayments()
   useLegacy()
-  const livePayments: PaymentDetail[] = scheduleOf(project.id).map((x) => {
-    const r = x.requestId ? payRequestById(x.requestId) : undefined
-    const paid = x.state === 'paid'
-    /* Batch 2 · the order is issued once the manager passes the request to finance · it read «تمّت»
-       on every payment, paid or not */
-    return {
-      no: x.no, amount: x.amount, date: paid ? r?.paidAt ?? x.legacy?.paidAt ?? x.dueAt : x.dueAt,
-      status: paid ? 'مدفوع' : PAY_SLOT_SAY[x.state].label, voucher: paid ? r?.id ?? x.legacy?.voucher : undefined,
-      condition: x.condition, basis: x.basis, via: paid ? r?.bank?.name ?? (r ? 'حساب الجهة' : undefined) : undefined, receipt: paid && Boolean(r),
-      authorized: paid || r?.state === 'finance', before: paid && !r,
-    }
-  })
+  const livePayments: PaymentDetail[] = paymentsOfProject(project.id)
   /* Follow-ups added from the tab join the project's own, so the tab and the log read one list. */
   const followUps = useFollowUps(project.id)
   const detail = useMemo(

@@ -93,6 +93,13 @@ export interface PayProof {
   why: string
 }
 
+/** Client 28 Oct · the files-store keys of a payment's proofs and its other supporting files · read by the payment's log */
+export const proofRecords = (id: string): { record: string; place: string }[] => [
+  { record: `pay:${id}:proof-transfer`, place: 'إثبات التحويل' },
+  { record: `pay:${id}:proof-receipt`, place: 'سند القبض' },
+  { record: `pay:${id}:proof-other`, place: 'مرفقات الصرف الأخرى' },
+]
+
 export const PAY_PROOFS: PayProof[] = [
   {
     key: 'transfer',

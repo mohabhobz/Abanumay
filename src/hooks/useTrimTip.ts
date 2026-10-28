@@ -9,7 +9,11 @@ export function useTrimTip(): void {
   useEffect(() => {
     let tip: HTMLDivElement | null = null
     let on: HTMLElement | null = null
-    const hide = () => { tip?.remove(); tip = null; on = null }
+    /* Client 28 Oct · one tip, not two · a cut text that also carries a native `title` showed the
+       browser's tip over ours · the title steps aside while ours shows and comes back after */
+    let muted: { el: HTMLElement; title: string }[] = []
+    const unmute = () => { muted.forEach((m) => m.el.setAttribute('title', m.title)); muted = [] }
+    const hide = () => { tip?.remove(); tip = null; on = null; unmute() }
     const over = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null
       const cell = t?.closest?.('.tbl td, .tbl th') as HTMLElement | null
@@ -21,6 +25,10 @@ export function useTrimTip(): void {
       hide()
       const text = el.innerText.trim()
       if (!text) return
+      for (let x: HTMLElement | null = t; x && x !== cell.parentElement; x = x.parentElement) {
+        const title = x.getAttribute('title')
+        if (title !== null) { muted.push({ el: x, title }); x.removeAttribute('title') }
+      }
       const r = el.getBoundingClientRect()
       tip = document.createElement('div')
       tip.className = 'trimtip'
