@@ -7,7 +7,7 @@ import { assistFor } from '@/data/mock/assistant'
 import { nf, MISSING_ITEM, nounAfter, pct, unitAfter } from '@/lib/format'
 import { canStartEval, closeById, evalApproved, evalBlockers } from '@/data/mock/closing'
 import { evalCriteriaNow, evalScore, saveEvalReview, saveEvaluation, useClosing } from '@/data/closing/store'
-import { evalOf, mySeat, seatsOf } from '@/data/closing/evalSeats'
+import { evalAt, evalOf, mySeat, seatsOf } from '@/data/closing/evalSeats'
 import { EvalSummary } from './EvalSummary'
 import { LogTab } from '@/features/projects/tabs'
 import { recordLog } from '@/features/shared/recordLog'
@@ -130,7 +130,7 @@ export default function EvalEditPage() {
   const readOf = (x: (typeof seats)[number]) => {
     const e = evalOf(c, x.who)
     const ahead = !done && seats.indexOf(x) > at
-    return <EvalSummary key={x.who} title={x.title} ev={e} by={e?.by ?? (x.who === 'supervisor' ? c.owner : undefined)}
+    return <EvalSummary key={x.who} title={x.title} ev={e} by={e?.by ?? (x.who === 'supervisor' ? c.owner : undefined)} at={evalAt(c, x.who)}
       meta={e ? <Tag tone="ok">قيّم</Tag> : <Tag tone="mute">{ahead ? 'لم يصل إليه' : 'لم يقيّم'}</Tag>}
       empty={ahead ? `يقيّم ${x.seat} حين يصل إليه التقييم.` : `لم يسجّل ${x.seat} تقييمه.`} />
   }

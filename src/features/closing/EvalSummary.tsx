@@ -1,28 +1,44 @@
-import type { ReactNode } from 'react'
-import { Empty, Glass, Head, KV, Person } from '@/components/ui'
+import { useState, type ReactNode } from 'react'
+import { Button, DateText, Glass, Head, Icon, KV, Num, Person, icons } from '@/components/ui'
 import { isolate, nf, pct, unitAfter, withUnit } from '@/lib/format'
 import { evalScore } from '@/data/closing/store'
 import type { ProjectEval } from '@/types/domain'
 
-/* Client 28 Oct · one evaluator's evaluation, read · the same rows the closing page showed for the
-   supervisor's, now for each of the three seats under its own title */
+/* Client 28 Oct · one evaluator's evaluation, read · a record that opens and closes · closed it reads
+   who evaluated, when, and the score · «تفاصيل التقييم» opens the questions, the indicators and the
+   lessons, and closes them again, so three evaluations stay a short screen */
 
-export function EvalSummary({ title, ev, meta, by, empty, children }: {
+export function EvalSummary({ title, ev, meta, by, at, empty, children }: {
   title: string
   ev?: ProjectEval
   meta?: ReactNode
   by?: string
+  /** The day it was written */
+  at?: string
   /** What reads when this seat hasn't evaluated yet */
   empty?: string
   children?: ReactNode
 }) {
+  const [open, setOpen] = useState(false)
+  const score = ev ? evalScore(ev) : null
   return (
-    <Glass>
+    <Glass className="evrec">
       <Head title={title} meta={meta} />
-      {ev ? (
+      {ev && (
+        <div className="evrec-h">
+          {by && <span className="evrec-i"><span className="sub">المقيِّم</span><Person name={by} /></span>}
+          {at && <span className="evrec-i"><span className="sub">تاريخ التقييم</span><DateText>{at}</DateText></span>}
+          <span className="evrec-i"><span className="sub">حساب التقييم</span>{score === null ? <span className="sub">لم يُحدَّد</span> : <b><Num>{score}</Num> <span className="sub">من 100</span></b>}</span>
+          <span className="pc-sp" />
+          <Button plain type="button" className="lgmore" aria-expanded={open} onClick={() => setOpen((x) => !x)}>
+            <Icon name={open ? icons.chevronUp : icons.chevronDown} size="sm" />
+            {open ? 'أخفِ التفاصيل' : 'تفاصيل التقييم'}
+          </Button>
+        </div>
+      )}
+      {ev ? open && (
         <KV
           rows={[
-            ...(by ? [{ k: 'المقيِّم', v: <Person name={by} /> }] : []),
             ...ev.indicators.map((i) => ({
               k: `${i.name} · المستهدف ${withUnit(i.target, i.unit)}`,
               v: i.actual === null
@@ -47,7 +63,7 @@ export function EvalSummary({ title, ev, meta, by, empty, children }: {
             ...(ev.lessons ? [{ k: 'الدروس المستفادة', v: <>{isolate(ev.lessons)}</> }] : []),
           ]}
         />
-      ) : <Empty title={empty ?? 'لم يقيّم بعد.'} />}
+      ) : <p className="sub evrec-h">{empty ?? 'لم يقيّم بعد.'}</p>}
       {children}
     </Glass>
   )

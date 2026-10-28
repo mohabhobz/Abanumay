@@ -27,3 +27,9 @@ export const evalOf = (c: CloseRow, who: EvalWho): (ProjectEval & { by?: string;
 /** The seat the current user evaluates now · none when it isn't his stage */
 export const mySeat = (c: CloseRow, role: RoleKey): EvalSeatDef | undefined =>
   seatsOf(c).find((s) => s.role === role && s.stage === c.stage)
+
+/** The day a seat's evaluation was written · a review keeps its own · the supervisor's is read from the evaluation's log */
+export const evalAt = (c: CloseRow, who: EvalWho): string | undefined => {
+  if (who !== 'supervisor') return c.evalReviews?.[who]?.at
+  return [...(c.evalAudit ?? [])].reverse().find((a) => /^حفظ التقييم$|^إرسال التقييم/.test(a.what))?.at
+}

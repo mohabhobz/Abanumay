@@ -31,3 +31,8 @@
 .evq .evq-r{display:grid;grid-template-columns:1fr calc(var(--sp-12) * 2);align-items:center;gap:var(--sp-4);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-2, 10px);background:color-mix(in srgb, var(--teal) 4%, transparent)}
 .evq .evq-r>.lb{margin:0;color:var(--t1);font-size:var(--fs-3)}
 @media (max-width:640px){.evq .evq-r{grid-template-columns:1fr}}
+
+/* Client 28 Oct · an evaluation as a record · who, when and the score, with its details folded */
+.evrec-h{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-5);margin-top:var(--sp-2)}
+.evrec-i{display:inline-flex;align-items:center;gap:var(--sp-2)}
+.evrec-h+.kv{margin-top:var(--sp-4);padding-top:var(--sp-3);border-top:1px solid var(--edge-f)}

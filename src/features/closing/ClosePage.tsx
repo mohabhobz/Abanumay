@@ -7,7 +7,7 @@ import { closeScore } from '@/data/shared/ai'
 import { RecordEntityCard, RecordProjectCard } from '@/features/shared/RecordParties'
 import { PaymentsTab } from '@/features/projects/tabs/PaymentsTab'
 import { paymentsOfProject } from '@/data/payments/projectPayments'
-import { evalOf, mySeat, seatsOf } from '@/data/closing/evalSeats'
+import { evalAt, evalOf, mySeat, seatsOf } from '@/data/closing/evalSeats'
 import { EvalSummary } from './EvalSummary'
 import { useMemo, useRef, useState } from 'react'
 import { closingAi } from '@/data/shared/ai'
@@ -416,7 +416,7 @@ export default function ClosePage() {
                 const now = all.findIndex((y) => y.stage === c.stage)
                 const ahead = !closed && now >= 0 && i > now
                 return (
-                  <EvalSummary key={x.who} title={x.title} ev={e} by={e?.by ?? (x.who === 'supervisor' ? c.owner : undefined)}
+                  <EvalSummary key={x.who} title={x.title} ev={e} by={e?.by ?? (x.who === 'supervisor' ? c.owner : undefined)} at={evalAt(c, x.who)}
                     meta={e ? <Tag tone={closed ? 'ok' : 'teal'}>{closed ? 'معتمَد' : x.stage === c.stage ? 'قيد التقييم' : 'قيّم'}</Tag> : <Tag tone="mute">{ahead ? 'لم يصل إليه' : 'لم يقيّم'}</Tag>}
                     empty={ahead ? `يقيّم ${x.seat} حين يصل إليه التقييم.` : `لم يسجّل ${x.seat} تقييمه.`} />
                 )
