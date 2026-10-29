@@ -272,7 +272,8 @@ export const REPORT_TABS = [
   { slug: 'overview', label: 'اللوحة المجمّعة' },
   /* Client, 8 Oct · who the grants reached and where · its panel also sits on every report screen and Today */
   { slug: 'impact', label: 'الأثر' },
-  { slug: 'build', label: 'تقرير مُشكَّل' },
+  /* Client 29 Oct · «تقرير مُشكَّل» isn't a formal term · the tab builds a report to the user's own fields */
+  { slug: 'build', label: 'تقرير مخصّص' },
   { slug: 'catalog', label: 'كل التقارير' },
   { slug: 'coverage', label: 'حالة القياس' },
 ] as const
