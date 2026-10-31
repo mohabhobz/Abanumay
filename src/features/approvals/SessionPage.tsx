@@ -16,7 +16,7 @@ import { projectRows } from '@/data/mock/projects'
 import { PORTFOLIOS } from '@/data/partners/store'
 import { HOLDER_LABEL, type Holder } from '@/data/holders'
 import { flowOf } from '@/data/intake/flow'
-import { CRITERIA, studyScore } from '@/data/intake/criteria'
+import { critShare, criteriaFor, studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { fundingIssues } from '@/data/budget/store'
 import { fitOf } from '@/data/intake/insight'
@@ -232,9 +232,9 @@ function Item({ s, it, may, me }: { s: Session; it: SessionItem; may: boolean; m
   /* the study by its groups, the consultant's opinion, the departments' opinions */
   const groupScore = (g: string) => {
     if (!study) return null
-    const list = CRITERIA.list.filter((x) => x.group === g)
+    const list = criteriaFor(study.scores).filter((x) => x.group === g)
     const w = list.reduce((a, x) => a + x.weight, 0)
-    return w ? Math.round(list.reduce((a, x) => a + ((study.scores[x.key] ?? 0) / 5) * x.weight, 0) / w * 100) : null
+    return w ? Math.round(list.reduce((a, x) => a + critShare(x, study.scores[x.key]) * x.weight, 0) / w * 100) : null
   }
   const ref = flowOf(p.id).referral
   const docs = flowOf(p.id).docs

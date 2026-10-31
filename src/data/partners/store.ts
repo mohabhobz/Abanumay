@@ -22,7 +22,7 @@ import { SESSIONS, type Vote } from '@/data/approvals/store'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { ROUTES } from '@/app/routes'
 import { nf } from '@/lib/format'
-import { CRITERIA, studyScore } from '@/data/intake/criteria'
+import { pfCriteria as pfStudyCriteria, studyScore } from '@/data/intake/criteria'
 
 /* Strategic partners · the Ehsan platform (BPD-011) and the partners' portfolios (BPD-013).
 
@@ -1433,7 +1433,7 @@ function applyOp(o: Op) {
       const pf = pfById(o.id)
       if (!pf || pf.stage !== 'supervisor') return
       pf.study = { scores: { ...o.scores }, note: o.note, by: o.by, at: day(o.at) }
-      plog(pf, o.by, `دراسة المحفظة بمعايير التقييم · ${studyScore(o.scores)} من 100${o.note ? ` · ${o.note}` : ''}`, o.at)
+      plog(pf, o.by, `دراسة المحفظة بمعايير التقييم · ${studyScore(o.scores, pfStudyCriteria())} من 100${o.note ? ` · ${o.note}` : ''}`, o.at)
       return
     }
     case 'pfCancel': {
@@ -1769,7 +1769,7 @@ function seed() {
   for (const s of PF_SEED) PORTFOLIOS.push(fromSeed(s))
   /* v3 · 13.2.6 · a seeded portfolio past its study carries a completed one */
   for (const pf of PORTFOLIOS) if (!['draft', 'returned', 'supervisor'].includes(pf.stage) && !pf.study)
-    pf.study = { scores: Object.fromEntries(CRITERIA.list.map((c, i) => [c.key, 4 + (i % 2)])), note: 'دراسة مرحّلة من النظام السابق', by: pf.owner, at: pf.openedAt }
+    pf.study = { scores: Object.fromEntries(pfStudyCriteria().map((c, i) => [c.key, 4 + (i % 2)])), note: 'دراسة مرحّلة من النظام السابق', by: pf.owner, at: pf.openedAt }
   for (const e of EHSAN_SEED) {
     const p = projectOf(e.projectId)
     if (!p) continue
@@ -1885,11 +1885,11 @@ export function createPortfolio(v: Omit<Extract<Op, { op: 'pfCreate' }>['pf'], '
 }
 /* ── v3 · 13.2.6 · 13.4.4 · the portfolio's study by the evaluation criteria ── */
 /** The weighted study score out of 100 · null before any study */
-export const pfStudyScore = (pf: PortfolioRec): number | null => (pf.study ? studyScore(pf.study.scores) : null)
+export const pfStudyScore = (pf: PortfolioRec): number | null => (pf.study ? studyScore(pf.study.scores, pfStudyCriteria()) : null)
 /** What the study still lacks · every criterion rated 1 – 5 */
 export function pfStudyIssues(pf: PortfolioRec): string[] {
   if (!pf.study) return ['ادرس المحفظة بمعايير التقييم قبل التوصية']
-  const miss = CRITERIA.list.filter((c) => !(pf.study!.scores[c.key] >= 1))
+  const miss = pfStudyCriteria().filter((c) => !(pf.study!.scores[c.key] >= 1))
   return miss.length ? [`قيّم معايير الدراسة كلها · ناقص: ${miss.map((c) => c.label).join('، ')}`] : []
 }
 /** The supervisor saves the study at the study stage */

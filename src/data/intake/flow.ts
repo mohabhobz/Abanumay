@@ -11,7 +11,7 @@ import { stageMeta, FIELDS_BY_TRACK } from '@/data/mock/taxonomy'
 import { entityById } from '@/data/mock/entities'
 import { replayLateRelinks } from '@/data/entities/store'
 import { CYCLE, TODAY, addWorkingDays, calendarDaysBetween, endAfterDays, workDaysOf, type Distribution } from './cycle'
-import { CRITERIA, studyScore } from './criteria'
+import { CRITERIA, criteriaFor, studyScore } from './criteria'
 import { excludedBy, type ExclusionAnswer } from './exclusion'
 import { nextSeq, type Stamped } from '@/data/opclock'
 import { liveDay, localDayOf, stampNow, timeOf } from '@/data/clock'
@@ -20,6 +20,7 @@ import { isEnded } from '@/data/status'
 import { installStatus } from '@/data/status'
 import { domainBudget } from './insight'
 import { OTHER, reasonSay } from './reasons'
+import type { MaqasidEval, WaqfEval } from './alignment'
 
 /* Receiving projects and the supervisor's study · the actions (procedure 3).
 
@@ -76,6 +77,7 @@ const SEED_EXTRAS: Record<string, ExtraDoc[]> = {
 
 export type Recommendation = 'approve' | 'reject'
 
+
 export interface Study {
   scores: Record<string, number>
   technical: string
@@ -96,6 +98,12 @@ export interface Study {
   /** Client 21 Oct · the study's notes in one place · `technical` and `admin` are read into it for
       studies saved before */
   notes?: string
+  /** Client 30 Oct · the old system's study fields, by section (project · entity · media · decision) ·
+      keyed as `STUDY_FIELDS` names them */
+  fields?: Record<string, string | number | boolean>
+  /** Client 30 Oct · the link to the shari'a objectives and to the endowment deed */
+  maqasid?: MaqasidEval
+  waqf?: WaqfEval
   by: string
   at: string
   /** Each save of a forwarded study after a return is a new version (3.4.26) */
@@ -289,7 +297,11 @@ const moveTo = (p: ProjectRow, stage: string) => {
 /* ── Seeds · the prototype's sample projects under study carry a study, so the card, the score and
    the guard read real values. One deliberately has none, to show the guard. ── */
 
-const seedScores = (n: number) => Object.fromEntries(CRITERIA.list.map((c, i) => [c.key, Math.max(2, Math.min(5, n - (i % 3)))]))
+/* a 1–5 judgement per criterion · a points question takes the same share of its points */
+const seedScores = (n: number) => Object.fromEntries(CRITERIA.list.map((c, i) => {
+  const v = Math.max(2, Math.min(5, n - (i % 3)))
+  return [c.key, c.points ? Math.round((v / 5) * c.weight) : v]
+}))
 
 const SEED_REFERRAL: Record<string, Referral> = {
   /* The demo's open referral · its access runs a week past the day it's opened, so the advice screen
@@ -381,7 +393,7 @@ export const forwardBlockers = (id: string): string[] => {
   if (p.stage === 'استكمال بيانات المشروع') out.push('المشروع بانتظار استكمال الجهة · لا تُستأنف الدراسة قبل إعادة إرساله')
   if (!f.study) out.push('لم تُسجَّل الدراسة بعد')
   else {
-    const unscored = CRITERIA.list.filter((c) => !f.study!.scores[c.key])
+    const unscored = criteriaFor(f.study.scores).filter((c) => f.study!.scores[c.key] === undefined)
     if (unscored.length) out.push(`${unscored.length} من معايير التقييم بلا درجة`)
     if (!f.study.recommendation) out.push('لم تُحدَّد التوصية')
     if (!f.study.justification.trim()) out.push('مبررات التوصية فارغة')

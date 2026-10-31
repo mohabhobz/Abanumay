@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { DECISIONS } from '@/data/shared/decisions'
-import { CRITERIA, studyScore } from './criteria'
+import { criteriaFor, studyScore } from './criteria'
 import { flowOf } from './flow'
 
 /* A request's priority · batch 8 (the priority decision).
@@ -52,9 +52,9 @@ export function priorityOf(projectId: string): PriorityRead {
       : { level: null, say: 'لم تُحدَّد', basis: 'يحدّدها مشرف المنح أو مدير المنح', mode: 'manual' }
   }
   const scores = flowOf(projectId).study?.scores ?? {}
-  const scored = CRITERIA.list.filter((c) => scores[c.key]).length
+  const scored = criteriaFor(scores).filter((c) => scores[c.key] !== undefined).length
   if (!scored) return { level: null, say: 'تُحسب بعد الدراسة', basis: 'من درجة الدراسة الموزونة', mode: 'computed' }
   const n = studyScore(scores)
   const level: Priority = n >= 80 ? 'high' : n >= 60 ? 'medium' : 'normal'
-  return { level, say: PRIORITY_SAY[level], basis: `درجة الدراسة ${n} من 100${scored < CRITERIA.list.length ? ` · ${scored} من ${CRITERIA.list.length} معايير مقيّمة` : ''}`, mode: 'computed' }
+  return { level, say: PRIORITY_SAY[level], basis: `درجة الدراسة ${n} من 100${scored < criteriaFor(scores).length ? ` · ${scored} من ${criteriaFor(scores).length} معايير مقيّمة` : ''}`, mode: 'computed' }
 }

@@ -28,7 +28,7 @@ import {
   excludeSub, isLiveSub, pfApproverOf, pfEvalScore, pfSessions, pfToSession, recommendSubs, recordPfReceipt, savePfEval, savePfForm, setPfReliable, stallSub, studySubs,
   type SubField, type SubState, pfStudyIssues, pfStudyScore, savePfStudy,
 } from '@/data/partners/store'
-import { CRITERIA, GROUP_SAY, type Criterion } from '@/data/intake/criteria'
+import { GROUP_SAY, pfCriteria, type Criterion } from '@/data/intake/criteria'
 import { SESSIONS } from '@/data/approvals/store'
 import { APPROVAL_RULES } from '@/data/approvals/rules'
 import { Checks, Said, SlotsEditor } from '@/features/partners/parts'
@@ -284,7 +284,7 @@ function StudyCard({ pf }: { pf: PortfolioRec }) {
         <div key={g} className="stdy-g">
           <h3 className="stdy-h">الدراسة {GROUP_SAY[g].study}</h3>
           <ul className="stdy-list">
-            {CRITERIA.list.filter((c) => c.group === g).map((c) => (
+            {pfCriteria().filter((c) => c.group === g).map((c) => (
               <li key={c.key}>
                 <span className="stdy-l">{c.label}</span>
                 <span className="sub">{pct(c.weight)}</span>

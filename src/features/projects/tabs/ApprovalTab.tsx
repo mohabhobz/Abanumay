@@ -8,7 +8,7 @@ import type { ProjectRow } from '@/types/domain'
 import { deciderFor } from '@/data/approval'
 import { HOLDER_LABEL, holderOf, type Holder } from '@/data/holders'
 import { flowOf, orgOutputsOf, outputLine } from '@/data/intake/flow'
-import { CRITERIA, GROUP_SAY, studyScore } from '@/data/intake/criteria'
+import { GROUP_SAY, critMax, criteriaFor, studyScore } from '@/data/intake/criteria'
 import { consultantByKey } from '@/data/intake/consultants'
 import { fitOf, similarProjects } from '@/data/intake/insight'
 import { expectedImpact } from '@/data/shared/ai'
@@ -178,8 +178,8 @@ export function ApprovalTab({ row }: { row: ProjectRow }) {
                   <b>التقييم {GROUP_SAY[g].eval}</b>
                   {/* the criteria wrap inside their own column, never back under the label (UI-129) */}
                   <span className="apv-sc">
-                    {CRITERIA.list.filter((c) => c.group === g).map((c) => (
-                      <span key={c.key} className="sub">{c.label} <span className="num">{study.scores[c.key] ?? '–'}</span>/5</span>
+                    {criteriaFor(study.scores).filter((c) => c.group === g).map((c) => (
+                      <span key={c.key} className="sub">{c.label} <span className="num">{study.scores[c.key] ?? '–'}</span>/{critMax(c)}</span>
                     ))}
                   </span>
                 </li>

@@ -302,7 +302,7 @@ export function CriteriaTab() {
             type="button"
             variant="2" className="cfgadd"
             disabled={!name.trim()}
-            onClick={() => { setD((x) => [...x, { key: `c${Date.now()}`, label: name.trim(), group: 'فني', weight: 0 }]); setName('') }}
+            onClick={() => { setD((x) => [...x, { key: `c${Date.now()}`, label: name.trim(), group: 'فني', weight: 0, points: true }]); setName('') }}
           >
             أضف المعيار
           </Button>

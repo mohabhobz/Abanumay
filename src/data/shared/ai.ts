@@ -1,3 +1,4 @@
+import { maqasidResult, pctOf, suggestMaqasid, suggestWaqf, waqfResult } from '@/data/intake/alignment'
 import { AI_CFG, aiSourceSay } from '@/lib/ai/provider'
 import { cachedRead, reportFindings } from '@/lib/docCache'
 import { DECISIONS } from '@/data/shared/decisions'
@@ -16,7 +17,7 @@ import { MONEY_LIMITS } from '@/data/mock/settings'
 import type { EntityDetail } from '@/data/mock/entityDetail'
 import { budgetByTrack } from '@/data/budget'
 import { flowOf } from '@/data/intake/flow'
-import { CRITERIA, studyScore } from '@/data/intake/criteria'
+import { critShare, criteriaFor, studyScore } from '@/data/intake/criteria'
 import { addWorkingDays, fundingBlock, goalFunded, CYCLE } from '@/data/intake/cycle'
 import { appFlowOf, strategyOf, VERDICT_SAY, OUTCOME_SAY, type Session } from '@/data/approvals/store'
 import { DIRECTIONS, linkOf, priorityWeight } from '@/data/budget/store'
@@ -224,7 +225,8 @@ export function readRecAnalysis(p: ProjectRow): Reading | null {
   const ap = appFlowOf(p.id)
   const st = f.study
   if (!st && !ap.recs.length) return null
-  const crit = st ? Object.entries(st.scores).map(([k, v]) => ({ k, v, label: CRITERIA.list.find((c) => c.key === k)?.label ?? k })) : []
+  /* each criterion read on 5 · a points question is scaled to it */
+  const crit = st ? criteriaFor(st.scores).filter((c) => st.scores[c.key] !== undefined).map((c) => ({ k: c.key, v: Math.round(critShare(c, st.scores[c.key]) * 50) / 10, label: c.label })) : []
   const strong = crit.filter((c) => c.v >= 4).sort((a, b) => b.v - a.v).slice(0, 3)
   const weak = crit.filter((c) => c.v <= 2).sort((a, b) => a.v - b.v).slice(0, 3)
   const notes = [st?.technical, st?.admin, st?.justification, ...ap.recs.map((r) => r.note)].filter((x): x is string => Boolean(x))
@@ -249,8 +251,36 @@ export function readRecAnalysis(p: ProjectRow): Reading | null {
 }
 
 /** The approval seat's readings · summary, alignment, similar, budget and the draft */
+/* Client 30 Oct · the study's two reference sections read in the assistant's card · the link to the
+   shari'a objectives and to the endowment deed, each with its final ratio and every criterion's share ·
+   the supervisor's saved evaluation, else the assistant's draft from the request */
+export function readMaqasid(p: ProjectRow): Reading {
+  const m = flowOf(p.id).study?.maqasid ?? suggestMaqasid(p)
+  const r = maqasidResult(m)
+  return {
+    id: 'ai-maqasid', kind: r.final < 0.6 ? 'flag' : 'note', label: 'الارتباط بمقاصد الشريعة',
+    metric: { value: pct(pctOf(r.final)), unit: `${r.cls} · ${r.advice}` },
+    text: `${m.major} · مرتبة ${m.rank} · ${m.nature}. ${r.parts.map((x) => `${x.label} ${pct(pctOf(x.share))}`).join('، ')}. ${r.review}.`,
+    danger: r.review.startsWith('تحتاج') ? [r.review] : [],
+    src: m.drafted ? `مسودة المساعد من طلب المشروع · ${advisory()}` : `تقييم ${m.by ?? 'مشرف المنح'} في الدراسة`,
+    to: ROUTES.projectTab(p.id, 'study'), toLabel: 'افتح الدراسة',
+  }
+}
+export function readWaqf(p: ProjectRow): Reading {
+  const w = flowOf(p.id).study?.waqf ?? suggestWaqf(p)
+  const r = waqfResult(w)
+  return {
+    id: 'ai-waqf', kind: r.final < 0.6 ? 'flag' : 'note', label: 'الارتباط بصك الوقفية',
+    metric: { value: pct(pctOf(r.final)), unit: `${r.cls} · ${r.advice}` },
+    text: `${w.cat} · ${w.item} · ${w.fit}${w.conflict === 'نعم' ? ' · يوجد تعارض مع الصك' : ''}. ${r.parts.map((x) => `${x.label} ${pct(pctOf(x.share))}`).join('، ')}. ${r.review}.`,
+    danger: r.final === 0 || r.review.startsWith('تحتاج') ? [r.review] : [],
+    src: w.drafted ? `مسودة المساعد من طلب المشروع · ${advisory()}` : `تقييم ${w.by ?? 'مشرف المنح'} في الدراسة`,
+    to: ROUTES.projectTab(p.id, 'study'), toLabel: 'افتح الدراسة',
+  }
+}
+
 export function projectAi(p: ProjectRow): Reading[] {
-  const out: Reading[] = [readSummary(p), readAlignment(p)]
+  const out: Reading[] = [readSummary(p), readAlignment(p), readMaqasid(p), readWaqf(p)]
   const ra = readRecAnalysis(p)
   if (ra) out.push(ra)
   const sim = readSimilar(p)

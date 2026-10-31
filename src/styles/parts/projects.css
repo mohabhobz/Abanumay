@@ -207,3 +207,28 @@
 .stdy-rec{display:flex;align-items:center;gap:var(--sp-3);margin:0}
 .stdy-rec>.lb{color:var(--t2)}
 .stdy-pr{margin-inline-start:var(--sp-2)}
+
+/* Client 30 Oct · the study in six sections · the score strip on top, the points fields, the outputs,
+   and the two reference matrices (shari'a objectives · endowment deed) laid out as their sheets */
+.stdy-sum{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-5);padding:var(--sp-3) var(--sp-4);border-radius:var(--r1);
+  background:color-mix(in srgb, var(--teal) 6%, transparent)}
+.stdy-sum>span{display:inline-flex;align-items:center;gap:var(--sp-2)}
+.stdy-list li.stdy-in>.fld{flex:none;inline-size:calc(var(--sp-12) * 2)}
+.stdy-list li.stdy-in>.fld.fld-a{flex:1 1 auto;inline-size:auto;max-inline-size:60%}
+
+.stdy-outs{display:flex;flex-direction:column;gap:var(--sp-2);align-items:flex-start}
+.stdy-save{padding:var(--sp-2) var(--sp-1)}
+.algn .stdy-h{margin-top:var(--sp-4)}
+.algn-tbl col.c-n{width:4%}
+.algn-tbl col.c-crit{width:30%}
+.algn-tbl col.c-pick{width:27%}
+.algn-tbl col.c-w{width:8%}
+.algn-tbl col.c-note{width:23%}
+.algn-tbl td{vertical-align:middle}
+.algn-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-3);margin-bottom:var(--sp-4)}
+.algn-res>span{display:flex;flex-direction:column;gap:var(--sp-1);padding:var(--sp-3);border-radius:var(--r1);background:color-mix(in srgb, var(--teal) 5%, transparent);min-width:0}
+.algn-res b{font-size:var(--fs-3)}
+.algn-res .algn-final{font-size:var(--fs-5, 1.4rem);color:var(--ok-ink, var(--t1))}
+@media (max-width:760px){.algn-res{grid-template-columns:repeat(2,minmax(0,1fr))}.stdy-list li.stdy-in>.fld.fld-a{max-inline-size:100%}}
+.algn-res>span>.tag{align-self:flex-start}
+.algn-res>span>span:not(.sub){font-size:var(--fs-2)}

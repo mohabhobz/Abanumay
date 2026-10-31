@@ -73,7 +73,8 @@ export const CFG = {
   payLimits: 'ab-cfg-pay-limits',
   /** Grant intake cycle · period, open domains, supervisors, distribution (BPD-003 · 3.2–3.4) */
   cycle: 'ab-cfg-cycle',
-  criteria: 'ab-cfg-criteria',
+  /* client 30 Oct · v2 · the old system's points questions replace the 1–5 list */
+  criteria: 'ab-cfg-criteria-v2',
   consultants: 'ab-cfg-consultants',
   prospects: 'ab-cfg-prospects',
   /** v3 · 3.4.24 · the reasons a supervisor picks for a recommendation to reject */
