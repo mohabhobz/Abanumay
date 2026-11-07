@@ -90,7 +90,8 @@ export function ChatDock({ title, ...thread }: ChatDockProps) {
         onClick={() => setOpen((x) => !x)}
       >
         <Icon name={icons.chat} size="sm" />
-        <span className="chatfab-t">{title}</span>
+        {/* Client 7 Nov · the icon alone · the name shows on hover and on focus */}
+        <span className="chatfab-tip" aria-hidden="true">{title}</span>
         {unread > 0 && <b className="chatfab-n">{unread}</b>}
       </Button>
 
