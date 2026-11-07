@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Button, Icon, icons } from '@/components/ui'
 import { markSeen, threadOf, unreadOf, useThreads } from '@/data/thread'
 import { Thread, type ThreadProps } from './Thread'
+import { useProximity } from '@/hooks/useProximity'
 
 /* The correspondence as a floating chat (client 21 Oct · #2).
 
@@ -14,9 +15,8 @@ import { Thread, type ThreadProps } from './Thread'
    One component on every screen that talks to the other side (the closing case, the project, the
    entity's portal) · the same thread inside it, so a message reads the same wherever it's opened.
 
-   Placement · the start edge (the right, in Arabic) · the end edge is «اسأل أبانمي», and the
-   decision bar runs between them along the bottom, so the button sits above the bar at the start
-   edge and the window opens above the button. A portal on `body` · an ancestor with
+   Placement · in the row of «اسأل أبانمي», to its right (client 7 Nov) · the decision bar takes the
+   rest of the row · the window opens above the button. A portal on `body` · an ancestor with
    `backdrop-filter` would otherwise become the containing block of `position:fixed`. */
 
 export interface ChatDockProps extends ThreadProps {
@@ -32,33 +32,35 @@ export function ChatDock({ title, ...thread }: ChatDockProps) {
   const unread = unreadOf(thread.channel, thread.me, thread.messages)
   const total = threadOf(thread.channel, thread.messages).length
 
-  /* Where the button sits · beside the rail at the start edge (it widens when opened and the user
-     can drag it), and just above the decision bar when the page has one (the bar's own place
-     depends on the page, so it's measured, not assumed) · measured into `--chat-x` and `--chat-b`
-     on the root · on mobile the rail is the bottom bar and the button rides the row of
-     «اسأل أبانمي», so the stylesheet decides and nothing is written */
+  /* Client 7 Nov · the button sits in the row of «اسأل أبانمي», just to its right, at its height and
+     in its style · the two read as one pair of floating buttons, the decision bar beside them ·
+     measured into `--chat-x`, `--chat-b` and `--chat-h` on the root, from the ask button's own box
+     (its offsets, not its rect · the ask button floats and leans to the cursor, and the pair must
+     not jitter with it) · the button's width goes to `--chat-r` so the decision bar reserves it ·
+     on mobile the rail is the bottom bar and the button rides the row of «اسأل أبانمي» at the
+     start edge, so the stylesheet decides and nothing is written */
+  useProximity(launcher)
   useEffect(() => {
     const root = document.documentElement
     const mob = window.matchMedia('(max-width:960px)')
+    const VARS = ['--chat-x', '--chat-b', '--chat-h', '--chat-r']
+    const clear = () => VARS.forEach((v) => root.style.removeProperty(v))
     const put = () => {
-      if (mob.matches) { root.style.removeProperty('--chat-x'); root.style.removeProperty('--chat-b'); return }
-      /* client review 22 Oct · above «اسأل أبانمي» at the end edge, the column of floating
-         buttons · at the start edge the button sat over the content column's labels */
-      const ask = document.querySelector('.askfab')?.getBoundingClientRect()
-      if (ask && ask.height > 0) {
-        root.style.setProperty('--chat-x', `${Math.max(0, Math.floor(ask.left))}px`)
-        root.style.setProperty('--chat-b', `${Math.ceil(window.innerHeight - ask.top) + 8}px`)
-        root.style.setProperty('--chat-w', `${Math.ceil(ask.width)}px`)
-      } else { root.style.removeProperty('--chat-x'); root.style.removeProperty('--chat-b'); root.style.removeProperty('--chat-w') }
+      if (mob.matches) { clear(); return }
+      const ask = document.querySelector<HTMLElement>('.askfab')
+      const me = launcher.current
+      if (!ask || !ask.offsetHeight || !me) { clear(); return }
+      const gap = parseFloat(getComputedStyle(root).getPropertyValue('--ask-gap')) * parseFloat(getComputedStyle(root).fontSize) || 10
+      root.style.setProperty('--chat-x', `${Math.ceil(ask.offsetLeft + ask.offsetWidth + gap)}px`)
+      root.style.setProperty('--chat-b', getComputedStyle(ask).bottom)
+      root.style.setProperty('--chat-h', `${ask.offsetHeight}px`)
+      root.style.setProperty('--chat-r', `${Math.ceil(me.offsetWidth + gap)}px`)
     }
     put()
     /* the bar comes and goes with the page's state · a light re-measure keeps up without observers */
     const t = window.setInterval(put, 600)
     window.addEventListener('resize', put)
-    return () => {
-      window.clearInterval(t); window.removeEventListener('resize', put)
-      root.style.removeProperty('--chat-x'); root.style.removeProperty('--chat-b'); root.style.removeProperty('--chat-w')
-    }
+    return () => { window.clearInterval(t); window.removeEventListener('resize', put); clear() }
   }, [])
 
   /* open · what's on it is read · the field takes the focus · Escape closes and returns focus */

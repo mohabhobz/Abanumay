@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ButtonLink, Glass, Head, Icon, icons, Money, Mono, Empty, Riyal, Tabs } from '@/components/ui'
+import { Link } from 'react-router-dom'
+import { ButtonLink, Glass, Head, Icon, icons, Money, Mono, Empty, Riyal } from '@/components/ui'
 import {
   Columns, Donut, Legend, SaudiMap, StackBar, CHART_COLORS, CHART_INKS,
   StageFlow, Lollipop, Waffle, Pareto, Meters, RankBars, MoneyRing, type Hue,
 } from '@/components/charts'
 import { AppLayout } from '@/app/layout/AppLayout'
-import { REPORT_TABS, ROUTES } from '@/app/routes'
+import { ROUTES } from '@/app/routes'
 import { fixtures, query, stagePressure, ENTITY_DOCS_TOTAL } from '@/data/repository'
 import { useRole } from '@/hooks/useRole'
 import { budgetForYear } from '@/data/budget'
@@ -19,6 +19,7 @@ import { countOf, df, nf, NOUN, nounAfter, pct, projectCode } from '@/lib/format
 import { days, TONE } from '@/lib/tone'
 import { IdentityBanner } from '@/components/soul'
 import { ImpactPanel } from '@/features/reports/ImpactPanel'
+import { ReportsHead } from '@/features/reports/ReportsHead'
 import { isDone, isLive } from '@/data/status'
 
 /* The combined dashboard · the home page until 3 Oct 2026, now a category of its own in Reports
@@ -59,7 +60,6 @@ const GREET = () => (new Date().getHours() < 12 ? 'صباح الخير' : 'مس�
 
 export default function HomeOverview({ embedded = false }: { embedded?: boolean }) {
   const { role, user } = useRole()
-  const navigate = useNavigate()
   const projects = fixtures.projects
   const entities = fixtures.entities
   const budget = useMemo(() => budgetForYear('2026-f'), [])
@@ -171,6 +171,8 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
       <div className="viewstack">
         {/* `pt` · the page transition on trial here before it reaches the other screens. */}
         <div className="screen col pt">
+          {/* Client 7 Nov · inside Reports, the same header and tabs as every other reports tab */}
+          {embedded && <ReportsHead active="overview" />}
           {/* === First fold ===
               Everything here closes in one screen with no scrolling: header, indicators, map, money
               and time. Height is the constraint here, not width, so the grid takes the remainder
@@ -180,12 +182,7 @@ export default function HomeOverview({ embedded = false }: { embedded?: boolean 
               their own surface unchanged, and the page behind it wasn't touched. */}
           {/* E-9 · inside Reports it reads as one of its categories: the reports header and tabs
               instead of the greeting banner it had as the home page. */}
-          {embedded ? (
-            <div className="ovhead">
-              <h1 className="ptitle">التقارير</h1>
-              <Tabs pin={false} items={REPORT_TABS} active="overview" onChange={(s) => navigate(ROUTES.reportTab(s))} />
-            </div>
-          ) : (
+          {!embedded && (
           <IdentityBanner
             title={<>{GREET()}، {user.name.split(' ')[0]}</>}
             sub={<>{df.format(new Date())} · {user.role}</>}

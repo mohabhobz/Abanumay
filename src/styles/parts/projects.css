@@ -210,8 +210,7 @@
 
 /* Client 30 Oct · the study in six sections · the score strip on top, the points fields, the outputs,
    and the two reference matrices (shari'a objectives · endowment deed) laid out as their sheets */
-.stdy-sum{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-5);padding:var(--sp-3) var(--sp-4);border-radius:var(--r1);
-  background:color-mix(in srgb, var(--teal) 6%, transparent)}
+.glass.stdy-sum{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-5);padding:var(--sp-4) var(--sp-5)}
 .stdy-sum>span{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .stdy-list li.stdy-in>.fld{flex:none;inline-size:calc(var(--sp-12) * 2)}
 .stdy-list li.stdy-in>.fld.fld-a{flex:1 1 auto;inline-size:auto;max-inline-size:60%}
@@ -232,3 +231,4 @@
 @media (max-width:760px){.algn-res{grid-template-columns:repeat(2,minmax(0,1fr))}.stdy-list li.stdy-in>.fld.fld-a{max-inline-size:100%}}
 .algn-res>span>.tag{align-self:flex-start}
 .algn-res>span>span:not(.sub){font-size:var(--fs-2)}
+.algn-avg .algn-res{margin-bottom:0}

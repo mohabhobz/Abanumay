@@ -127,13 +127,14 @@ export default function BudgetPage() {
                     <b>{docTitle(d)}</b>
                     <span className="sub"><Mono>{d.id}</Mono> · {yearById(d.yearId)?.name} · {shareSay(docSources(d))}</span>
                     <span className="pc-sp" />
-                    <span className="num">{nf.format(d.total)}</span>
-                    {/* 11 Oct · audit UI-047 · the tags sit in one fixed-width slot, so the amount
-                        beside them starts on the same line in every row */}
+                    {/* Client 7 Nov · the tags on the right in one fixed-width slot, starting at the same
+                        line in every row · the amount on the left in its own fixed column, its
+                        digits aligned on the ones place, right beside the button */}
                     <span className="bgl-tags">
                       {dep > 0 ? <Tag tone="mute">مشاريع مرتبطة بها: <Num>{dep}</Num></Tag> : <Tag tone="ok">بلا متعلقات</Tag>}
                       <Tag tone={budgetTone(d.state)}>{BUDGET_STATE_SAY[d.state]}</Tag>
                     </span>
+                    <span className="num bgl-amt">{nf.format(d.total)}</span>
                     <ButtonLink variant="2" size="sm" to={ROUTES.budgetDoc(d.id)}>
                       افتح الشجرة
                       <Icon name={icons.chevron} size="sm" />

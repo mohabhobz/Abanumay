@@ -9,6 +9,7 @@ import type { ProjectRow } from '@/types/domain'
 import { critMax, criteriaFor, studyScore, type Criterion } from '@/data/intake/criteria'
 import { fieldsOf, type StudyField, type StudySection } from '@/data/intake/studyFields'
 import { maqasidResult, pctOf, suggestMaqasid, suggestWaqf, waqfResult } from '@/data/intake/alignment'
+import { alignAvg, alignTone } from '@/data/intake/alignScore'
 import { MaqasidCard, WaqfCard } from './StudyAlign'
 import { stampNow } from '@/data/clock'
 import { domainBudget } from '@/data/intake/insight'
@@ -70,7 +71,6 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
   })
   const [msg, setMsg] = useState('')
 
-  const score = studyScore(d.scores)
   const blockers = forwardBlockers(row.id)
   const excluded = excludedBy(d.exclusions)
   const asked = d.recommendation === 'approve' ? d.amount : row.amountRequested
@@ -128,6 +128,9 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
   const entCrit = crit.filter((c) => c.group === 'إداري')
   const mq = maqasidResult(d.maqasid)
   const wq = waqfResult(d.waqf)
+  const mqP = pctOf(mq.final)
+  const wqP = pctOf(wq.final)
+  const avgP = alignAvg(mqP, wqP)
 
   return (
     <>
@@ -141,12 +144,14 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
       {/* Client 30 Oct (Mozaffar) · the study is six sections · the old system's four (the project, the
           entity, the media coverage, the support decision), then the link to the shari'a objectives and
           to the endowment deed · the points questions sit in the first two, the score totals them */}
-      <div className="stdy-sum">
-        <span><span className="sub">درجة الدراسة</span><b><Num>{score}</Num> <span className="sub">من 100</span></b></span>
-        <span><span className="sub">الارتباط بمقاصد الشريعة</span><Tag tone={mq.final >= 0.8 ? 'ok' : mq.final >= 0.6 ? 'teal' : 'warn'}>{pct(pctOf(mq.final))} · {mq.cls}</Tag></span>
-        <span><span className="sub">الارتباط بصك الوقفية</span><Tag tone={wq.final >= 0.8 ? 'ok' : wq.final >= 0.6 ? 'teal' : 'warn'}>{pct(pctOf(wq.final))} · {wq.cls}</Tag></span>
-        {!editable && <span className="sub">{f.study ? <>دراسة <Person name={f.study.by} /> · الإصدار <Num>{f.study.version}</Num> · <DateText>{f.study.at}</DateText></> : 'لم تُسجَّل دراسة بعد.'}</span>}
-      </div>
+      {/* Client 7 Nov · the strip carries the two links and their average, each a final percent · a
+          card like the rest of the page · the study's points score is no longer repeated here */}
+      <Glass className="stdy-sum">
+        <span><span className="sub">الارتباط بمقاصد الشريعة</span><Tag tone={alignTone(mqP)}>{pct(mqP)}</Tag></span>
+        <span><span className="sub">الارتباط بصك الوقفية</span><Tag tone={alignTone(wqP)}>{pct(wqP)}</Tag></span>
+        <span><span className="sub">متوسط الارتباط</span><Tag tone={alignTone(avgP)}>{pct(avgP)}</Tag></span>
+        {!editable && f.study && <span className="sub">دراسة <Person name={f.study.by} /> · الإصدار <Num>{f.study.version}</Num> · <DateText>{f.study.at}</DateText></span>}
+      </Glass>
 
       {/* 1 · the project */}
       <Glass>
@@ -260,6 +265,15 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
       {/* 5 · 6 · the two references · drafted by the assistant, reviewed by the supervisor */}
       <MaqasidCard row={row} value={d.maqasid} editable={editable} onChange={(m) => set('maqasid', m)} />
       <WaqfCard row={row} value={d.waqf} editable={editable} onChange={(w) => set('waqf', w)} />
+      {/* Client 7 Nov · the two final percents added and halved · what the projects list sorts by */}
+      <Glass className="algn-avg">
+        <Head title="متوسط الارتباط" meta={<span className="sub">(نسبة المقاصد + نسبة الصك) ÷ 2</span>} />
+        <div className="algn-res">
+          <span><span className="sub">الارتباط بمقاصد الشريعة</span><b>{pct(mqP)}</b></span>
+          <span><span className="sub">الارتباط بصك الوقفية</span><b>{pct(wqP)}</b></span>
+          <span><span className="sub">متوسط الارتباط</span><b className="algn-final">{pct(avgP)}</b></span>
+        </div>
+      </Glass>
 
       {editable && (
         <div className="regfoot stdy-save">

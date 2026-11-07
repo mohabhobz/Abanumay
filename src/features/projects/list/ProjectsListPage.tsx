@@ -114,6 +114,10 @@ const SORTS: { key: ProjectSort; label: string }[] = [
   { key: 'longest', label: 'مدة التنفيذ · من الأطول' },
   { key: 'shortest', label: 'مدة التنفيذ · من الأقصر' },
   { key: 'weight', label: 'الأعلى وزنًا' },
+  /* Client 7 Nov · the two reference links from the study, and their average */
+  { key: 'maqasid', label: 'الارتباط بمقاصد الشريعة · الأعلى' },
+  { key: 'waqf', label: 'الارتباط بصك الوقفية · الأعلى' },
+  { key: 'align', label: 'متوسط الارتباط · الأعلى' },
   { key: 'name', label: 'الاسم' },
 ]
 

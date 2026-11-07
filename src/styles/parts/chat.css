@@ -3,26 +3,39 @@
    floating buttons) · the window opens above the button and covers the page, so
    it takes the floating surface (`--g-pop`) and the floating elevation, not the card's. */
 
-:root{--chat-x:clamp(var(--sp-7), 3vw, var(--sp-9));--chat-w:auto;
-  --chat-b:calc(clamp(var(--sp-5), 2vw, var(--sp-7)) + var(--h-md) * 2)}
+:root{--chat-x:clamp(var(--sp-7), 3vw, var(--sp-9));--chat-h:var(--bar-h);
+  --chat-b:clamp(var(--sp-5), 2vw, var(--sp-7))}
 
-.chatfab{position:fixed;z-index:22;bottom:var(--chat-b);left:var(--chat-x);min-width:var(--chat-w);
-  display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-3);height:var(--h-md);padding-inline:var(--sp-5);
-  border-radius:var(--r1);font:inherit;font-weight:600;font-size:var(--fs-3);color:var(--t1);cursor:pointer;
-  background:var(--g-pop);-webkit-backdrop-filter:var(--mat-3);backdrop-filter:var(--mat-3);
-  box-shadow:inset 0 0 0 1px var(--ctl-line), var(--el-2)}
-.chatfab:hover{box-shadow:inset 0 0 0 1px var(--ctl-line-h), var(--el-3)}
-.chatfab.on{box-shadow:inset 0 0 0 1px var(--ctl-line-f), var(--el-3)}
+/* Client 7 Nov · beside «اسأل أبانمي», in its style · the same glass on the page's own backing, the
+   same edge and shadow, the same height, corner and type, the same lean to the cursor (--near) and
+   the same slow float · the moving shine stays the assistant's own */
+.chatfab{position:fixed;z-index:21;isolation:isolate;bottom:var(--chat-b);left:var(--chat-x);
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-3);
+  width:max-content;height:var(--chat-h);padding:var(--sp-5);border-radius:var(--r2);
+  font-family:var(--fd);font-weight:600;font-size:var(--fs-3);color:var(--t1);cursor:pointer;
+  background-color:var(--mesh-bg);background-image:linear-gradient(160deg,var(--fl-4),var(--fl-2));
+  -webkit-backdrop-filter:var(--mat-3);backdrop-filter:var(--mat-3);
+  box-shadow:inset 0 0 0 1px rgba(var(--edgeC),calc(var(--ctl-edge) * (1 + var(--near,0)*.9))),
+    0 calc(10px + var(--near,0)*14px) calc(28px + var(--near,0)*26px) rgba(20,69,71,calc(.10 + var(--near,0)*.10));
+  transform:translateY(calc(8px * (1 - var(--near,0))));
+  transition:transform var(--mo-4) var(--ease-out),box-shadow var(--mo-4) var(--ease-std);
+  animation:askfloat calc(var(--mo-loop) * 3) var(--ease-std) infinite}
+.chatfab::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
+  opacity:var(--near,0);transition:opacity var(--mo-3) var(--ease-std);
+  background:radial-gradient(340px circle at var(--mx,50%) 60%,var(--fl-7),var(--fl-2) 46%,transparent 74%)}
+.chatfab.on{box-shadow:inset 0 0 0 1px rgba(var(--retC2),.42), var(--el-3)}
+.chatfab svg{width:22px;height:22px}
 .chatfab-t{white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.chatfab{animation:none;transition:none;transform:none!important}.chatfab::before{display:none}}
 .chatfab-n{display:inline-flex;align-items:center;justify-content:center;min-width:var(--h-badge);height:var(--h-badge);
   padding-inline:var(--sp-2);border-radius:var(--rp);font-size:var(--fs-1);font-variant-numeric:tabular-nums;
   color:var(--on-ch-1);background:var(--ch-1)}
 
 .chatpop{position:fixed;z-index:22;display:flex;flex-direction:column;
   left:var(--chat-x);
-  bottom:calc(var(--chat-b) + var(--h-md) + var(--sp-3));
+  bottom:calc(var(--chat-b) + var(--chat-h) + var(--sp-3));
   width:min(calc(var(--sp-12) * 6), calc(100vw - var(--chat-x) - var(--sp-8)));
-  max-height:min(calc(var(--sp-12) * 8), calc(100vh - var(--chat-b) - var(--h-md) - var(--sp-9)));
+  max-height:min(calc(var(--sp-12) * 8), calc(100vh - var(--chat-b) - var(--chat-h) - var(--sp-9)));
   border-radius:var(--r3);background:var(--g-pop);-webkit-backdrop-filter:var(--mat-3);backdrop-filter:var(--mat-3);
   box-shadow:inset 0 0 0 1px var(--edge-1), var(--el-4);overflow:hidden}
 .chatpop-h{flex:none;display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-4) var(--sp-5);
@@ -51,7 +64,8 @@
 @media (max-width:960px){
   :root{--chat-x:0rem}
   :root{--chat-b:var(--ask-mob)}
-  .chatfab{left:auto;min-width:0;inset-inline-start:clamp(var(--sp-4), 3vw, var(--sp-5));padding-inline:var(--sp-4)}
+  :root{--chat-h:46px}
+  .chatfab{left:auto;inset-inline-start:clamp(var(--sp-4), 3vw, var(--sp-5));padding:0;aspect-ratio:1;justify-content:center;border-radius:var(--r1);transform:none}
   .chatfab-t{display:none}
   .chatpop{left:auto;inset-inline:clamp(var(--sp-4), 3vw, var(--sp-5));width:auto}
 }
@@ -100,7 +114,7 @@
 .vbar-t{flex:none;min-inline-size:5ch;font-size:var(--fs-2);color:var(--t2);font-variant-numeric:tabular-nums;text-align:center}
 /* the waveform · thin bars, mirrored round the middle, the newest beside the mic */
 .vwave{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:2px;block-size:32px;overflow:hidden;
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 14%);mask-image:linear-gradient(90deg,transparent,#000 14%)}
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 5%);mask-image:linear-gradient(90deg,transparent,#000 5%)}
 .vwave i{display:block;flex:0 0 2px;block-size:32px;border-radius:1px;background:var(--teal);transform:scaleY(.08);
   transform-origin:50% 50%;transition:transform 70ms linear}
 .s-asking .vwave i{background:rgba(0,165,155,.35)}
@@ -125,3 +139,5 @@
   .vwave i{transition:none}
 }
 .cbox .cbox-b[hidden],.cbox textarea[hidden]{display:none}
+/* Client 7 Nov · the row's bars fill it end to end · no gap left after the last one */
+.vwave{justify-content:flex-start}

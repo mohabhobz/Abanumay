@@ -1,7 +1,7 @@
 import { TodayReport } from './TodayReport'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ButtonLink, Glass, Head, Icon, icons, Tabs, Tag } from '@/components/ui'
+import { Link, useParams } from 'react-router-dom'
+import { Glass, Head, Icon, icons, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import {
@@ -16,6 +16,7 @@ import { Board } from './Board'
 import { Builder } from './Builder'
 import { Catalog } from './Catalog'
 import { ImpactPanel } from './ImpactPanel'
+import { ReportsHead } from './ReportsHead'
 import { PERIODS } from '@/data/reportDefs'
 
 /* Reports.
@@ -38,7 +39,6 @@ import { PERIODS } from '@/data/reportDefs'
 
 export default function ReportsPage() {
   const { tab } = useParams<{ tab?: string }>()
-  const navigate = useNavigate()
   const [period, setPeriod] = useState<string>(PERIODS[0].id)
 
   const active: ReportTabSlug =
@@ -51,22 +51,7 @@ export default function ReportsPage() {
     <AppLayout assistantContext={assistFor.page('التقارير')}>
       <div className="viewstack">
         <div className={`screen col${active === 'board' ? ' hasg2 g2fit' : ''}`}>
-          <header>
-            <div>
-              <h1 className="ptitle">التقارير</h1>
-            </div>
-            <div className="rowf gp-2">
-              {/* 11.4.26 · 13.2.27 · the Ehsan projects and the sub-projects, marked by their kind */}
-              <ButtonLink variant="2" to={ROUTES.partnersTab('report')}><Icon name={icons.link} />تقرير الشركاء</ButtonLink>
-              <ButtonLink variant="2" to={ROUTES.glassBoard}><Icon name={icons.insight} />لوحة المؤشرات · تجريبية</ButtonLink>
-            </div>
-          </header>
-
-          <Tabs
-            items={REPORT_TABS}
-            active={active}
-            onChange={(s) => navigate(ROUTES.reportTab(s))}
-          />
+          <ReportsHead active={active} />
 
           {/* Client, 8 Oct · the impact on every report screen · the «الأثر» tab draws it in full */}
           {active === 'impact' ? <ImpactPanel full /> : <ImpactPanel />}

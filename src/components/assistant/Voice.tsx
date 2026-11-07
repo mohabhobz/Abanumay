@@ -17,7 +17,9 @@ import type { useVoice } from '@/hooks/useVoice'
 
 type Voice = ReturnType<typeof useVoice>
 
-const N = 56
+/* the history kept · more than the widest row draws · the row shows as many as fit (a bar and its gap, 4px) */
+const N = 480
+const STEP = 4
 const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
 export function MicButton({ v, disabled }: { v: Voice; disabled?: boolean }) {
@@ -38,6 +40,17 @@ export function VoiceBar({ v }: { v: Voice }) {
   useEffect(() => { lv.current = v.level }, [v.level])
   /* the waveform's history · a sample every 70 ms, the newest beside the mic */
   const [hist, setHist] = useState<number[]>(() => Array(N).fill(0))
+  /* Client 7 Nov · the waveform runs the whole row · a flat line to the far end until the voice
+     fills it from the mic side, then it scrolls on */
+  const wave = useRef<HTMLSpanElement>(null)
+  const [fit, setFit] = useState(56)
+  useEffect(() => {
+    const el = wave.current
+    if (!el) return
+    const ro = new ResizeObserver(([e]) => setFit(Math.max(8, Math.min(N, Math.floor((e.contentRect.width + 2) / STEP)))))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   useEffect(() => {
     if (!listening) return
     let k = 0
@@ -72,8 +85,8 @@ export function VoiceBar({ v }: { v: Voice }) {
           <Icon name={icons.mic} size="sm" />
         </Button>
         <span className="vbar-t num">{mmss(v.secs)}</span>
-        <span className="vwave" aria-hidden="true">
-          {hist.map((h, i) => (
+        <span className="vwave" aria-hidden="true" ref={wave}>
+          {hist.slice(0, fit).map((h, i) => (
             <i key={i} style={understanding ? { animationDelay: `${(i % 14) * 50}ms` } : { transform: `scaleY(${Math.max(0.08, h)})` }} />
           ))}
         </span>

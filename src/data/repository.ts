@@ -11,6 +11,7 @@
  * connection is wired in.
  */
 import { projectOutcome } from '@/data/shared/outcome'
+import { alignOf } from '@/data/intake/alignScore'
 import { openUpdateOf } from '@/data/entities/store'
 import type {
   Project, Entity, AuthorityMatrix, CurrentUser, Insight, FollowUpType,
@@ -50,6 +51,9 @@ export type ProjectSort =
   | 'shortest'
   | 'weight'
   | 'name'
+  | 'maqasid'      // Highest link to the shari'a objectives first
+  | 'waqf'         // Highest link to the endowment deed first
+  | 'align'        // Highest average of the two links first
 
 /** Project list filters · same field names as the system's own filters */
 /**
@@ -240,6 +244,14 @@ const sortProjects = (rows: ProjectRow[], sort: ProjectSort = 'waiting'): Projec
       return out.sort((a, b) => b.weight - a.weight)
     case 'name':
       return out.sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+    case 'maqasid':
+    case 'waqf':
+    case 'align': {
+      /* Client 7 Nov · each row's percents are read once, then the rows are ordered by them */
+      const k = sort === 'maqasid' ? 'mq' : sort === 'waqf' ? 'wq' : 'avg'
+      const by = new Map(out.map((r) => [r.id, alignOf(r)[k]]))
+      return out.sort((a, b) => (by.get(b.id) ?? 0) - (by.get(a.id) ?? 0))
+    }
     default:
       // Longest waiting first; those already done (no limit) go last
       return out.sort((a, b) => stagePressure(b) - stagePressure(a))
