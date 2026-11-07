@@ -224,6 +224,7 @@ export function AssistantScreen({
                     onStop={stop}
                     busy={busy}
                     inputRef={input}
+                    voice
                   />
                 }
               />
@@ -257,6 +258,7 @@ export function AssistantScreen({
             onStop={stop}
             busy={busy}
             inputRef={input}
+            voice
             docked
           />
         )}

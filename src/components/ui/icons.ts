@@ -32,7 +32,7 @@ import {
   Lock, MagnifyingGlass, MapPin, Monitor, Moon, Paperclip, PencilSimple, Plus,
   PushPin, Rows, SidebarSimple, SignOut, Signature, SlidersHorizontal, SortDescending, SquaresFour,
   ShieldCheck, Sun, ThumbsDown, ThumbsUp, Trash, UploadSimple, User, Users, Wallet,
-  WarningCircle, Info, X,
+  WarningCircle, Info, X, Microphone,
   type Icon as PhIcon,
 } from '@phosphor-icons/react'
 import { AbLeafGlyph } from '@/components/soul/motifs'
@@ -42,6 +42,8 @@ export type IconGlyph = PhIcon
 
 export const icons = {
   home: House,
+  /** Client 7 Nov · speaking to the assistant · the composer's voice input */
+  mic: Microphone,
   sun: Sun,
   panel: SidebarSimple,
   moon: Moon,

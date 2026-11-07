@@ -10,6 +10,8 @@ export const ROUTES = {
   /** Password reset · public, self-service (2.3.pw) */
   forgot: '/forgot',
   home: '/',
+  /** Client 7 Nov · the polished «اليوم» beside the original, for comparison */
+  homeV2: '/today-v2',
   /** The combined dashboard that was the home page until 3 Oct 2026 · now its own category in
       Reports (meeting 1 Oct, E-9); the old `/overview` address redirects here. */
   overview: '/reports/overview',

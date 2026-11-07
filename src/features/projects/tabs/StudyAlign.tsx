@@ -82,9 +82,8 @@ function CritTable({ crit, scores, editable, fixed, onChange }: {
   )
 }
 
-function Frame({ title, final, drafted, editable, onDraft, children }: {
+function Frame({ title, drafted, editable, onDraft, children }: {
   title: string
-  final: AlignResult
   drafted?: boolean
   editable: boolean
   onDraft: () => void
@@ -94,7 +93,6 @@ function Frame({ title, final, drafted, editable, onDraft, children }: {
     <Glass className="algn">
       <Head title={title} meta={<span className="rowf gp-2">
         {drafted && <Tag tone="teal">مسودة المساعد · راجعها</Tag>}
-        <Tag tone={CLASS_TONE[final.cls]}>{pct(pctOf(final.final))} · {final.cls}</Tag>
         {editable && (
           <Button type="button" variant="ghost" size="sm" onClick={onDraft} title="يعيد المساعد ملء التقييم من طلب المشروع">
             <Icon name={icons.spark} size="sm" />
@@ -112,7 +110,7 @@ export function MaqasidCard({ row, value, editable, onChange }: { row: ProjectRo
   const set = <K extends keyof MaqasidEval>(k: K, v: MaqasidEval[K]) => onChange({ ...value, [k]: v, drafted: false })
   const rank = MAQSAD_RANK.find((x) => x.value === value.rank)
   return (
-    <Frame title="الارتباط بمقاصد الشريعة" final={r} drafted={value.drafted} editable={editable} onDraft={() => onChange(suggestMaqasid(row))}>
+    <Frame title="الارتباط بمقاصد الشريعة" drafted={value.drafted} editable={editable} onDraft={() => onChange(suggestMaqasid(row))}>
       <h3 className="stdy-h">تصنيف ارتباط المشروع بالمقاصد</h3>
       <div className="regfields">
         <FormField label="المقصد الأكبر"><FieldSelect value={value.major} label="المقصد الأكبر" disabled={!editable} options={opts(MAQSAD_MAJOR)} onChange={(v) => set('major', v)} /></FormField>
@@ -141,7 +139,7 @@ export function WaqfCard({ row, value, editable, onChange }: { row: ProjectRow; 
   const items = WAQF_ITEMS.filter((x) => x.cat === value.cat)
   const item = WAQF_ITEMS.find((x) => x.item === value.item)
   return (
-    <Frame title="الارتباط بصك الوقفية" final={r} drafted={value.drafted} editable={editable} onDraft={() => onChange(suggestWaqf(row))}>
+    <Frame title="الارتباط بصك الوقفية" drafted={value.drafted} editable={editable} onDraft={() => onChange(suggestWaqf(row))}>
       <h3 className="stdy-h">تصنيف ارتباط المشروع بصك الوقفية</h3>
       <div className="regfields">
         <FormField label="تصنيف المصرف"><FieldSelect value={value.cat} label="تصنيف المصرف" disabled={!editable} options={opts(WAQF_CATS)}

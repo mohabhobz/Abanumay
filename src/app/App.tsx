@@ -3,6 +3,7 @@ import { Navigate, Outlet, Route, BrowserRouter, Routes } from 'react-router-dom
 import LoginPage from '@/features/auth/LoginPage'
 import ProjectPage from '@/features/projects/ProjectPage'
 import HomePage from '@/features/home/HomePage'
+import HomePageV2 from '@/features/home/HomePageV2'
 import HomeOverview from '@/features/home/HomeOverview'
 import JourneyPage from '@/features/journey/JourneyPage'
 import GlassBoard from '@/features/board/GlassBoard'
@@ -121,6 +122,7 @@ export default function App() {
           }
         >
         <Route path={ROUTES.home} element={<HomePage />} />
+        <Route path={ROUTES.homeV2} element={<HomePageV2 />} />
         <Route path="/overview" element={<Navigate to={ROUTES.overview} replace />} />
         <Route path={ROUTES.journey} element={<JourneyPage />} />
         <Route path={ROUTES.glassBoard} element={<GlassBoard />} />

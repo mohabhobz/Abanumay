@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  FormField, FieldBox, Button, DateText, FieldSelect, Glass, Head, KV, Mono, Money, MoneyField, Num, Person, Switch, Tag,
+  FormField, FieldBox, Button, DateText, FieldSelect, Glass, Head, KV, Money, MoneyField, Num, Person, Switch, Tag,
 } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
-import { isolate, pct, projectCode } from '@/lib/format'
+import { isolate, pct } from '@/lib/format'
 import type { ProjectRow } from '@/types/domain'
 import { critMax, criteriaFor, studyScore, type Criterion } from '@/data/intake/criteria'
 import { fieldsOf, type StudyField, type StudySection } from '@/data/intake/studyFields'
@@ -24,8 +24,6 @@ import { OutputsEditor } from '../OutputsEditor'
 import { orgOutputsOf, outputLine, saveOrgOutputs, useFlow, type Output } from '@/data/intake/flow'
 import { useRole } from '@/hooks/useRole'
 import { holderOf } from '@/data/holders'
-import { CYCLE } from '@/data/intake/cycle'
-import { TransferModal } from '@/features/projects/TransferModal'
 import { blankExclusions, excludedBy, exclusionsOf } from '@/data/intake/exclusion'
 import { addCondition, appFlowOf, useApprovals } from '@/data/approvals/store'
 import { useBudget } from '@/data/budget/store'
@@ -126,7 +124,6 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
       </FieldBox>
     </li>
   )
-  const subtotal = (list: Criterion[]) => list.reduce((a, c) => a + Math.min(d.scores[c.key] ?? 0, critMax(c)), 0)
   const projCrit = crit.filter((c) => c.group !== 'إداري')
   const entCrit = crit.filter((c) => c.group === 'إداري')
   const mq = maqasidResult(d.maqasid)
@@ -153,19 +150,18 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
 
       {/* 1 · the project */}
       <Glass>
-        <Head title="بيانات المشروع" meta={<span className="rowf gp-2"><Mono>{projectCode(row.id, row.year)}</Mono><Tag tone="mute"><Num>{subtotal(projCrit)}</Num> من <Num>{projCrit.reduce((a, c) => a + critMax(c), 0)}</Num></Tag></span>} />
+        {/* Client 7 Nov · nothing the page header already says · its code, name, owner and requested
+            amount stay up there · the study's score reads once, in the strip above */}
+        <Head title="بيانات المشروع" />
         <KV
           rows={[
-            { k: 'المشروع', v: <b>{row.name}</b> },
             { k: 'السنة', v: <Num>{row.year.slice(0, 4)}</Num> },
             { k: 'المسار', v: row.track },
             { k: 'المجال', v: row.field },
             { k: 'الهدف', v: row.goal },
             { k: 'المنطقة', v: `${row.region}${row.city ? ` · ${row.city}` : ''}` },
-            { k: 'المبلغ المطلوب', v: <Money>{row.amountRequested}</Money> },
           ]}
         />
-        <OwnerRow row={row} />
         {fieldList('project')}
         <ul className="stdy-list">{projCrit.map(critRow)}</ul>
         {/* #20 · the exclusion criteria · any «نعم» excludes the project */}
@@ -183,7 +179,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
 
       {/* 2 · the entity */}
       <Glass>
-        <Head title="الجهة المنفذة" meta={entCrit.length ? <Tag tone="mute"><Num>{subtotal(entCrit)}</Num> من <Num>{entCrit.reduce((a, c) => a + critMax(c), 0)}</Num></Tag> : undefined} />
+        <Head title="الجهة المنفذة" />
         <KV rows={[{ k: 'الجهة', v: <Link className="tlink" to={ROUTES.entity(row.entityId)}>{row.entityName}</Link> }]} />
         <ul className="stdy-list">{entCrit.map(critRow)}</ul>
         {fieldList('entity')}
@@ -197,7 +193,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
 
       {/* 4 · the support decision · the recommendation itself is taken from the decision bar */}
       <Glass>
-        <Head title="قرار دعم المشروع" meta={<Tag tone={score >= 70 ? 'ok' : score >= 50 ? 'warn' : 'mute'}>درجة الدراسة <Num>{score}</Num> من <Num>{100}</Num></Tag>} />
+        <Head title="قرار دعم المشروع" />
         <p className="stdy-rec">
           <span className="lb">رأي مشرف المنح</span>
           {f.study?.recommendation === 'approve' ? <Tag tone="ok">دعم المشروع</Tag>
@@ -486,35 +482,6 @@ function OrgOutputsBlock({ row }: { row: ProjectRow }) {
           <ul className="outs-ro mt-1">{mine.map((o, i) => <li key={i} className="sub">{outputLine(o)}</li>)}</ul>
         </details>
       )}
-    </div>
-  )
-}
-
-/* Meeting 20 Oct · the project's owner is part of the study, not of the entity's data · the
-   supervisor who studies it owns it.
-   Client sheet 24 Oct (#90) · one path to change the supervisor, the same rule everywhere: a supervisor
-   of the same domain, a mandatory reason, logged before → after («تعديل مشرف المنح») · the card opens the
-   project's transfer dialog in its supervisor mode (`reownProject` decides who may) instead of a second,
-   looser assignment of its own. */
-function OwnerRow({ row }: { row: ProjectRow }) {
-  useFlow()
-  const { role, user } = useRole()
-  const [open, setOpen] = useState(false)
-  const sups = CYCLE.domains[row.field]?.supervisors ?? []
-  const studying = row.stage === 'دراسة المشروع' && (row.holder ?? 'supervisor') === 'supervisor'
-  const can = !row.archived && sups.length > 0 && (role.key === 'grants-manager' || (role.key === 'supervisor' && studying && (row.owner === user.name || Boolean(user.behalf))))
-  return (
-    <div className="stdy-own mt-3">
-      <div className="rowf gp-2">
-        <span className="lb">مالك المشروع</span>
-        {row.owner ? <Person name={row.owner} /> : <Tag tone="warn">غير مُسنَد</Tag>}
-        {can && (
-          <Button type="button" variant="2" size="sm" onClick={() => setOpen(true)}>
-            {row.owner ? 'عدّل المشرف' : 'أسند إلى مشرف'}
-          </Button>
-        )}
-      </div>
-      {open && <TransferModal row={row} me={user.name} mode="owner" onClose={() => setOpen(false)} />}
     </div>
   )
 }

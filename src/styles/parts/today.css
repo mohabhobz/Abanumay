@@ -214,3 +214,31 @@
 .tday-card.clickable:hover{box-shadow:inset 0 0 0 1px rgba(var(--ch-2C),.45),var(--el-2)}
 .tday-card.clickable:hover .tday-card-q,.tday-card-go{color:var(--ch-2)}
 .tday-knob{stroke:var(--g-pop)}
+
+/* ── 7 Nov · «اليوم» v2 (`/today-v2`) · the polish pass over the same page · quiet chrome: no glows,
+   no gradient tiles, no bar before the titles, the late warning a tag on the next step only ── */
+.tday2{padding-block-end:calc(var(--sp-12) * 2)}
+.tday2-h{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap}
+.tday2-h .ptitle{margin:0}
+.tday2-h p{margin:var(--sp-1) 0 0}
+.tday2 .tday-focus::after,.tday2 .tday-prog::after{content:none}
+.tday2 .tday-step{color:var(--t1);font-size:var(--fs-3);font-weight:600}
+.tday2 .tday-step::before{content:none}
+.tday2 .tday-ic{background:var(--fl-3);color:var(--ch-1);box-shadow:inset 0 0 0 1px var(--edge-hair)}
+.tday2 .tday-focus:hover .tday-ic{transform:none}
+.tday2 .tday-focus-t h2{font-weight:600}
+.tday2 .tday-pct{font-weight:600}
+.tday2 .tday-big>b{color:var(--t1)}
+.tday2 .tday-prog.on .tday-say{color:var(--t2)}
+.tday2 .tday-tick{background:var(--fl-3);color:var(--ch-1)}
+.tday2 .tday-week>.on i{background:var(--teal)}
+.tday2 .tday-card.clickable:hover{transform:none}
+.tday2 .tday-card.clickable:hover svg.ic2{scale:none;rotate:none}
+.tday2-why{font-size:var(--fs-1);color:var(--t3)}
+.tday2-why.late{color:var(--warn-ink)}
+.tday2 .tday-board.n-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tday2 .tday-board.n-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tday2 .tday-board.n-1{grid-template-columns:minmax(0,1fr)}
+.tday2-none{display:flex;align-items:center;gap:var(--sp-2);margin:0}
+@media (max-width:1180px){.tday2 .tday-board.n-3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.tday2 .tday-board[class*="n-"]{grid-template-columns:minmax(0,1fr)}.tday2{padding-block-end:calc(var(--sp-12) * 3)}}
