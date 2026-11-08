@@ -7,7 +7,7 @@ import { useAgreements } from '@/data/agreements/store'
 import { usePlans } from '@/data/plans/store'
 import { nf, pct } from '@/lib/format'
 import {
-  STAGE_ORDER, boardKingdom, boardMonths, boardRegions, boardRings, boardTotals, boardWaves,
+  STAGE_ORDER, STAGE_SHORT, boardKingdom, boardMonths, boardRegions, boardRings, boardTotals, boardWaves,
   type RegionDatum, type RingDatum, type WaveSeries,
 } from './model'
 
@@ -172,14 +172,14 @@ function GeoPanel({ regions, sel, onSel, spot }: {
           </dl>
           <div className="gb-spot-t">
             <h5 className="gb-sub">{all ? 'مراحل المشاريع' : 'مراحل مشاريعها'}</h5>
-            <ol className="gb-tl" aria-label="مراحل مشاريع المنطقة">
+            <ol className="gb-tl" aria-label="مراحل مشاريع المنطقة" style={{ ['--n' as string]: STAGE_ORDER.length }}>
               {STAGE_ORDER.map((k) => {
                 const n = spot.stages.find((s) => s.key === k)?.n ?? 0
                 return (
-                  <li key={k} className={size(n)}>
+                  <li key={k} className={size(n)} title={k}>
                     <span className="gb-tl-v num">{nf.format(n)}</span>
                     <i className="gb-tl-d" aria-hidden="true" />
-                    <span className="gb-tl-k">{k}</span>
+                    <span className="gb-tl-k">{STAGE_SHORT[k] ?? k}</span>
                   </li>
                 )
               })}

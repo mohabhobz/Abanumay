@@ -37,6 +37,17 @@ const FAMILY: { key: string; of: readonly ProjectStatusGroup[] }[] = [
   { key: 'مرفوضة أو ملغاة', of: DROPPED },
 ]
 export const STAGE_ORDER: string[] = FAMILY.map((f) => f.key)
+/* Client 8 Nov · the timeline's names in one word each, so every stage reads on one line · the
+   full name stays the key and the tooltip */
+export const STAGE_SHORT: Record<string, string> = {
+  'قيد الدراسة': 'الدراسة',
+  'معتمدة · قبل التنفيذ': 'معتمدة',
+  'تحت التنفيذ': 'التنفيذ',
+  'قيد الإغلاق': 'الإغلاق',
+  'متعثر': 'متعثرة',
+  'منتهية': 'منتهية',
+  'مرفوضة أو ملغاة': 'مرفوضة',
+}
 
 export function boardTotals() {
   const ps = live()

@@ -111,8 +111,11 @@
 .gb-stats dt{font-size:var(--fs-1);color:var(--t2)}
 .gb-stats dd{margin:0;font-family:var(--fd);font-size:var(--fs-5);font-weight:700}
 .gb-spot-t .gb-sub{margin-bottom:var(--sp-4)}
-.gb-tl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:relative}
-.gb-tl::before{content:"";position:absolute;inset-inline:10%;top:calc(var(--lh-md) + var(--sp-3) + var(--sp-3));height:var(--sp-1);
+/* Client 8 Nov · every stage on one line · one column per stage, however many there are, so the
+   track never breaks onto a second row · the line runs from the first dot's centre to the last's
+   (half a column in from each side, set from the count) · a long name wraps under its own dot */
+.gb-tl{--n:7;list-style:none;margin:0;padding:0;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);position:relative}
+.gb-tl::before{content:"";position:absolute;inset-inline:calc(50% / var(--n));top:calc(var(--lh-md) + var(--sp-3) + var(--sp-3));height:var(--sp-1);
   background:linear-gradient(to left, var(--ch-2), var(--ch-5));opacity:.5}
 .gb-tl li{position:relative;display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);text-align:center}
 .gb-tl-v{font-size:var(--fs-3);font-weight:700;line-height:var(--lh-md)}
@@ -121,7 +124,7 @@
 .gb-tl .s1 .gb-tl-d{background:var(--ch-2);box-shadow:0 0 0 var(--sp-2) rgba(var(--ch-2C), .18)}
 .gb-tl .s2 .gb-tl-d{background:var(--lime);box-shadow:0 0 0 var(--sp-3) rgba(var(--ch-4C), .22)}
 .gb-tl .s0 .gb-tl-v{color:var(--t3)}
-.gb-tl-k{font-size:var(--fs-1);color:var(--t2)}
+.gb-tl-k{font-size:var(--fs-1);color:var(--t2);white-space:nowrap}
 
 /* ── waves ── */
 .gb-leg{margin:0 0 var(--sp-4);display:flex;flex-wrap:wrap;gap:var(--sp-3) var(--sp-7)}
