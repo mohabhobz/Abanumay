@@ -81,3 +81,33 @@
 .nstep-c.dng:hover:not(:disabled) .nstep-go{color:var(--no-ink)}
 .nstep-c:disabled{cursor:not-allowed;background:none;box-shadow:inset 0 0 0 1px var(--edge-d);color:var(--t3)}
 .nstep-c:disabled .nstep-m{background:var(--fl-2);color:var(--t3)}
+
+/* ═══ Client 9 Nov · the entity's bar (EntityBar) · one row on every screen an entity opens ═══
+   The shell stacks the bar over the page instead of the staff rail beside it · the bar keeps the
+   screen's own side padding, so its edges line up with the content under it, and it doesn't
+   scroll · the page under it starts a step lower than a staff page (the bar already gave it air). */
+.shell.ent{flex-direction:column}
+.ebar{flex:none;position:relative;z-index:16;padding:var(--screen-pt) clamp(var(--sp-7), 3vw, var(--sp-9)) 0}
+.ebar-in{display:flex;align-items:center;gap:var(--sp-3);min-width:0;padding-bottom:var(--sp-5);box-shadow:inset 0 -1px 0 var(--edge-d)}
+.ebar-in>.mark{flex:none}
+.ebar-id{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0;margin-inline-start:var(--sp-1)}
+.ebar-id>b{font-family:var(--fd);font-weight:700;font-size:var(--fs-3);color:var(--t1)}
+.ebar-id>.sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* the bell reads as one of the bar's controls · the same box, edge and fill as the buttons beside it */
+.ebar .nbell-top{position:relative;width:var(--h-md);height:var(--h-md);
+  background:var(--ctl-tone);box-shadow:inset 0 0 0 1px var(--ctl-tone-line);color:var(--solid)}
+.ebar .nbell-top:hover,.ebar .nbell-top.on{background:var(--ctl-tone-h);color:var(--solid)}
+.ebar .nbell-top svg{width:var(--ic-sm);height:var(--ic-sm)}
+/* the count sits on the button's corner, clear of the bell */
+.ebar .nbell-ic{position:static}
+.ebar .nbadge{inset-block-start:calc(-1 * var(--sp-2));inset-inline-end:calc(-1 * var(--sp-2))}
+.shell.ent .screen{--padt:var(--sp-6)}
+@media (max-width:960px){
+  .ebar{padding:var(--sp-4) clamp(var(--sp-4), 3vw, var(--sp-5)) 0}
+  .ebar-in{padding-bottom:var(--sp-4)}
+  .ebar-in .btn .btn-t,.ebar-id>.sub{display:none}
+}
+
+/* No «اسأل أبانمي» on the screen (an entity's) · the decision bar reserves no room for it, only for
+   the contact button that takes its place at the end edge */
+:root:not(:has(.askfab)){--ask-w:0px;--ask-gap:0px}

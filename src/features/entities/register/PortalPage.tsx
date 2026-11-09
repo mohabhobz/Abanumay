@@ -5,8 +5,8 @@ import { ButtonLink, Button, BankGrid, BankCard,
 } from '@/components/ui'
 import { DocList, UploadButton } from '@/components/docs'
 import { ChatDock } from '@/components/thread'
-import { Background, NotificationBell } from '@/components/shell'
-import Logo from '@/assets/LogoColor'
+import { Background, EntityBar } from '@/components/shell'
+import { entityChat } from '@/data/entityChat'
 import { ROUTES } from '@/app/routes'
 import { agreements } from '@/data/mock/agreements'
 import { agrFlowOf, agrHolder, agrStageSay, useAgreements } from '@/data/agreements/store'
@@ -14,7 +14,7 @@ import { payableProjects, requestsOfEntity, usePayments } from '@/data/payments/
 import { entityStateOf } from '@/data/mock/payEntity'
 import { closeRows, closeStageLabel } from '@/data/mock/closing'
 import { CASES, CASE_KIND_SAY, CASE_STAGE_SAY, CASE_STAGE_TONE, useClosing } from '@/data/closing/store'
-import { isPortalPreview, signOut } from '@/data/session'
+import { isPortalPreview } from '@/data/session'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { NOUN, nounAfter, readDate } from '@/lib/format'
 import {
@@ -178,7 +178,8 @@ export default function PortalPage() {
     { label: reqOf.state === 'rejected' && !resent ? 'القرار · مرفوض' : 'القرار', state: outcome ?? done('decided') },
   ]
 
-  const thread = regThread(reqOf.state, reqOf.name)
+  /* Client 9 Nov · the entity's general line · the same one its other screens fall back to */
+  const chat = entityChat(r ? { reqId: r.id } : { entityId }) ?? { channel: `reg:${reqOf.id}`, messages: regThread(reqOf.state, reqOf.name), name: reqOf.name }
 
   /* Note: no reel and no internal assistant - exactly like the registration screen. Whoever opens
      this is an entity with no system account, and a reel featuring "projects" and "budget" promises
@@ -188,28 +189,6 @@ export default function PortalPage() {
   const body = (
       <div className="viewstack">
         <div className="screen col hasg2">
-          <div className="regtop">
-            <Logo className="mark mark-38" />
-            <div>
-              <b>منح أبانمي</b>
-              <span className="sub">بوّابة الجهة · طلبك أنت</span>
-            </div>
-            <span className="pc-sp" />
-            {/* Batch 3 · the entity's bell · its own notices, on its own session only */}
-            {!preview && <NotificationBell user={{ name: account ? account.name : reqOf.name }} entity={account ? account.name : reqOf.name} place="top" />}
-            {/* Note: this used to be a button with no `onClick` - it looked like logout, could be
-                clicked, and nothing happened; the client caught it. It now clears the session and
-                returns to the login screen with `replace`, so a browser "back" doesn't reopen the
-                portal after logout. */}
-            <Button
-              variant="2" size="sm"
-              onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}
-            >
-              <Icon name={icons.logout} size="sm" />
-              تسجيل الخروج
-            </Button>
-          </div>
-
           <header className="phead">
             <div className="pmain">
               <h1 className="ptitle">{legacy && account ? account.name : reqOf.name}</h1>
@@ -635,10 +614,10 @@ export default function PortalPage() {
                 closing · whatever's stuck with the entity gets resolved with a word, not a form */}
               <ChatDock
                 title="التواصل مع المؤسسة"
-                channel={`reg:${reqOf.id}`}
-                by={reqOf.name}
-                messages={thread}
-                entityName={reqOf.name}
+                channel={chat.channel}
+                by={chat.name}
+                messages={chat.messages}
+                entityName={chat.name}
                 me="entity"
                 placeholder="اكتب رسالة إلى المؤسسة…"
                 emptyTitle="قناة التواصل مفتوحة عند الحاجة"
@@ -673,7 +652,11 @@ export default function PortalPage() {
     <>
       <Background />
       <div className="app">
-        <div className="shell">{body}</div>
+        {/* Client 9 Nov · the entity's one bar (EntityBar), the same on every screen it opens */}
+        <div className="shell ent">
+          <EntityBar name={account ? account.name : reqOf.name} preview={preview} />
+          {body}
+        </div>
       </div>
     </>
   )

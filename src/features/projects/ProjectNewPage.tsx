@@ -306,7 +306,8 @@ export default function ProjectNewPage() {
     <AppLayout assistantContext={assistFor.page('إنشاء مشروع')}>
       <div className="viewstack hasdock">
         <div className="screen col">
-          <BackTo label="المشاريع" onClick={() => navigate(ROUTES.projects)} />
+          {/* Client 9 Nov · the entity's way back is its portal, in its bar · not the staff projects list */}
+          {!asEntity && <BackTo label="المشاريع" onClick={() => navigate(ROUTES.projects)} />}
 
           <header>
             <div>

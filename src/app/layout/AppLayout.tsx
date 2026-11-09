@@ -1,9 +1,10 @@
 import { SessionGuard } from './SessionGuard'
 import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ButtonLink, Button, Icon, icons } from '@/components/ui'
 import { portalOf } from '@/app/entityAccess'
-import { AskDock, Background, MobileTop, NotificationBell, Rail } from '@/components/shell'
+import { AskDock, Background, EntityBar, MobileTop, Rail } from '@/components/shell'
+import { ChatDock } from '@/components/thread'
+import { entityChat } from '@/data/entityChat'
 import { AssistantOverlay } from '@/features/assistant/AssistantOverlay'
 import { BehalfBar } from '@/features/cross/Behalf'
 import { TodayReturn } from '@/features/home/TodayReturn'
@@ -73,6 +74,8 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
   useTagCols()
   useTrimTip()
 
+  const chat = entity ? entityChat(sessionScope()) : undefined
+
   const toggleAssistant = useCallback(() => setAssistantOpen((v) => !v), [])
 
   useEffect(() => {
@@ -94,21 +97,12 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
       <div className="app">
         {mobile && !entity && <MobileTop user={user} />}
 
-        <div className="shell">
+        <div className={`shell${entity ? ' ent' : ''}`}>
           {/* Re-audit 7 Oct · an entity session reads its own records in the staff layout, without
-              the staff navigation · its way out is its portal */}
+              the staff navigation · client 9 Nov · its bar is the portal's own (EntityBar), the same
+              row on every screen it opens, with the way back to its portal */}
           {entity ? (
-            <nav className="xs-etop glass" aria-label="بوابة الجهة">
-              <ButtonLink variant="2" size="sm" to={portalOf(sessionScope())}>
-                <Icon name={icons.chevronBack} size="sm" />
-                بوابة {user.name}
-              </ButtonLink>
-              <NotificationBell user={user} entity={user.name} place="top" />
-              <Button type="button" variant="ghost" size="sm" onClick={() => { signOut(); navigate(ROUTES.login, { replace: true }) }}>
-                <Icon name={icons.logout} size="sm" />
-                تسجيل الخروج
-              </Button>
-            </nav>
+            <EntityBar name={user.name} portal={portalOf(sessionScope())} />
           ) : (
           <Rail
             user={user}
@@ -133,6 +127,13 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
           {/* Fixed on every screen, placed next to the decision bar rather than the navigation bar
               — the question is asked at the point of decision. */}
           {!entity && <AskDock open={assistantOpen} onToggle={toggleAssistant} compact={mobile} />}
+          {/* Client 9 Nov · the entity's line to the foundation is on every screen it opens · a page
+              with its own thread (a project, a closing) shows that one, and this steps aside */}
+          {entity && chat && (
+            <ChatDock fallback title="التواصل مع المؤسسة" channel={chat.channel} by={chat.name} messages={chat.messages}
+              entityName={chat.name} me="entity" placeholder="اكتب رسالة إلى المؤسسة…"
+              emptyTitle="قناة التواصل مفتوحة عند الحاجة" emptyNote="لا رسائل بعد." />
+          )}
         </div>
       </div>
     </>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { Button, Icon, icons } from '@/components/ui'
 import { markSeen, threadOf, unreadOf, useThreads } from '@/data/thread'
@@ -22,9 +22,30 @@ import { useProximity } from '@/hooks/useProximity'
 export interface ChatDockProps extends ThreadProps {
   /** The window's title · «التواصل مع الجهة» for staff, «التواصل مع المؤسسة» for the entity */
   title: string
+  /** Client 9 Nov · the shell's own dock for an entity · it shows only while the page has no dock
+      of its own (a project or a closing opens on its own thread, every other screen on the
+      entity's general one), so the button is there on every screen and never twice */
+  fallback?: boolean
 }
 
-export function ChatDock({ title, ...thread }: ChatDockProps) {
+/* How many page docks are mounted · the shell's fallback steps aside while any is */
+let docks = 0
+const subs = new Set<() => void>()
+const bump = (d: number) => { docks += d; subs.forEach((f) => f()) }
+const useDocks = () => useSyncExternalStore((f) => { subs.add(f); return () => { subs.delete(f) } }, () => docks)
+
+export function ChatDock({ fallback, ...props }: ChatDockProps) {
+  const n = useDocks()
+  useEffect(() => {
+    if (fallback) return
+    bump(1)
+    return () => bump(-1)
+  }, [fallback])
+  if (fallback && n > 0) return null
+  return <Dock {...props} />
+}
+
+function Dock({ title, ...thread }: Omit<ChatDockProps, 'fallback'>) {
   useThreads()
   const [open, setOpen] = useState(false)
   const launcher = useRef<HTMLButtonElement>(null)
@@ -49,7 +70,22 @@ export function ChatDock({ title, ...thread }: ChatDockProps) {
       if (mob.matches) { clear(); return }
       const ask = document.querySelector<HTMLElement>('.askfab')
       const me = launcher.current
-      if (!ask || !ask.offsetHeight || !me) { clear(); return }
+      if (!me) { clear(); return }
+      if (!ask || !ask.offsetHeight) {
+        /* no «اسأل أبانمي» (an entity's screens) · the button takes its place at the end edge, and
+           the decision bar reserves the button's width instead */
+        clear()
+        const g = parseFloat(getComputedStyle(root).getPropertyValue('--ask-gap')) * parseFloat(getComputedStyle(root).fontSize) || 10
+        root.style.setProperty('--chat-r', `${Math.ceil(me.offsetWidth + g)}px`)
+        /* and it takes the decision bar's height and bottom line when the page has one */
+        const dock = document.querySelector<HTMLElement>('.decdock')
+        const bar = dock?.querySelector<HTMLElement>('.chrome')
+        if (dock && bar && bar.offsetHeight) {
+          root.style.setProperty('--chat-h', `${bar.offsetHeight}px`)
+          root.style.setProperty('--chat-b', `${Math.round(window.innerHeight - dock.getBoundingClientRect().bottom + parseFloat(getComputedStyle(dock).paddingBottom))}px`)
+        }
+        return
+      }
       const gap = parseFloat(getComputedStyle(root).getPropertyValue('--ask-gap')) * parseFloat(getComputedStyle(root).fontSize) || 10
       root.style.setProperty('--chat-x', `${Math.ceil(ask.offsetLeft + ask.offsetWidth + gap)}px`)
       root.style.setProperty('--chat-b', getComputedStyle(ask).bottom)

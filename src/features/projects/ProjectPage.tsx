@@ -428,11 +428,12 @@ export default function ProjectPage() {
               chronological. */}
           <Crumbs
             items={[
-              { label: 'المشاريع', to: ROUTES.projects },
+              /* Client 9 Nov · an entity's root is its portal, not the staff projects list */
+              asEntity ? { label: 'البوابة', to: `${ROUTES.entityPortal}?entity=${entity.id}` } : { label: 'المشاريع', to: ROUTES.projects },
               ...(active === 'data'
                 ? [{ label: project.name }]
                 : [
-                    { label: project.name, to: ROUTES.project(project.id) },
+                    { label: project.name, to: `${ROUTES.project(project.id)}${asEntity ? '?as=entity' : ''}` },
                     { label: PROJECT_TABS.find((t) => t.slug === active)?.label ?? '' },
                   ]),
             ]}

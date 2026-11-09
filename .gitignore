@@ -19,3 +19,5 @@ vite.config.ts.timestamp-*
 
 # End-to-end test scripts · local runs only, not part of the app
 _e2e*.mjs
+.vercel
+.env*
