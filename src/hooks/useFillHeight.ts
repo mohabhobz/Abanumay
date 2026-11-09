@@ -126,7 +126,9 @@ export function useFillHeight(
       const main = el.previousElementSibling as HTMLElement | null
       const last = main?.lastElementChild as HTMLElement | null
       const clear = () => { if (last) { last.style.removeProperty('min-height'); last.removeAttribute('data-fill') } }
-      if (!main || !last || !last.classList.contains('glass') || !window.matchMedia('(min-width:961px)').matches) { clear(); return }
+      /* Client 9 Nov · only an empty card stretches (its content centred, like the assistant's closed
+         card) · a card with results keeps its own height */
+      if (!main || !last || !last.classList.contains('glass') || !last.querySelector(':scope > .empty') || !window.matchMedia('(min-width:961px)').matches) { clear(); return }
       const kids = [...last.children] as HTMLElement[]
       if (!kids.length) { clear(); return }
       const cs = getComputedStyle(last)
