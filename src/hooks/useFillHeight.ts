@@ -98,6 +98,7 @@ export function useFillHeight(
         el.style.setProperty('--ai-max', `${roomNow}px`)
         el.style.setProperty(varName, `${Math.min(roomNow, Math.max(min, Math.round(h)))}px`)
         el.removeAttribute('data-tall')
+        fillMain()
         return
       }
       el.style.setProperty(varName, `${Math.max(min, Math.round(h))}px`)
@@ -108,6 +109,26 @@ export function useFillHeight(
          flag only flips on the content's own height. */
       const room = window.innerHeight - stick - reserve
       el.toggleAttribute('data-tall', el.offsetHeight > room + 1)
+    }
+
+    /* Client 9 Nov · a main column shorter than the assistant beside it · its last card stretches to
+       the assistant's height, its content centred (`data-fill`) · measured from the card's own
+       content, so the stretch it gets never feeds back into the next measure */
+    const fillMain = () => {
+      const main = el.previousElementSibling as HTMLElement | null
+      const last = main?.lastElementChild as HTMLElement | null
+      const clear = () => { if (last) { last.style.removeProperty('min-height'); last.removeAttribute('data-fill') } }
+      if (!main || !last || !last.classList.contains('glass') || !window.matchMedia('(min-width:961px)').matches) { clear(); return }
+      const kids = [...last.children] as HTMLElement[]
+      if (!kids.length) { clear(); return }
+      const cs = getComputedStyle(last)
+      const natural = kids[kids.length - 1].getBoundingClientRect().bottom - kids[0].getBoundingClientRect().top
+        + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
+      const before = last.getBoundingClientRect().top - main.getBoundingClientRect().top
+      const card = el.firstElementChild as HTMLElement | null
+      const need = Math.round((card?.offsetHeight ?? el.offsetHeight) - before)
+      if (natural + 1 < need) { last.style.minHeight = `${need}px`; last.setAttribute('data-fill', '') }
+      else clear()
     }
 
     const schedule = () => {
@@ -140,6 +161,8 @@ export function useFillHeight(
       el.style.removeProperty(varName)
       el.style.removeProperty('--ai-max')
       el.removeAttribute('data-tall')
+      const last = el.previousElementSibling?.lastElementChild as HTMLElement | null
+      if (last) { last.style.removeProperty('min-height'); last.removeAttribute('data-fill') }
     }
   }, [ref, varName, reserveSelector, capSelector, min, gap])
 }

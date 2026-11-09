@@ -34,7 +34,7 @@ export function ImpactPanel({ full = false }: { full?: boolean }) {
   return (
     <section className={`impc${full ? ' impc-full' : ''}`} aria-label="الأثر">
       <div className="impc-top">
-        <h2 className="impc-t">الأثر</h2>
+        {/* Client 9 Nov · no title over the KPI cards · the section keeps its name for screen readers */}
         {full
           ? <span className="sub">{countOf(m.projects, NOUN.project)} مموَّلًا</span>
           : <Link className="lnk" to={ROUTES.reportTab('impact')}>التقرير الكامل<Icon name={icons.chevron} size="sm" /></Link>}

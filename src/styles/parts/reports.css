@@ -11,7 +11,7 @@
    the assistant as well as full width. */
 .impc{display:flex;flex-direction:column;gap:var(--gap);container-type:inline-size}
 .impc>*{min-width:0}
-.impc-top{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap}
+.impc-top{display:flex;align-items:baseline;justify-content:flex-end;gap:var(--sp-4);flex-wrap:wrap}
 .impc-t{margin:0;font-family:var(--fd);font-size:var(--fs-6);font-weight:700;line-height:var(--lh-head);color:var(--t1)}
 .impc-top .lnk{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .impc-ks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
@@ -34,3 +34,4 @@
 @container (max-width:420px){
   .impc-ks{grid-template-columns:1fr}
 }
+.kpirow-m{display:flex;justify-content:flex-end}

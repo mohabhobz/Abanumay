@@ -216,7 +216,10 @@ export function Tabs({
     }
     check()
     scroller.addEventListener('scroll', check, { passive: true })
-    return () => scroller.removeEventListener('scroll', check)
+    /* Client 9 Nov · the row's height, on its screen · the assistant's column sticks below it */
+    const ro = new ResizeObserver(() => (scroller as HTMLElement).style.setProperty('--tabs-h', `${el.offsetHeight}px`))
+    ro.observe(el)
+    return () => { scroller.removeEventListener('scroll', check); ro.disconnect(); (scroller as HTMLElement).style.removeProperty('--tabs-h') }
   }, [pin])
   return (
     <div ref={ref} className={`tabs${pin ? ' tabs-pin' : ''}${className ? ` ${className}` : ''}`} role="tablist">
@@ -432,11 +435,12 @@ export function Stat({
   )
 }
 
-/** Client 27 Oct · a row of KPI cards carries its own title, like any other section of the page */
+/** A row of KPI cards · client 9 Nov · no title over the cards · each card names its own figure ·
+    the title stays the row's accessible name */
 export function StatRow({ title, meta, three, id, children }: { title: string; meta?: ReactNode; three?: boolean; id?: string; children: ReactNode }) {
   return (
     <section className="rpsec kpirow" aria-label={title} id={id}>
-      <Head title={title} meta={meta} />
+      {meta && <div className="kpirow-m">{meta}</div>}
       <div className={`stats4${three ? ' n3' : ''}`}>{children}</div>
     </section>
   )

@@ -1979,7 +1979,8 @@ to{opacity:1;transform:none}
      confirmed 20px of unused width. (For comparison, a comparable design
      system's own collapsed rail is 48px.) */
   flex:none;width:var(--rail-w,60px);display:flex;flex-direction:column;align-items:center;gap:var(--sp-4);
-  padding:var(--rail-pt) var(--sp-3);position:relative;z-index:25;
+  /* Client 9 Nov · above the pinned tabs (30) · its tooltips and the account menu used to open under them */
+  padding:var(--rail-pt) var(--sp-3);position:relative;z-index:36;
   transition:width var(--mo-3) var(--ease-out);
   box-shadow:inset -1px 0 0 var(--edge-d)}
 /* During dragging, transitions are disabled so the width tracks the mouse
@@ -9161,6 +9162,9 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
    gutters by its own box, so the blur covers them too */
 .tabs-pin{--tab-gut:clamp(var(--sp-7), 3vw, var(--sp-9));padding-block:var(--sp-3) 0}
 .tabs-pin[data-stuck]{margin-inline:calc(-1 * var(--tab-gut));padding-inline:var(--tab-gut);
+  /* Client 9 Nov · the stuck surface runs the screen's full width · it kept the row's own width, so
+     the negative margins only shifted it and the start gutter was left bare */
+  width:calc(100% + var(--tab-gut) * 2);max-width:none;
   background:color-mix(in srgb, var(--pop) 58%, transparent);
   -webkit-backdrop-filter:blur(18px) saturate(1.35);backdrop-filter:blur(18px) saturate(1.35);
   box-shadow:inset 0 -1px 0 var(--edge-1),0 8px 24px -16px rgb(0 0 0 / .18)}
@@ -9370,3 +9374,18 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .bgchk-h>.bgchk-l{margin:0}
 /* Client 27 Oct · a record's status in its own card · a larger pill (the plan's «حالة التنفيذ») */
 .stbig>.tag{font-size:var(--fs-4);line-height:var(--lh-md);padding:var(--sp-1) var(--sp-5)}
+
+/* ═══ Client 9 Nov · the assistant's column ═══
+   · it sticks below the pinned tabs, never under them · `--tabs-h` is the row's height, written by
+     `Tabs` on its screen · the screen's top padding is what the sticky offset already counts from
+   · a floor it never goes under (`--ai-min`), and while it works (open) it takes the whole room down
+     to the decision bar (`--ai-max`) · what it holds scrolls inside it, the page doesn't
+   · when the main column is shorter, its last card is stretched to the column's height and its
+     content centred (`data-fill`, written by `useFillHeight`) */
+@media (min-width:961px){
+  .screen:has(.tabs-pin) .aiside{top:calc(var(--tabs-h, 56px) - var(--padt, 0px) + var(--sp-5))}
+  .aiside{max-height:none}
+  .aiside>.aicard.aicard{min-height:var(--ai-min, 420px);height:var(--ai-min, 420px);max-height:var(--ai-max, none)}
+  .aiside>.aicard.aicard:not(.aishut){height:max(var(--ai-min, 420px), var(--ai-max, 420px))}
+  .glass[data-fill]{display:flex;flex-direction:column;justify-content:center}
+}

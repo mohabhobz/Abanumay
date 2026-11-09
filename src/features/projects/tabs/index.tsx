@@ -27,8 +27,8 @@ export function HistoryTab({
   const navigate = useNavigate()
   return (
     <>
-      <Glass>
-        <Head title="مؤشرات الجهة" />
+      {/* Client 9 Nov · no title over a card of figures · each figure names itself */}
+      <Glass aria-label="مؤشرات الجهة">
         <div className="imp" style={{ '--n': E.stats.length } as CSSProperties}>
           {E.stats.map((s) => (
             <div key={s.k}>
