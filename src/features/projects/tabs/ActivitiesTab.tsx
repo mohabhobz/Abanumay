@@ -193,7 +193,7 @@ export function ActivitiesTab({ projectId, me, list, onAdd }: ActivitiesTabProps
         )}
 
         {list.length === 0 ? (
-          <Empty
+          <Empty art={{ done: 1 }}
             title="لم تُسجَّل فعاليات على هذا المشروع بعد."
           />
         ) : (

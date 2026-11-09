@@ -52,7 +52,7 @@ export function FollowUpsTab({ projectId, followUps, types, me, onAdd }: FollowU
       />
 
       {followUps.length === 0 ? (
-        <Empty
+        <Empty art={{ done: 1 }}
           title="لا توجد متابعات مسجّلة على هذا المشروع."
         />
       ) : (

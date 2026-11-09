@@ -9386,6 +9386,22 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
   .screen:has(.tabs-pin) .aiside{top:calc(var(--tabs-h, 56px) - var(--padt, 0px) + var(--sp-5))}
   .aiside{max-height:none}
   .aiside>.aicard.aicard{min-height:var(--ai-min, 420px);height:var(--ai-min, 420px);max-height:var(--ai-max, none)}
-  .aiside>.aicard.aicard:not(.aishut){height:max(var(--ai-min, 420px), var(--ai-max, 420px))}
+  .aiside>.aicard.aicard:not(.aishut),
+  .aiside[data-long]>.aicard.aicard{height:max(var(--ai-min, 420px), var(--ai-max, 420px))}
   .glass[data-fill]{display:flex;flex-direction:column;justify-content:center}
 }
+
+/* ═══ Client 9 Nov · a card with nothing in it yet reads like the assistant's closed card ═══
+   One centred column, in the assistant's order: the mark (the growth art), the card's own title, the
+   line that says it's empty, then its action · the card's header row and the empty block give up
+   their boxes (`display:contents`) so their parts line up in that one column, wherever the card
+   sits (a tab beside the assistant, stretched to its height, or alone) */
+.glass:has(>.empty){display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:var(--sp-3)}
+.glass:has(>.empty)>:is(.hd,.acts-hd,.empty),.glass:has(>.empty)>.acts-hd>.hd{display:contents}
+.glass:has(>.empty) .empty-art{order:1;margin:0 0 var(--sp-1)}
+.glass:has(>.empty)>:is(.hd,.acts-hd) h3{order:2;margin:0;font-family:var(--fd);font-weight:600;font-size:var(--fs-4);line-height:var(--lh-text);color:var(--t1)}
+.glass:has(>.empty) .empty>.t{order:3;font-size:var(--fs-2);line-height:var(--lh-long);color:var(--t2);max-width:28rem}
+.glass:has(>.empty) .empty>.sub{order:3;max-width:28rem}
+.glass:has(>.empty)>:is(.hd,.acts-hd) .meta{order:3}
+.glass:has(>.empty) .emptyact,.glass:has(>.empty)>.acts-hd>:not(.hd){order:4;margin-top:var(--sp-2)}
+.glass:has(>.empty)>:not(.hd,.acts-hd,.empty){order:5}

@@ -98,6 +98,14 @@ export function useFillHeight(
         el.style.setProperty('--ai-max', `${roomNow}px`)
         el.style.setProperty(varName, `${Math.min(roomNow, Math.max(min, Math.round(h)))}px`)
         el.removeAttribute('data-tall')
+        /* Client 9 Nov · a long page (the main column taller than the room the stuck column gets) ·
+           the assistant takes that whole room, minus its margins above and below */
+        const main = el.previousElementSibling as HTMLElement | null
+        if (main) {
+          const pb = parseFloat(getComputedStyle(main).paddingBottom) || 0
+          const full = window.innerHeight - stick - reserve
+          el.toggleAttribute('data-long', main.getBoundingClientRect().height - pb > full)
+        }
         fillMain()
         return
       }
@@ -161,6 +169,7 @@ export function useFillHeight(
       el.style.removeProperty(varName)
       el.style.removeProperty('--ai-max')
       el.removeAttribute('data-tall')
+      el.removeAttribute('data-long')
       const last = el.previousElementSibling?.lastElementChild as HTMLElement | null
       if (last) { last.style.removeProperty('min-height'); last.removeAttribute('data-fill') }
     }
