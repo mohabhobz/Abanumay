@@ -26,7 +26,7 @@ export function OtherDocs({ projectId, me, asEntity, canUpload }: { projectId: s
           مرفقات أخرى <span className="sub"><Num>{list.length}</Num> {list.length === 1 ? 'ملف' : 'ملفات'}</span>
         </h3>
         {canUpload && (
-          <UploadButton label="ارفع مرفقات أخرى" text="أضف مرفقات" accept={ACCEPT} maxMb={50} onPick={() => undefined}
+          <UploadButton label="ارفع مرفقات أخرى" accept={ACCEPT} maxMb={50} onPick={() => undefined}
             onPickMany={(files) => { setSaid(''); uploadMore(projectId, files.map((f) => ({ name: f.name, size: f.size })), me) }} />
         )}
       </div>

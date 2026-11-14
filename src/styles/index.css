@@ -9405,3 +9405,17 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .glass:has(>.empty)>:is(.hd,.acts-hd) .meta{order:3}
 .glass:has(>.empty) .emptyact,.glass:has(>.empty)>.acts-hd>:not(.hd){order:4;margin-top:var(--sp-2)}
 .glass:has(>.empty)>:not(.hd,.acts-hd,.empty){order:5}
+
+/* ═══ Client 14 Nov · a list's row actions are one column of one width ═══
+   Every upload («ارفع» / «استبدال») and every action that ends a row of a list or a table takes
+   the same width (`--row-act-w`) with its label centred, so a column of them reads as one column
+   whatever each one says · and the upload that sits on a section's title row («مرفقات أخرى») lines
+   up with the column of the table under it, not the card's edge */
+:root{--row-act-w:calc(var(--sp-12) * 1.5)}
+.upbtn,
+:is(td, li) > :is(.btn, a.btn, label.btn):last-child,
+.dact > :is(.btn, label.btn){min-inline-size:var(--row-act-w);justify-content:center}
+.stdy-hr>.upbtn{margin-inline-end:var(--sp-4)}
+/* Client 14 Nov · a dropdown stretched wider than its text (a form grid, a wide toolbar slot) keeps its
+   arrow on the end edge · the text takes the room between, the arrow never floats mid-field */
+.fsel-b>.fsel-sz{margin-inline-end:auto}

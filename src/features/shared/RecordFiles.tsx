@@ -50,7 +50,7 @@ export function RecordFiles({ record, seed = [], canUpload, me, title = 'الم�
         meta={<span className="rowf gp-2">
           <span className="sub"><Num>{rows.filter((r) => r.uploaded).length}</Num> {rows.length === 1 ? 'ملف' : 'ملفات'}</span>
           {canUpload && (
-            <UploadButton label={`أرفق ملفات · ${title}`} text="أضف مرفقات" accept={ACCEPT} maxMb={50} onPick={() => undefined}
+            <UploadButton label={`أرفق ملفات · ${title}`} accept={ACCEPT} maxMb={50} onPick={() => undefined}
               onPickMany={(fs) => { setBad(''); addFiles(record, fs.map((f) => ({ name: f.name, size: f.size })), me) }} />
           )}
         </span>}

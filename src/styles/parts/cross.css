@@ -111,3 +111,6 @@
 /* No «اسأل أبانمي» on the screen (an entity's) · the decision bar reserves no room for it, only for
    the contact button that takes its place at the end edge */
 :root:not(:has(.askfab)){--ask-w:0px;--ask-gap:0px}
+.pm-add{margin-bottom:var(--sp-3)}
+/* Client 14 Nov · a form row's action sits on its fields' bottom line */
+.regfields>.regf-act{align-self:end}

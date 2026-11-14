@@ -68,7 +68,7 @@ export function PayProofs({ r, me, asEntity }: { r: PayRequest; me: string; asEn
             <span className="pc-sp" />
             {others.length > 0 ? <Tag tone="mute"><Num>{others.length}</Num> {others.length === 1 ? 'مرفق' : 'مرفقات'}</Tag> : <Tag tone="mute">اختياري</Tag>}
             {open && (
-              <UploadButton label="أضف مرفقات أخرى" text="أضف مرفقًا" accept={ACCEPT} maxMb={50} onPick={() => undefined}
+              <UploadButton label="أضف مرفقات أخرى" accept={ACCEPT} maxMb={50} onPick={() => undefined}
                 onPickMany={(fs) => { setBad(''); addFiles(`pay:${r.id}:proof-other`, fs.map((f) => ({ name: f.name, size: f.size })), me) }} />
             )}
           </span>

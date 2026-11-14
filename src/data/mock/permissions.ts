@@ -180,7 +180,21 @@ export interface PermUser {
   /** Last sign-in · display text in the mock */
   seen: string
   overrides: Overrides
+  /* Client 14 Nov · a staff account added from this screen · its sign-in is the work email */
+  email?: string
+  mobile?: string
+  dept?: string
+  title?: string
 }
+
+/** Client 14 Nov · the foundation's departments, as a new staff account picks one */
+export const DEPTS = [
+  'إدارة المنح', 'الإدارة المالية', 'الإدارة التنفيذية', 'الاتصال المؤسسي', 'الإدارة القانونية',
+  'تقنية المعلومات', 'الموارد البشرية', 'اللجان ومجلس الأمناء',
+] as const
+
+/** The work email of a demo account · its login at the foundation's domain */
+export const WORK_DOMAIN = 'abanumay.org'
 
 export const PERM_USERS: PermUser[] = [
   { id: 'u01', name: 'نورة القحطاني', role: 'admin', active: true, seen: 'الآن', overrides: {} },

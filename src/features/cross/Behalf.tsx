@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FormField, FieldBox, Button, DateText, Glass, Head, Select, Tag } from '@/components/ui'
+import { FormField, FieldBox, FieldSelect, Button, DateText, Glass, Head, Tag } from '@/components/ui'
 import { useRole } from '@/hooks/useRole'
 import { readRole, ROLES, type RoleKey } from '@/data/roles'
 import { BEHALF_LOG, currentBehalf, endBehalf, startBehalf } from '@/data/behalf'
@@ -19,10 +19,14 @@ export function BehalfCard() {
     <Glass>
       <Head title="تولّي إجراء متعثر" meta={<Tag tone="mute">مدير النظام</Tag>} />
       <div className="regfields">
-        <Select label="الدور الأصلي" all="اختر الدور" value={role || undefined} options={seats.map((r) => ({ value: r.key, label: r.title }))} onChange={(v) => setRole((v ?? '') as RoleKey | '')} />
-        <FormField label="السبب (إلزامي)"><FieldBox><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التولّي" placeholder="مثل: غياب المستخدم المسؤول" /></FieldBox></FormField>
-        <span className="rowf gp-2">
-          <Button type="button" variant="2" size="sm" onClick={() => {
+        {/* Client 14 Nov · the role is a form field like the reason beside it (a filter's dropdown had
+            its arrow drawn mid-field) · the button sits on the fields' bottom line, at their height */}
+        <FormField label="الدور الأصلي" required as="div">
+          <FieldSelect value={role} label="الدور الأصلي" placeholder="اختر الدور" options={seats.map((r) => ({ value: r.key, label: r.title }))} onChange={(v) => setRole(v as RoleKey | '')} />
+        </FormField>
+        <FormField label="السبب" required><FieldBox><input value={reason} onChange={(e) => setReason(e.target.value)} aria-label="سبب التولّي" placeholder="مثل: غياب المستخدم المسؤول" /></FieldBox></FormField>
+        <span className="rowf gp-2 regf-act">
+          <Button type="button" variant="2" onClick={() => {
             const out = role ? startBehalf(role, reason, user.name) : ['اختر الدور الذي تتولاه']
             setBad(out)
           }}>ابدأ التولّي</Button>

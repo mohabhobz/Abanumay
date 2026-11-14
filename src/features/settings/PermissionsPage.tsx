@@ -2,15 +2,16 @@ import { AuthRulesCard } from './AuthRulesCard'
 import { readRole } from '@/data/roles'
 import { useMemo, useState } from 'react'
 import {
-  FormField, Button, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, Num, Person, SearchBox, Select, Switch, Tabs, Tag,
+  FormField, Button, DateText, Empty, FieldBox, FieldSelect, Glass, Head, Icon, icons, Modal, ModalHead, Num, Person, SearchBox, Select, Switch, Tabs, Tag,
 } from '@/components/ui'
+import { STAFF_DIRECTORY } from '@/data/roles'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { assistFor } from '@/data/mock/assistant'
 import { useStored } from '@/lib/prefs'
 import {
-  ACTIONS, PERM_INITIAL, PERM_KEY, PERM_MODULES, PERM_USERS, PERSONAS, SCOPES, conflicts, moduleByKey,
+  ACTIONS, DEPTS, WORK_DOMAIN, PERM_INITIAL, PERM_KEY, PERM_MODULES, PERM_USERS, PERSONAS, SCOPES, conflicts, moduleByKey,
   moduleCount, overrideCount, roleLabel,
   type ActionKey, type Grants, type Overrides, type PermLogRow, type PermRole, type PermState,
   type PermUser, type Scope,
@@ -115,12 +116,20 @@ function UsersTab({ st, setSt, sel, onSel }: {
   )
   const user = st.users.find((u) => u.id === sel) ?? rows[0]
   const roleOf = (k: string) => st.roles.find((r) => r.key === k)
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<PermUser | null>(null)
 
   return (
     <>
       <div className="pm-split">
         <Glass className="pm-side">
           <Head title="المستخدمون" meta={<><Num>{rows.length}</Num> من <Num>{st.users.length}</Num></>} />
+          {/* Client 14 Nov · the way a staff account is made · the only one, besides the demo accounts ·
+              above the list it adds to */}
+          <Button variant="2" full className="pm-add" onClick={() => setAdding(true)}>
+            <Icon name={icons.plus} size="sm" />
+            إضافة مستخدم
+          </Button>
           <div className="pm-bar">
             <SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المستخدم" />
             <Select
@@ -175,11 +184,55 @@ function UsersTab({ st, setSt, sel, onSel }: {
           )}
         </Glass>
 
+        {adding && (
+          <AddUserModal
+            users={st.users}
+            roles={st.roles}
+            onClose={() => setAdding(false)}
+            onAdd={(u) => {
+              setSt((x) => ({
+                ...x,
+                users: [...x.users, u],
+                log: [logRow(u.name, `إضافة المستخدم بدور «${roleLabel(u.role)}» · ${u.email}`), ...x.log],
+              }))
+              setAdding(false)
+              onSel(u.id)
+            }}
+          />
+        )}
+
+        {editing && (
+          <AddUserModal
+            users={st.users}
+            roles={st.roles}
+            initial={editing}
+            onClose={() => setEditing(null)}
+            onAdd={(u) => {
+              const was = editing
+              const lines: string[] = []
+              const say = (k: string, a?: string, b?: string) => { if ((a ?? '') !== (b ?? '')) lines.push(`تعديل ${k}: «${a || '—'}» ← «${b || '—'}»`) }
+              say('الاسم', was.name, u.name); say('بريد العمل', emailOf(was), u.email); say('الجوال', was.mobile, u.mobile)
+              say('الإدارة', was.dept, u.dept); say('المسمى', was.title, u.title)
+              if (was.role !== u.role) lines.push(`تغيير الدور من «${roleLabel(was.role)}» إلى «${roleLabel(u.role)}»`)
+              const next = was.role !== u.role ? { ...u, overrides: {} } : u
+              if (lines.length) {
+                setSt((x) => ({
+                  ...x,
+                  users: x.users.map((v) => (v.id === next.id ? next : v)),
+                  log: [...lines.map((l) => logRow(next.name, l)), ...x.log],
+                }))
+              }
+              setEditing(null)
+            }}
+          />
+        )}
+
         {user && (
           <UserEditor
             key={user.id + JSON.stringify(user)}
             user={user}
             roles={st.roles}
+            onEdit={() => setEditing(user)}
             onSave={(next, lines) =>
               setSt((x) => ({
                 ...x,
@@ -194,8 +247,96 @@ function UsersTab({ st, setSt, sel, onSel }: {
   )
 }
 
-function UserEditor({ user, roles, onSave }: {
-  user: PermUser; roles: PermRole[]; onSave: (u: PermUser, log: string[]) => void
+/* ═══ Client 14 Nov · a new staff account ═══
+   The full name, the work email (its sign-in · unique across every account, the demo ones
+   included), the mobile, the department, the job title and the role · the account starts active
+   on its role's permissions, with no overrides, and the log keeps who added it */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+const MOBILE_RE = /^(05\d{8}|9665\d{8}|\+9665\d{8})$/
+/* Client 14 Nov · the same form edits an account's details (`initial`) · its own email and its own
+   demo login don't count against it · a demo account with no email yet starts from its login at the
+   foundation's domain */
+const demoOf = (name: string) => STAFF_DIRECTORY.find((a) => a.name === name)
+const emailOf = (u: PermUser) => u.email ?? (demoOf(u.name) ? `${demoOf(u.name)!.login}@${WORK_DOMAIN}` : '')
+function AddUserModal({ users, roles, initial, onClose, onAdd }: {
+  users: PermUser[]; roles: PermRole[]; initial?: PermUser; onClose: () => void; onAdd: (u: PermUser) => void
+}) {
+  const [f, setF] = useState(() => initial
+    ? { name: initial.name, email: emailOf(initial), mobile: initial.mobile ?? '', dept: initial.dept ?? '', title: initial.title ?? '', role: initial.role }
+    : { name: '', email: '', mobile: '', dept: '', title: '', role: '' })
+  const [tried, setTried] = useState(false)
+  const put = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }))
+  const email = f.email.trim().toLowerCase()
+  const mine = initial ? demoOf(initial.name)?.login : undefined
+  const taken = (e: string) =>
+    users.some((u) => u.id !== initial?.id && emailOf(u).toLowerCase() === e)
+    || STAFF_DIRECTORY.some((a) => a.login !== mine && (`${a.login}@${WORK_DOMAIN}` === e || a.login === e.split('@')[0]))
+  const errs: Partial<Record<keyof typeof f, string>> = {}
+  if (!f.name.trim() || f.name.trim().split(/\s+/).length < 2) errs.name = 'اكتب الاسم الكامل · الاسم واسم العائلة على الأقل'
+  if (!EMAIL_RE.test(email)) errs.email = 'اكتب بريد عمل صحيحًا'
+  else if (taken(email)) errs.email = 'هذا البريد مستخدم في حساب آخر'
+  if (!MOBILE_RE.test(f.mobile.replace(/\s/g, ''))) errs.mobile = 'اكتب الجوال بصيغة 05XXXXXXXX'
+  if (!f.dept) errs.dept = 'اختر الإدارة'
+  if (!f.title.trim()) errs.title = 'اكتب المسمى الوظيفي'
+  if (!f.role) errs.role = 'اختر الدور'
+  const ok = Object.keys(errs).length === 0
+  const say = (k: keyof typeof f) => tried && errs[k] ? <span className="bad regf-h" role="alert">{errs[k]}</span> : null
+  const submit = () => {
+    setTried(true)
+    if (!ok) return
+    const base = initial ?? { id: `u${Date.now().toString(36)}`, active: true, seen: 'لم يدخل بعد', overrides: {} }
+    onAdd({
+      ...base, name: f.name.trim().replace(/\s+/g, ' '), role: f.role,
+      email, mobile: f.mobile.replace(/\s/g, ''), dept: f.dept, title: f.title.trim(),
+    })
+  }
+  return (
+    <Modal label={initial ? 'تعديل بيانات الموظف' : 'إضافة مستخدم'} onClose={onClose} escape>
+      <ModalHead icon={icons.user} title={initial ? 'تعديل بيانات الموظف' : 'إضافة مستخدم'} />
+      <div className="mb col">
+        <p className="sub cnote">{initial ? 'يدخل ببريد العمل · تغيير الدور هنا يغيّر صلاحياته إلى صلاحيات الدور الجديد' : 'حساب موظف جديد · يدخل ببريد العمل ويأخذ صلاحيات دوره'}</p>
+        <div className="regfields">
+          <FormField label="الاسم الكامل" required wide>
+            <FieldBox><input value={f.name} onChange={(e) => put('name')(e.target.value)} aria-label="الاسم الكامل" autoComplete="off" /></FieldBox>
+            {say('name')}
+          </FormField>
+          <FormField label="بريد العمل" required>
+            <FieldBox><input dir="ltr" type="email" value={f.email} onChange={(e) => put('email')(e.target.value)} aria-label="بريد العمل" placeholder={`name@${WORK_DOMAIN}`} autoComplete="off" /></FieldBox>
+            {say('email')}
+          </FormField>
+          <FormField label="الجوال" required>
+            <FieldBox><input dir="ltr" inputMode="tel" value={f.mobile} onChange={(e) => put('mobile')(e.target.value)} aria-label="الجوال" placeholder="05XXXXXXXX" autoComplete="off" /></FieldBox>
+            {say('mobile')}
+          </FormField>
+          <FormField label="الإدارة" required>
+            <FieldSelect value={f.dept} label="الإدارة" placeholder="اختر" options={[...DEPTS]} onChange={put('dept')} />
+            {say('dept')}
+          </FormField>
+          <FormField label="المسمى الوظيفي" required>
+            <FieldBox><input value={f.title} onChange={(e) => put('title')(e.target.value)} aria-label="المسمى الوظيفي" placeholder="مثال: أخصائي منح" autoComplete="off" /></FieldBox>
+            {say('title')}
+          </FormField>
+          <FormField label="الدور" required wide>
+            <FieldSelect value={f.role} label="الدور" placeholder="اختر" disabled={initial?.name === ME}
+              options={roles.filter((r) => (r.persona ?? 'staff') !== 'entity' && (r.persona ?? 'staff') !== 'partner').map((r) => ({ value: r.key, label: r.label }))}
+              onChange={put('role')} />
+            {say('role')}
+          </FormField>
+        </div>
+      </div>
+      <div className="mf">
+        <Button variant="p" onClick={submit}>
+          {!initial && <Icon name={icons.plus} size="sm" />}
+          {initial ? 'احفظ البيانات' : 'أضف المستخدم'}
+        </Button>
+        <Button variant="2" onClick={onClose}>تراجع</Button>
+      </div>
+    </Modal>
+  )
+}
+
+function UserEditor({ user, roles, onSave, onEdit }: {
+  user: PermUser; roles: PermRole[]; onSave: (u: PermUser, log: string[]) => void; onEdit: () => void
 }) {
   const [d, setD] = useState<PermUser>(user)
   const role = roles.find((r) => r.key === d.role)
@@ -247,9 +388,16 @@ function UserEditor({ user, roles, onSave }: {
       <div className="pm-who">
         <Person name={d.name} size="lg" quiet={false} />
         <span className="sub">
+          {d.title && <>{d.title}{d.dept ? ` · ${d.dept}` : ''} · </>}
           يفتح <Num>{moduleCount(role, d.overrides)}</Num> من <Num>{PERM_MODULES.length}</Num> وحدة · آخر دخول: {d.seen}
+          {emailOf(d) && <> · <bdi>{emailOf(d)}</bdi></>}
         </span>
         <span className="pc-sp" />
+        {/* Client 14 Nov · the person's details · name, work email, mobile, department, title */}
+        <Button variant="2" size="sm" onClick={onEdit}>
+          <Icon name={icons.edit} size="sm" />
+          تعديل البيانات
+        </Button>
         {changes.length > 0 && (
           <SaveBar
             count={changes.length}

@@ -225,9 +225,28 @@ export function staffLogin(username: string): StaffAccount | null {
     const slug = person(a.name).slug ?? ''
     if ([a.login, slug, a.name.toLowerCase()].includes(u)) return a
   }
+  /* Client 14 Nov · an account the system admin added (Permissions → «إضافة مستخدم») signs in with
+     its work email, or the email's local part · read from the admin's saved state · an account
+     that is stopped doesn't open */
+  const added = addedAccount(username.trim().toLowerCase())
+  if (added) return added
   /* A seat key still opens that seat's default person · «supervisor» = omar */
   const seat = ROLES.find((r) => r.key === u)
   return seat ? STAFF_DIRECTORY.find((a) => a.role === seat.key) ?? null : null
+}
+
+const SEAT_OF: Record<string, RoleKey> = { board: 'member', consultant: 'supervisor' }
+function addedAccount(login: string): StaffAccount | null {
+  try {
+    const raw = localStorage.getItem('ab-perm-v3')
+    const users = raw ? (JSON.parse(raw) as { users?: { name: string; role: string; active: boolean; email?: string }[] }).users ?? [] : []
+    const u = users.find((x) => x.email && x.active && (x.email.toLowerCase() === login || x.email.toLowerCase().split('@')[0] === login))
+    if (!u?.email) return null
+    const role = (ROLES.some((r) => r.key === u.role) ? u.role : SEAT_OF[u.role] ?? 'supervisor') as RoleKey
+    return { login: u.email.toLowerCase().split('@')[0], name: u.name, role }
+  } catch {
+    return null
+  }
 }
 
 /** The demo sign-ins, as the login error lists them */
