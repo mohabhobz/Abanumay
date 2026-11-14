@@ -9,6 +9,7 @@ import { signIn } from '@/data/session'
 import { STAFF_LOGINS, staffLogin, writeRole } from '@/data/roles'
 import { findAccount, passwordOk } from '@/data/entities/auth'
 import { AUTH_RULES, lockLeft, loginFailed, loginSucceeded } from '@/data/authGuard'
+import { mustChangePassword, staffPasswordOk } from '@/data/staffAuth'
 import { regRows } from '@/data/mock/registration'
 
 /* Login screen.
@@ -82,6 +83,14 @@ export default function LoginPage() {
       fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : `${WRONG} · قُفل الحساب ${AUTH_RULES.lockMinutes} دقيقة`)
       return
     }
+    /* Client 14 Nov · a staff account with a password kept (an added account, or one that set its
+       own) must match it · the demo accounts with none keep opening with any password */
+    const stf = staffLogin(user)
+    if (stf && staffPasswordOk(stf.login, pass) === false) {
+      const left = loginFailed(user)
+      fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : `${WRONG} · قُفل الحساب ${AUTH_RULES.lockMinutes} دقيقة`)
+      return
+    }
     loginSucceeded(user)
     setErr('')
     setBusy(true)
@@ -104,6 +113,8 @@ export default function LoginPage() {
       }
       writeRole(staff.role)
       signIn(staff.login)
+      /* a temporary password opens one screen only · the person sets their own first */
+      if (mustChangePassword(staff.login)) { navigate(ROUTES.firstPassword, { replace: true }); return }
       navigate(from ?? (readDisplay().landing || AFTER_LOGIN), { replace: true })
     }, 700)
   }

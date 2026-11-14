@@ -22,6 +22,7 @@ import RequestsPage from '@/features/entities/register/RequestsPage'
 import RegReviewPage from '@/features/entities/register/RegReviewPage'
 import EntityNewPage from '@/features/entities/register/EntityNewPage'
 import ForgotPage from '@/features/auth/ForgotPage'
+import FirstPasswordPage from '@/features/auth/FirstPasswordPage'
 import UpdateRequestPage from '@/features/entities/updates/UpdateRequestPage'
 import UpdatesPage from '@/features/entities/updates/UpdatesPage'
 import UpdateReviewPage from '@/features/entities/updates/UpdateReviewPage'
@@ -92,6 +93,7 @@ export default function App() {
       <Routes>
         <Route path={ROUTES.login} element={<LoginPage />} />
         <Route path={ROUTES.forgot} element={<ForgotPage />} />
+        <Route path={ROUTES.firstPassword} element={<FirstPasswordPage />} />
 
         {/* Registration lives outside the auth gate on purpose: the requester has no account, so
             placing this screen behind `RequireAuth` would mean only a signed-in user could open it

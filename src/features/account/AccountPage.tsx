@@ -1,4 +1,6 @@
 import { signOutEverywhere } from '@/data/authGuard'
+import { signedAccount } from '@/data/roles'
+import { setOwnPassword, staffPasswordAt, staffPasswordOk } from '@/data/staffAuth'
 import { keepThisSession } from '@/data/session'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -287,14 +289,21 @@ function SecurityTab() {
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
   const [ok, setOk] = useState(false)
+  const [wrong, setWrong] = useState(false)
   const pass = RULES.map((r) => ({ ...r, on: r.test(pw, cur) }))
   const match = pw2.length > 0 && pw === pw2
   const ready = cur.length > 0 && pass.every((r) => r.on) && match
 
+  /* Client 14 Nov · the change is real · the current password is checked against the one kept for
+     this account (a demo account with none takes any), the new one is kept and the next sign-in
+     needs it */
+  const me = signedAccount()
   const change = () => {
     if (!ready) return
+    if (me && staffPasswordOk(me.login, cur) === false) { setWrong(true); return }
+    if (me) setOwnPassword(me.login, pw)
     setS((x) => ({ ...x, changed: new Date().toISOString().slice(0, 10) }))
-    setCur(''); setPw(''); setPw2(''); setOk(true)
+    setCur(''); setPw(''); setPw2(''); setOk(true); setWrong(false)
   }
 
   const age = Math.max(0, Math.round((Date.now() - new Date(s.changed).getTime()) / 864e5))
@@ -308,10 +317,11 @@ function SecurityTab() {
     <div className="g2">
       <div className="col">
         <Glass>
-          <Head title="كلمة المرور" meta={<span className="sub">آخر تغيير <DateText>{s.changed}</DateText></span>} />
+          <Head title="كلمة المرور" meta={<span className="sub">آخر تغيير <DateText>{(me && staffPasswordAt(me.login)) || s.changed}</DateText></span>} />
           <div className="regfields">
             <div className="regf-w">
-              <PwField label="الحالية" value={cur} onChange={(x) => { setOk(false); setCur(x) }} auto="current-password" />
+              <PwField label="الحالية" value={cur} onChange={(x) => { setOk(false); setWrong(false); setCur(x) }} auto="current-password" />
+              {wrong && <span className="bad regf-h" role="alert">كلمة المرور الحالية غير صحيحة</span>}
             </div>
             <PwField label="الجديدة" value={pw} onChange={(x) => { setOk(false); setPw(x) }} auto="new-password" />
             <PwField label="تأكيد الجديدة" value={pw2} onChange={(x) => { setOk(false); setPw2(x) }} auto="new-password" />

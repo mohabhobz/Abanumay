@@ -5,6 +5,7 @@ import {
   FormField, Button, DateText, Empty, FieldBox, FieldSelect, Glass, Head, Icon, icons, Modal, ModalHead, Num, Person, SearchBox, Select, Switch, Tabs, Tag,
 } from '@/components/ui'
 import { STAFF_DIRECTORY } from '@/data/roles'
+import { makeTemp, setTempPassword, tempIssues } from '@/data/staffAuth'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -118,9 +119,11 @@ function UsersTab({ st, setSt, sel, onSel }: {
   const roleOf = (k: string) => st.roles.find((r) => r.key === k)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<PermUser | null>(null)
+  const [said, setSaid] = useState('')
 
   return (
     <>
+      {said && <p className="ok-ink cnote" role="status">{said}</p>}
       <div className="pm-split">
         <Glass className="pm-side">
           <Head title="المستخدمون" meta={<><Num>{rows.length}</Num> من <Num>{st.users.length}</Num></>} />
@@ -189,7 +192,9 @@ function UsersTab({ st, setSt, sel, onSel }: {
             users={st.users}
             roles={st.roles}
             onClose={() => setAdding(false)}
-            onAdd={(u) => {
+            onAdd={(u, temp) => {
+              if (temp && u.email) setTempPassword(u.email, temp)
+              setSaid(`أُضيف ${u.name} · يدخل ببريد العمل ${u.email} وكلمة المرور المؤقتة، ويُطلب منه تغييرها عند أول دخول`)
               setSt((x) => ({
                 ...x,
                 users: [...x.users, u],
@@ -207,13 +212,21 @@ function UsersTab({ st, setSt, sel, onSel }: {
             roles={st.roles}
             initial={editing}
             onClose={() => setEditing(null)}
-            onAdd={(u) => {
+            onAdd={(u, temp) => {
               const was = editing
               const lines: string[] = []
               const say = (k: string, a?: string, b?: string) => { if ((a ?? '') !== (b ?? '')) lines.push(`تعديل ${k}: «${a || '—'}» ← «${b || '—'}»`) }
               say('الاسم', was.name, u.name); say('بريد العمل', emailOf(was), u.email); say('الجوال', was.mobile, u.mobile)
               say('الإدارة', was.dept, u.dept); say('المسمى', was.title, u.title)
               if (was.role !== u.role) lines.push(`تغيير الدور من «${roleLabel(was.role)}» إلى «${roleLabel(u.role)}»`)
+              if (temp && u.email) {
+                /* a reset · the account opens with the new temporary password, on its own sign-in */
+                setTempPassword(u.email, temp)
+                const demo = demoOf(was.name)
+                if (demo && demo.login !== u.email.split('@')[0]) setTempPassword(demo.login, temp)
+                lines.push('إعادة تعيين كلمة المرور بكلمة مؤقتة')
+                setSaid(`أُعيد تعيين كلمة مرور ${u.name} · يُطلب منه تغييرها عند دخوله التالي`)
+              }
               const next = was.role !== u.role ? { ...u, overrides: {} } : u
               if (lines.length) {
                 setSt((x) => ({
@@ -259,8 +272,12 @@ const MOBILE_RE = /^(05\d{8}|9665\d{8}|\+9665\d{8})$/
 const demoOf = (name: string) => STAFF_DIRECTORY.find((a) => a.name === name)
 const emailOf = (u: PermUser) => u.email ?? (demoOf(u.name) ? `${demoOf(u.name)!.login}@${WORK_DOMAIN}` : '')
 function AddUserModal({ users, roles, initial, onClose, onAdd }: {
-  users: PermUser[]; roles: PermRole[]; initial?: PermUser; onClose: () => void; onAdd: (u: PermUser) => void
+  users: PermUser[]; roles: PermRole[]; initial?: PermUser; onClose: () => void; onAdd: (u: PermUser, temp?: string) => void
 }) {
+  /* Client 14 Nov · the admin sets a temporary password · required on a new account, optional on an
+     existing one (a reset) · the person replaces it on their first sign-in */
+  const [temp, setTemp] = useState('')
+  const [showTemp, setShowTemp] = useState(true)
   const [f, setF] = useState(() => initial
     ? { name: initial.name, email: emailOf(initial), mobile: initial.mobile ?? '', dept: initial.dept ?? '', title: initial.title ?? '', role: initial.role }
     : { name: '', email: '', mobile: '', dept: '', title: '', role: '' })
@@ -279,7 +296,8 @@ function AddUserModal({ users, roles, initial, onClose, onAdd }: {
   if (!f.dept) errs.dept = 'اختر الإدارة'
   if (!f.title.trim()) errs.title = 'اكتب المسمى الوظيفي'
   if (!f.role) errs.role = 'اختر الدور'
-  const ok = Object.keys(errs).length === 0
+  const tempBad = temp || !initial ? tempIssues(temp) : []
+  const ok = Object.keys(errs).length === 0 && tempBad.length === 0
   const say = (k: keyof typeof f) => tried && errs[k] ? <span className="bad regf-h" role="alert">{errs[k]}</span> : null
   const submit = () => {
     setTried(true)
@@ -288,7 +306,7 @@ function AddUserModal({ users, roles, initial, onClose, onAdd }: {
     onAdd({
       ...base, name: f.name.trim().replace(/\s+/g, ' '), role: f.role,
       email, mobile: f.mobile.replace(/\s/g, ''), dept: f.dept, title: f.title.trim(),
-    })
+    }, temp || undefined)
   }
   return (
     <Modal label={initial ? 'تعديل بيانات الموظف' : 'إضافة مستخدم'} onClose={onClose} escape>
@@ -321,6 +339,21 @@ function AddUserModal({ users, roles, initial, onClose, onAdd }: {
               options={roles.filter((r) => (r.persona ?? 'staff') !== 'entity' && (r.persona ?? 'staff') !== 'partner').map((r) => ({ value: r.key, label: r.label }))}
               onChange={put('role')} />
             {say('role')}
+          </FormField>
+          <FormField label={initial ? 'كلمة مرور مؤقتة جديدة' : 'كلمة المرور المؤقتة'} required={!initial} wide>
+            <span className="rowf gp-2 pm-temp">
+              <FieldBox>
+                <input dir="ltr" type={showTemp ? 'text' : 'password'} value={temp} onChange={(e) => setTemp(e.target.value)}
+                  aria-label="كلمة المرور المؤقتة" autoComplete="new-password" placeholder={initial ? 'اتركها فارغة لتبقى كلمة المرور كما هي' : ''} />
+                <Button plain type="button" className="iact" onClick={() => setShowTemp((x) => !x)} aria-label={showTemp ? 'إخفاء' : 'إظهار'} aria-pressed={showTemp}>
+                  <Icon name={showTemp ? icons.eyeOff : icons.eye} size="sm" />
+                </Button>
+              </FieldBox>
+              <Button variant="2" type="button" onClick={() => { setTemp(makeTemp()); setShowTemp(true) }}>ولّد</Button>
+            </span>
+            {tried && tempBad.length > 0
+              ? <span className="bad regf-h" role="alert">كلمة المرور المؤقتة: {tempBad.join(' · ')}</span>
+              : <span className="sub regf-h">{initial ? 'تُعيد تعيين كلمة مروره · يُطلب منه تغييرها عند دخوله التالي' : 'بلّغه بها مع بريد العمل · يُطلب منه تغييرها عند أول دخول'}</span>}
           </FormField>
         </div>
       </div>

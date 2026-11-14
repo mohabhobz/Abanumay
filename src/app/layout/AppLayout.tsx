@@ -1,6 +1,8 @@
 import { SessionGuard } from './SessionGuard'
 import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { signedAccount } from '@/data/roles'
+import { mustChangePassword } from '@/data/staffAuth'
 import { portalOf } from '@/app/entityAccess'
 import { AskDock, Background, EntityBar, MobileTop, Rail } from '@/components/shell'
 import { ChatDock } from '@/components/thread'
@@ -89,6 +91,10 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [toggleAssistant])
+
+  /* Client 14 Nov · a staff session still on its temporary password goes to set its own first */
+  const acct = entity ? undefined : signedAccount()
+  if (acct && mustChangePassword(acct.login)) return <Navigate to={ROUTES.firstPassword} replace />
 
   return (
     <>

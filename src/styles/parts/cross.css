@@ -114,3 +114,5 @@
 .pm-add{margin-bottom:var(--sp-3)}
 /* Client 14 Nov · a form row's action sits on its fields' bottom line */
 .regfields>.regf-act{align-self:end}
+.pm-temp{align-items:stretch}
+.pm-temp>.fld{flex:1;min-inline-size:0}
