@@ -9,8 +9,8 @@ export const ROUTES = {
   login: '/login',
   /** Password reset · public, self-service (2.3.pw) */
   forgot: '/forgot',
-  /** Client 14 Nov · a staff member's first sign-in with a temporary password */
-  firstPassword: '/first-password',
+  /** Client 16 Nov · the invitation / reset link a staff member receives by email */
+  setPassword: '/set-password',
   home: '/',
   /** Client 7 Nov · the polished «اليوم» beside the original, for comparison */
   homeV2: '/today-v2',

@@ -116,3 +116,4 @@
 .regfields>.regf-act{align-self:end}
 .pm-temp{align-items:stretch}
 .pm-temp>.fld{flex:1;min-inline-size:0}
+.pm-sent{margin:0 0 var(--sp-4)}

@@ -5,7 +5,9 @@ import {
   FormField, Button, DateText, Empty, FieldBox, FieldSelect, Glass, Head, Icon, icons, Modal, ModalHead, Num, Person, SearchBox, Select, Switch, Tabs, Tag,
 } from '@/components/ui'
 import { STAFF_DIRECTORY } from '@/data/roles'
-import { makeTemp, setTempPassword, tempIssues } from '@/data/staffAuth'
+import { INVITE_HOURS, hasStaffPassword, sendInvite, type Invite } from '@/data/staffAuth'
+import { Link } from 'react-router-dom'
+import { ROUTES } from '@/app/routes'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -119,11 +121,12 @@ function UsersTab({ st, setSt, sel, onSel }: {
   const roleOf = (k: string) => st.roles.find((r) => r.key === k)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<PermUser | null>(null)
-  const [said, setSaid] = useState('')
+  /* Client 16 Nov · the last link sent · shown here because the prototype has no mail server */
+  const [sent, setSent] = useState<Invite | null>(null)
 
   return (
     <>
-      {said && <p className="ok-ink cnote" role="status">{said}</p>}
+      {sent && <InviteSent inv={sent} onClose={() => setSent(null)} />}
       <div className="pm-split">
         <Glass className="pm-side">
           <Head title="المستخدمون" meta={<><Num>{rows.length}</Num> من <Num>{st.users.length}</Num></>} />
@@ -176,6 +179,7 @@ function UsersTab({ st, setSt, sel, onSel }: {
                       <span className="pm-item-m sub">
                         {r?.label ?? u.role}
                         {!u.active && <> · موقوف</>}
+                        {u.active && isPending(u) && <> · بانتظار التفعيل</>}
                         {n > 0 && <> · <Num>{n}</Num> تخصيص</>}
                       </span>
                       {c > 0 && <Icon name={icons.alert} size="sm" className="pm-warn" />}
@@ -192,13 +196,12 @@ function UsersTab({ st, setSt, sel, onSel }: {
             users={st.users}
             roles={st.roles}
             onClose={() => setAdding(false)}
-            onAdd={(u, temp) => {
-              if (temp && u.email) setTempPassword(u.email, temp)
-              setSaid(`أُضيف ${u.name} · يدخل ببريد العمل ${u.email} وكلمة المرور المؤقتة، ويُطلب منه تغييرها عند أول دخول`)
+            onAdd={(u) => {
+              if (u.email) setSent(sendInvite(u.email, u.name, 'invite'))
               setSt((x) => ({
                 ...x,
                 users: [...x.users, u],
-                log: [logRow(u.name, `إضافة المستخدم بدور «${roleLabel(u.role)}» · ${u.email}`), ...x.log],
+                log: [logRow(u.name, `إضافة المستخدم بدور «${roleLabel(u.role)}» · أُرسلت الدعوة إلى ${u.email}`), ...x.log],
               }))
               setAdding(false)
               onSel(u.id)
@@ -212,21 +215,13 @@ function UsersTab({ st, setSt, sel, onSel }: {
             roles={st.roles}
             initial={editing}
             onClose={() => setEditing(null)}
-            onAdd={(u, temp) => {
+            onAdd={(u) => {
               const was = editing
               const lines: string[] = []
               const say = (k: string, a?: string, b?: string) => { if ((a ?? '') !== (b ?? '')) lines.push(`تعديل ${k}: «${a || '—'}» ← «${b || '—'}»`) }
               say('الاسم', was.name, u.name); say('بريد العمل', emailOf(was), u.email); say('الجوال', was.mobile, u.mobile)
               say('الإدارة', was.dept, u.dept); say('المسمى', was.title, u.title)
               if (was.role !== u.role) lines.push(`تغيير الدور من «${roleLabel(was.role)}» إلى «${roleLabel(u.role)}»`)
-              if (temp && u.email) {
-                /* a reset · the account opens with the new temporary password, on its own sign-in */
-                setTempPassword(u.email, temp)
-                const demo = demoOf(was.name)
-                if (demo && demo.login !== u.email.split('@')[0]) setTempPassword(demo.login, temp)
-                lines.push('إعادة تعيين كلمة المرور بكلمة مؤقتة')
-                setSaid(`أُعيد تعيين كلمة مرور ${u.name} · يُطلب منه تغييرها عند دخوله التالي`)
-              }
               const next = was.role !== u.role ? { ...u, overrides: {} } : u
               if (lines.length) {
                 setSt((x) => ({
@@ -246,6 +241,12 @@ function UsersTab({ st, setSt, sel, onSel }: {
             user={user}
             roles={st.roles}
             onEdit={() => setEditing(user)}
+            onInvite={(kind) => {
+              const email = emailOf(user)
+              if (!email) return
+              setSent(sendInvite(email, user.name, kind))
+              setSt((x) => ({ ...x, log: [logRow(user.name, kind === 'invite' ? `إعادة إرسال الدعوة إلى ${email}` : `إرسال رابط إعادة تعيين كلمة المرور إلى ${email}`), ...x.log] }))
+            }}
             onSave={(next, lines) =>
               setSt((x) => ({
                 ...x,
@@ -271,13 +272,30 @@ const MOBILE_RE = /^(05\d{8}|9665\d{8}|\+9665\d{8})$/
    foundation's domain */
 const demoOf = (name: string) => STAFF_DIRECTORY.find((a) => a.name === name)
 const emailOf = (u: PermUser) => u.email ?? (demoOf(u.name) ? `${demoOf(u.name)!.login}@${WORK_DOMAIN}` : '')
+/** Added from this screen and its owner hasn't set a password from the link yet */
+const isPending = (u: PermUser) => Boolean(u.email) && !demoOf(u.name) && !hasStaffPassword(u.email!)
+
+/* Client 16 Nov · what the email carries, shown on screen (no mail server in the prototype) */
+function InviteSent({ inv, onClose }: { inv: Invite; onClose: () => void }) {
+  const link = `${ROUTES.setPassword}?t=${inv.token}`
+  return (
+    <div className="ptl-res ok pm-sent" role="status">
+      <Icon name={icons.send} size="sm" />
+      <span>
+        {inv.kind === 'invite' ? 'أُرسلت الدعوة' : 'أُرسل رابط إعادة تعيين كلمة المرور'} إلى <bdi>{inv.email}</bdi> · صالح {INVITE_HOURS} ساعة ولمرة واحدة
+        <span className="sub"> · لا خادم بريد في النموذج، هذا الرابط الذي يصله: </span>
+        <Link className="lnk" to={link} target="_blank" rel="noreferrer">افتح رابط {inv.kind === 'invite' ? 'الدعوة' : 'إعادة التعيين'}</Link>
+      </span>
+      <span className="pc-sp" />
+      <Button plain type="button" className="iact" aria-label="إغلاق" onClick={onClose}><Icon name={icons.close} size="sm" /></Button>
+    </div>
+  )
+}
+
 function AddUserModal({ users, roles, initial, onClose, onAdd }: {
-  users: PermUser[]; roles: PermRole[]; initial?: PermUser; onClose: () => void; onAdd: (u: PermUser, temp?: string) => void
+  users: PermUser[]; roles: PermRole[]; initial?: PermUser; onClose: () => void; onAdd: (u: PermUser) => void
 }) {
-  /* Client 14 Nov · the admin sets a temporary password · required on a new account, optional on an
-     existing one (a reset) · the person replaces it on their first sign-in */
-  const [temp, setTemp] = useState('')
-  const [showTemp, setShowTemp] = useState(true)
+
   const [f, setF] = useState(() => initial
     ? { name: initial.name, email: emailOf(initial), mobile: initial.mobile ?? '', dept: initial.dept ?? '', title: initial.title ?? '', role: initial.role }
     : { name: '', email: '', mobile: '', dept: '', title: '', role: '' })
@@ -296,8 +314,7 @@ function AddUserModal({ users, roles, initial, onClose, onAdd }: {
   if (!f.dept) errs.dept = 'اختر الإدارة'
   if (!f.title.trim()) errs.title = 'اكتب المسمى الوظيفي'
   if (!f.role) errs.role = 'اختر الدور'
-  const tempBad = temp || !initial ? tempIssues(temp) : []
-  const ok = Object.keys(errs).length === 0 && tempBad.length === 0
+  const ok = Object.keys(errs).length === 0
   const say = (k: keyof typeof f) => tried && errs[k] ? <span className="bad regf-h" role="alert">{errs[k]}</span> : null
   const submit = () => {
     setTried(true)
@@ -306,13 +323,13 @@ function AddUserModal({ users, roles, initial, onClose, onAdd }: {
     onAdd({
       ...base, name: f.name.trim().replace(/\s+/g, ' '), role: f.role,
       email, mobile: f.mobile.replace(/\s/g, ''), dept: f.dept, title: f.title.trim(),
-    }, temp || undefined)
+    })
   }
   return (
     <Modal label={initial ? 'تعديل بيانات الموظف' : 'إضافة مستخدم'} onClose={onClose} escape>
       <ModalHead icon={icons.user} title={initial ? 'تعديل بيانات الموظف' : 'إضافة مستخدم'} />
       <div className="mb col">
-        <p className="sub cnote">{initial ? 'يدخل ببريد العمل · تغيير الدور هنا يغيّر صلاحياته إلى صلاحيات الدور الجديد' : 'حساب موظف جديد · يدخل ببريد العمل ويأخذ صلاحيات دوره'}</p>
+        <p className="sub cnote">{initial ? 'يدخل ببريد العمل · تغيير الدور هنا يغيّر صلاحياته إلى صلاحيات الدور الجديد' : 'حساب موظف جديد · تصله دعوة على بريد العمل يعيّن منها كلمة مروره، ثم يدخل بصلاحيات دوره'}</p>
         <div className="regfields">
           <FormField label="الاسم الكامل" required wide>
             <FieldBox><input value={f.name} onChange={(e) => put('name')(e.target.value)} aria-label="الاسم الكامل" autoComplete="off" /></FieldBox>
@@ -340,27 +357,12 @@ function AddUserModal({ users, roles, initial, onClose, onAdd }: {
               onChange={put('role')} />
             {say('role')}
           </FormField>
-          <FormField label={initial ? 'كلمة مرور مؤقتة جديدة' : 'كلمة المرور المؤقتة'} required={!initial} wide>
-            <span className="rowf gp-2 pm-temp">
-              <FieldBox>
-                <input dir="ltr" type={showTemp ? 'text' : 'password'} value={temp} onChange={(e) => setTemp(e.target.value)}
-                  aria-label="كلمة المرور المؤقتة" autoComplete="new-password" placeholder={initial ? 'اتركها فارغة لتبقى كلمة المرور كما هي' : ''} />
-                <Button plain type="button" className="iact" onClick={() => setShowTemp((x) => !x)} aria-label={showTemp ? 'إخفاء' : 'إظهار'} aria-pressed={showTemp}>
-                  <Icon name={showTemp ? icons.eyeOff : icons.eye} size="sm" />
-                </Button>
-              </FieldBox>
-              <Button variant="2" type="button" onClick={() => { setTemp(makeTemp()); setShowTemp(true) }}>ولّد</Button>
-            </span>
-            {tried && tempBad.length > 0
-              ? <span className="bad regf-h" role="alert">كلمة المرور المؤقتة: {tempBad.join(' · ')}</span>
-              : <span className="sub regf-h">{initial ? 'تُعيد تعيين كلمة مروره · يُطلب منه تغييرها عند دخوله التالي' : 'بلّغه بها مع بريد العمل · يُطلب منه تغييرها عند أول دخول'}</span>}
-          </FormField>
         </div>
       </div>
       <div className="mf">
         <Button variant="p" onClick={submit}>
-          {!initial && <Icon name={icons.plus} size="sm" />}
-          {initial ? 'احفظ البيانات' : 'أضف المستخدم'}
+          {!initial && <Icon name={icons.send} size="sm" />}
+          {initial ? 'احفظ البيانات' : 'أضف وأرسل الدعوة'}
         </Button>
         <Button variant="2" onClick={onClose}>تراجع</Button>
       </div>
@@ -368,9 +370,11 @@ function AddUserModal({ users, roles, initial, onClose, onAdd }: {
   )
 }
 
-function UserEditor({ user, roles, onSave, onEdit }: {
+function UserEditor({ user, roles, onSave, onEdit, onInvite }: {
   user: PermUser; roles: PermRole[]; onSave: (u: PermUser, log: string[]) => void; onEdit: () => void
+  onInvite: (kind: Invite['kind']) => void
 }) {
+  const pending = isPending(user)
   const [d, setD] = useState<PermUser>(user)
   const role = roles.find((r) => r.key === d.role)
   const self = user.name === ME
@@ -427,6 +431,14 @@ function UserEditor({ user, roles, onSave, onEdit }: {
         </span>
         <span className="pc-sp" />
         {/* Client 14 Nov · the person's details · name, work email, mobile, department, title */}
+        {pending && <Tag tone="warn">بانتظار التفعيل</Tag>}
+        {/* Client 16 Nov · the password is the person's own · the admin only sends the link to set it */}
+        {emailOf(d) && (
+          <Button variant="2" size="sm" onClick={() => onInvite(pending ? 'invite' : 'reset')}>
+            <Icon name={icons.send} size="sm" />
+            {pending ? 'أعد إرسال الدعوة' : 'رابط إعادة تعيين كلمة المرور'}
+          </Button>
+        )}
         <Button variant="2" size="sm" onClick={onEdit}>
           <Icon name={icons.edit} size="sm" />
           تعديل البيانات
