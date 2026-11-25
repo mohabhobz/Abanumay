@@ -232,3 +232,4 @@
 .algn-res>span>.tag{align-self:flex-start}
 .algn-res>span>span:not(.sub){font-size:var(--fs-2)}
 .algn-avg .algn-res{margin-bottom:0}
+.algn-avg .algn-res{grid-template-columns:repeat(4,minmax(0,1fr))}

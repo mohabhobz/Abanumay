@@ -13,6 +13,7 @@ import { holderOf } from '@/data/holders'
 import { projectIsTest } from '@/data/shared/testData'
 import { OUTCOME_SAY, projectOutcome } from '@/data/shared/outcome'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
+import { alignOf, recoOf } from '@/data/intake/alignScore'
 
 /* Project table column definitions — a single source for four consumers.
 
@@ -147,6 +148,15 @@ export const COLS: Col[] = [
     text: (r) => priorityOf(r.id).say,
   },
   { key: 'weight', w: 60, label: 'الوزن', def: true, n: true, cell: (r) => r.weight, text: (r) => String(r.weight), value: (r) => r.weight, agg: 'avg' },
+  /* Client 24 Nov (meeting) · the study's two links, their average and what it recommends · as on the card */
+  { key: 'maqasid', w: 72, label: 'مقاصد الشريعة', n: true, cell: (r) => pct(alignOf(r).mq), text: (r) => `${alignOf(r).mq}%`, value: (r) => alignOf(r).mq, agg: 'avg' },
+  { key: 'waqf', w: 72, label: 'صك الوقفية', n: true, cell: (r) => pct(alignOf(r).wq), text: (r) => `${alignOf(r).wq}%`, value: (r) => alignOf(r).wq, agg: 'avg' },
+  { key: 'alignAvg', w: 72, label: 'المتوسط', def: true, n: true, cell: (r) => pct(alignOf(r).avg), text: (r) => `${alignOf(r).avg}%`, value: (r) => alignOf(r).avg, agg: 'avg' },
+  {
+    key: 'reco', w: 120, label: 'التوصية', def: true,
+    cell: (r) => { const x = recoOf(alignOf(r).avg); return <Tag tone={x.tone}>{x.label}</Tag> },
+    text: (r) => recoOf(alignOf(r).avg).label,
+  },
   { key: 'score', w: 60, label: 'التقييم', n: true, cell: (r) => r.score, text: (r) => String(r.score), value: (r) => r.score, agg: 'avg' },
   {
     key: 'benef',

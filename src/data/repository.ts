@@ -11,7 +11,7 @@
  * connection is wired in.
  */
 import { projectOutcome } from '@/data/shared/outcome'
-import { alignOf } from '@/data/intake/alignScore'
+import { alignOf, recoOf } from '@/data/intake/alignScore'
 import { openUpdateOf } from '@/data/entities/store'
 import type {
   Project, Entity, AuthorityMatrix, CurrentUser, Insight, FollowUpType,
@@ -82,6 +82,8 @@ export interface ProjectQuery {
   /** The actual process department */
   stage?: Filter
   supportStatus?: Filter
+  /** Client 24 Nov · the recommendation the average of the two links reads as (RECOS) */
+  reco?: Filter
   grantMethod?: Filter
   funding?: Filter
   owner?: Filter
@@ -205,6 +207,7 @@ const matchProject = (r: ProjectRow, q: ProjectQuery): boolean => {
   /* `?? ''` isn't decoration: a project with no owner or no support decision must fall outside the
      filter when the user selects a specific owner or support status. */
   if (!eq(q.supportStatus, r.supportStatus ?? '')) return false
+  if (q.reco && (Array.isArray(q.reco) ? q.reco.length : true) && !eq(q.reco, recoOf(alignOf(r).avg).label)) return false
   if (!eq(q.owner, r.owner ?? '')) return false
   if (!eqAny(q.tag, r.tags)) return false
   if (q.unowned && r.owner !== null) return false

@@ -303,7 +303,7 @@ export default function ProjectPage() {
   const screen = useRef<HTMLDivElement>(null)
   /* The analytics column fills the remaining space from its position up to the decision bar. */
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
+  useFillHeight(aside)
   const [atEnd, setAtEnd] = useState(false)
 
   useEffect(() => {

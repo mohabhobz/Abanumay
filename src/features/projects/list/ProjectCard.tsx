@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { rowGo } from '@/lib/rowGo'
 import { Icon, icons, Money, Mono, Person, Tag } from '@/components/ui'
 import { NOUN, nounAfter, pct } from '@/lib/format'
-import { alignOf } from '@/data/intake/alignScore'
+import { alignOf, recoOf } from '@/data/intake/alignScore'
 import { stagePressure } from '@/data/repository'
 import { days, groupTone, pressureColor, TONE } from '@/lib/tone'
 import type { ProjectRow } from '@/types/domain'
@@ -26,6 +26,7 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
   const pressure = stagePressure(row)
   const live = row.stageLimit > 0
   const al = alignOf(row)
+  const reco = recoOf(al.avg)
 
   return (
     <article {...rowGo(go, rowHref(row), `pcard glass${selected ? ' sel' : ''}`)}>
@@ -68,11 +69,14 @@ export function ProjectCard({ row, selected, onSelect }: ProjectCardProps) {
         {row.type && row.type !== 'مشروع عادي' ? `${row.type} · ` : ''}{row.track} · {row.goal}
       </div>
 
-      {/* Client 7 Nov · the study's two reference links, final percents */}
+      {/* Client 7 Nov · the study's two reference links, final percents · client 24 Nov · and their average */}
       <div className="pc-algn">
-        <span><span className="k">مقاصد الشريعة</span><b className="num">{pct(al.mq)}</b></span>
-        <span><span className="k">صك الوقفية</span><b className="num">{pct(al.wq)}</b></span>
+        <span><span className="k">المقاصد</span><b className="num">{pct(al.mq)}</b></span>
+        <span><span className="k">الصك</span><b className="num">{pct(al.wq)}</b></span>
+        <span className="pc-algn-avg"><span className="k">المتوسط</span><b className="num">{pct(al.avg)}</b></span>
       </div>
+      {/* Client 24 Nov (meeting) · what the average recommends · read from the average only */}
+      <div className="pc-reco"><Tag tone={reco.tone}>{reco.label}</Tag></div>
 
       {/* Actual workflow stage plus time spent in it. */}
       <div className="pc-stage well">

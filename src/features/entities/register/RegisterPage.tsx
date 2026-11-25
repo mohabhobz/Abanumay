@@ -263,7 +263,7 @@ export default function RegisterPage() {
   /* The sticky card takes its height from its actual position - short with visible content before
      it sticks, and it grows as you scroll down until it fills the screen. */
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
+  useFillHeight(aside)
 
   const at = FORM_STAGES.findIndex((x) => x.key === tab)
   const first = at <= 0

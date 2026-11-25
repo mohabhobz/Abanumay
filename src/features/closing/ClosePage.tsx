@@ -98,7 +98,7 @@ export default function ClosePage() {
   const tick = ver
 
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
+  useFillHeight(aside)
 
   const readings = useMemo(() => (c ? [...closeReadings(c), ...closingAi(c)] : []), [c, tick])
 

@@ -187,7 +187,7 @@ export default function EntityNewPage() {
 
   /* Side column sticks and stretches to the end of the screen - same as the portal. */
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
+  useFillHeight(aside)
 
   /* Batch 7 · entities#11 · the internal form checks duplicates too (name, email, mobile, IBAN) · it
      never called them, so a supervisor could register an entity that already exists */

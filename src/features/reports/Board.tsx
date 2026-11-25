@@ -39,12 +39,7 @@ export function Board({
      shorter than the screen, so without `capSelector` the column would
      extend below the last card. The cap makes both columns end on the same line. */
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, {
-    varName: '--ai-fill',
-    reserveSelector: '.decdock, .askfab',
-    capSelector: '.rbg',
-    min: 240,
-  })
+  useFillHeight(aside, { capSelector: '.rbg' })
 
   return (
     <>

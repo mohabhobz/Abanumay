@@ -53,11 +53,7 @@ export default function EntityPage() {
   /* The side card takes the remaining space up to the decision footer - the same calculation as the
      project page, so the layout matches across both. */
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, {
-    varName: '--ai-fill',
-    reserveSelector: '.decdock, .askfab',
-    min: 240,
-  })
+  useFillHeight(aside)
 
   /* 14 Oct · LOCTech §1 · opening an archived entity's file is itself recorded · once a visit */
   const archived = Boolean(entity?.archived)

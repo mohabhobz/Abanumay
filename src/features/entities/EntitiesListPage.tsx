@@ -90,7 +90,7 @@ export default function EntitiesListPage() {
   const [custom, setCustom] = useState(false)
   const [fOrder, setFOrder] = useState<string[]>(() => readFilterOrder('entities', FILTER_KEYS))
 
-  useEffect(() => writeFilterOrder('entities', fOrder), [fOrder])
+  useEffect(() => writeFilterOrder('entities', fOrder, FILTER_KEYS), [fOrder])
   /* Selection scopes a request, a message or an export · never an eligibility decision: suspending,
      revoking or archiving an entity is made in its own file, where its documents, projects and
      payments are in view (LOCTech «الإجراءات عند التحديد» §3 · 14 Oct). The bar's buttons and the

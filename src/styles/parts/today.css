@@ -242,3 +242,19 @@
 .tday2-none{display:flex;align-items:center;gap:var(--sp-2);margin:0}
 @media (max-width:1180px){.tday2 .tday-board.n-3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:640px){.tday2 .tday-board[class*="n-"]{grid-template-columns:minmax(0,1fr)}.tday2{padding-block-end:calc(var(--sp-12) * 3)}}
+
+/* ═══ Client 25 Nov · the board holds still while its tabs are switched ═══
+   The tabs row pins to the top (the system's pinned tabs) and the board under it is never shorter
+   than the screen below that row · a tab with few cards used to shorten the page, the scroll was
+   pulled up with it, and the pinned row jumped and the columns grew and shrank with every switch ·
+   now the four columns take the full height whatever the tab holds, and their cards start at the top */
+.tday .tday-tabs{position:sticky;z-index:30}
+/* Client 25 Nov · each column has a floor, not the tallest column's height · a short or empty
+   column («أعيد إليك» with nothing) keeps a steady size, and a long one grows by its own content */
+.tday-board{align-items:start}
+.tday-board>.tday-col{justify-content:flex-start;min-block-size:24rem}
+@media (max-width:640px){.tday-board>.tday-col{min-block-size:0}}
+/* a card's footer wraps · a long date pill sent the amount out past the card's edge */
+.tday-card-f{flex-wrap:wrap;min-inline-size:0}
+.tday-card-f>.tday-pill{min-inline-size:0;max-inline-size:100%;white-space:normal;line-height:var(--lh-text)}
+.tday-card-f>:last-child:not(.tday-pill){margin-inline-start:auto;white-space:nowrap}

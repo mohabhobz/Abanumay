@@ -1,179 +1,101 @@
-import { useEffect, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useState, type RefObject } from 'react'
 
 /**
- * Makes an element fill the remaining space from its position down to
- * the bottom of the screen.
+ * The assistant's column on a record page · client 25 Nov · the final rule.
  *
- * The problem this solves: a sticky card with `height: 100dvh - ...` is
- * only correct after it actually becomes sticky. Before that, it starts
- * below the header and tabs (563px on the project page), so it would
- * extend 430px below the bottom of the screen and its middle content
- * would fall outside the viewport — opening the page would show an
- * empty card with its button below the fold.
+ * Measures three numbers from the live screen and writes them; the CSS block «the record page's two
+ * columns» (index.css) does the rest. Nothing else in the code sizes this column.
  *
- * So the height is recomputed from its actual position at every moment:
- * screen height minus its offset from the top minus the space reserved
- * below (the decision bar). Before it's sticky it stays short with its
- * content visible, and it grows as you scroll down until it becomes
- * sticky and fills the screen — exactly "max-height = sticky-top minus
- * remaining space below."
+ *   line         · the top of whatever floats at the screen's foot (the decision bar, «اسأل أبانمي»,
+ *                  the chat button) minus one gap · nothing ends below it
+ *   --ai-reserve · on the screen · its foot up to that line · the screen keeps it as bottom padding,
+ *                  so the last thing on any tab scrolls up clear of the bar
+ *   --ai-room    · on the screen · from where the column sticks (under the pinned tabs) to that line ·
+ *                  the main column's floor, so both columns end on the line and the tabs never move
+ *   --ai-h       · on the column · from where it sits right now to that line · it grows as the page
+ *                  scrolls until it sticks, and is never taller than the room (its content scrolls)
+ *   --ai-now     · the same number on the screen · the main column's floor, so its last card (an
+ *                  empty one above all) grows and shrinks with the assistant beside it
  *
- * A second cap: the neighboring column. The formula above measures
- * against the screen only, which is correct when the content is taller
- * than the screen (project and entity pages). But on the reports
- * dashboard the cards are shorter than the screen, so the sticky card
- * would extend below the last card and leave an empty trailing gap.
- * `capSelector` measures the bottom of that content and stops the
- * column from passing it — "max-height aligned with the end of the last card."
+ * `capSelector` (the reports board) also stops the column at the bottom of that content.
  */
 export function useFillHeight(
   ref: RefObject<HTMLElement | null>,
   {
-    /** The variable the height gets written to. */
-    varName = '--fill-h',
-    /** Element reserved below (the decision bar) — measured if present. */
-    reserveSelector,
-    /** Content whose bottom the column shouldn't go past — if present. */
+    /** Content whose bottom the column doesn't pass (the reports board) */
     capSelector,
-    /** Minimum height so the card doesn't get squeezed on a short screen. */
-    min = 320,
-    /** Gap between the card and whatever's below it. */
-    gap = 12,
+    /** The smallest the column gets · 0 by default: never under the bar, even on a short screen */
+    min = 0,
   }: {
-    varName?: string
-    reserveSelector?: string
     capSelector?: string
     min?: number
-    gap?: number
   } = {},
 ): void {
+  /* the column can leave and come back (a tab without it, the plan's activities) · the measuring
+     follows the element itself, so a column that returns is measured again, not left stale */
+  const [el, setEl] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => { if (ref.current !== el) setEl(ref.current) })
   useEffect(() => {
-    const el = ref.current
     if (!el) return
+    const screen = el.closest<HTMLElement>('.screen')
+    /* what floats at the screen's foot · the bar itself, not the dock's tall box around it */
+    const floats = '.decdock .decbar, .askfab, .chatfab'
 
     let raf = 0
     const measure = () => {
       raf = 0
-      /* Stickiness has a cap: a sticky element releases its position once its
-         container runs out (end of the page), so `top` goes negative and the
-         formula would produce a height taller than the screen — the card
-         would stretch and its middle content would rise above the viewport,
-         leaving an empty gap. The floor here is the sticky offset itself, so
-         the height never exceeds the screen's own dimension. */
-      const stick = parseFloat(getComputedStyle(el).top) || 0
-      const top = Math.max(el.getBoundingClientRect().top, stick)
-      const dock = reserveSelector
-        ? document.querySelector<HTMLElement>(reserveSelector)
-        : null
-      /* Reserved space below = the bar's height + the gap beneath it to the screen edge. */
-      const reserve = dock
-        ? window.innerHeight - dock.getBoundingClientRect().top + gap
-        : gap
+      const vh = window.innerHeight
+      const sr = screen?.getBoundingClientRect() ?? { top: 0, bottom: vh }
+      const gap = parseFloat(getComputedStyle(el.parentElement ?? el).rowGap) || 16
+      /* the line · the highest top among what floats in the screen's lower half */
+      const tops = [...document.querySelectorAll<HTMLElement>(floats)]
+        .map((e) => e.getBoundingClientRect())
+        .filter((r) => r.height > 0 && r.width > 0 && r.top > vh / 2)
+        .map((r) => r.top)
+      const line = Math.min(sr.bottom, ...tops) - gap
+      /* where the column sits once stuck · sticky counts from the screen's content box */
+      const pt = screen ? parseFloat(getComputedStyle(screen).paddingTop) || 0 : 0
+      const stuck = sr.top + pt + (parseFloat(getComputedStyle(el).top) || 0)
+      const top = Math.max(el.getBoundingClientRect().top, stuck)
 
-      let h = window.innerHeight - top - reserve
-
-      /* Content cap: the neighboring column's bottom minus our position = the
-         tallest height that lets both columns end together. Computed from the
-         bounding rect so it stays correct through stickiness and scrolling. */
+      const room = Math.max(min, Math.round(line - stuck))
+      let h = Math.max(min, Math.round(line - top))
       if (capSelector) {
         const cap = document.querySelector<HTMLElement>(capSelector)
-        if (cap) h = Math.min(h, cap.getBoundingClientRect().bottom - top)
-      } else if (el.classList.contains('aiside')) {
-        /* 12 Oct · client · the assistant grows and shrinks with the main column beside it: its
-           content's end (without the sticking pad under it) is the default cap, so a short page
-           doesn't get a card running past its last card. */
-        const main = el.previousElementSibling as HTMLElement | null
-        if (main) {
-          const pb = parseFloat(getComputedStyle(main).paddingBottom) || 0
-          h = Math.min(h, main.getBoundingClientRect().bottom - pb - top)
+        if (cap) {
+          /* the content's end, or the main column's when it holds more than the content */
+          const main = el.previousElementSibling as HTMLElement | null
+          const end = Math.max(cap.getBoundingClientRect().bottom, main?.getBoundingClientRect().bottom ?? 0)
+          h = Math.max(min, Math.min(h, Math.round(end - top)))
         }
       }
-
-      /* Client 27 Oct · the assistant never runs under the decision bar or the floating assistant:
-         its room from where it sits to the bar is its ceiling (`--ai-max`), its content scrolls
-         inside it, and its floor is `min` unless the room itself is smaller · the page around it
-         no longer has to scroll to show what it holds. */
-      const roomNow = Math.max(160, Math.round(window.innerHeight - top - reserve))
-      if (el.classList.contains('aiside')) {
-        el.style.setProperty('--ai-max', `${roomNow}px`)
-        el.style.setProperty(varName, `${Math.min(roomNow, Math.max(min, Math.round(h)))}px`)
-        el.removeAttribute('data-tall')
-        /* Client 9 Nov · a long page (the main column taller than the room the stuck column gets) ·
-           the assistant takes that whole room, minus its margins above and below */
-        const main = el.previousElementSibling as HTMLElement | null
-        if (main) {
-          const pb = parseFloat(getComputedStyle(main).paddingBottom) || 0
-          const full = window.innerHeight - stick - reserve
-          el.toggleAttribute('data-long', main.getBoundingClientRect().height - pb > full)
-        }
-        fillMain()
-        return
+      if (screen) {
+        screen.style.setProperty('--ai-room', `${room}px`)
+        screen.style.setProperty('--ai-reserve', `${Math.max(0, Math.round(sr.bottom - line))}px`)
       }
-      el.style.setProperty(varName, `${Math.max(min, Math.round(h))}px`)
-
-      /* Content taller than the screen can give it (an open reading list) → the card takes its own
-         height and stops sticking, so the page scrolls through it and nothing hides under the
-         decision bar or the floating assistant. The fill is never more than this space, so the
-         flag only flips on the content's own height. */
-      const room = window.innerHeight - stick - reserve
-      el.toggleAttribute('data-tall', el.offsetHeight > room + 1)
+      el.style.setProperty('--ai-h', `${h}px`)
+      /* the main column follows the assistant's height as it grows (client 25 Nov) */
+      screen?.style.setProperty('--ai-now', `${h}px`)
     }
 
-    /* Client 9 Nov · a main column shorter than the assistant beside it · its last card stretches to
-       the assistant's height, its content centred (`data-fill`) · measured from the card's own
-       content, so the stretch it gets never feeds back into the next measure */
-    const fillMain = () => {
-      const main = el.previousElementSibling as HTMLElement | null
-      const last = main?.lastElementChild as HTMLElement | null
-      const clear = () => { if (last) { last.style.removeProperty('min-height'); last.removeAttribute('data-fill') } }
-      /* Client 9 Nov · only an empty card stretches (its content centred, like the assistant's closed
-         card) · a card with results keeps its own height */
-      if (!main || !last || !last.classList.contains('glass') || !last.querySelector(':scope > .empty') || !window.matchMedia('(min-width:961px)').matches) { clear(); return }
-      const kids = [...last.children] as HTMLElement[]
-      if (!kids.length) { clear(); return }
-      const cs = getComputedStyle(last)
-      const natural = kids[kids.length - 1].getBoundingClientRect().bottom - kids[0].getBoundingClientRect().top
-        + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
-      const before = last.getBoundingClientRect().top - main.getBoundingClientRect().top
-      const card = el.firstElementChild as HTMLElement | null
-      const need = Math.round((card?.offsetHeight ?? el.offsetHeight) - before)
-      if (natural + 1 < need) { last.style.minHeight = `${need}px`; last.setAttribute('data-fill', '') }
-      else clear()
-    }
-
-    const schedule = () => {
-      if (!raf) raf = requestAnimationFrame(measure)
-    }
-
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(measure) }
     measure()
     /* Scrolling happens inside `.screen`, not on the window, so both are listened to. */
-    const scroller = el.closest('.screen') ?? window
+    const scroller = screen ?? window
     scroller.addEventListener('scroll', schedule, { passive: true })
-    window.addEventListener('scroll', schedule, { passive: true })
     window.addEventListener('resize', schedule)
     const ro = new ResizeObserver(schedule)
     ro.observe(document.body)
-    /* The cards can grow taller without the page body growing (the screen
-       is taller than they are), so the content itself is also observed. */
-    if (capSelector) {
-      const cap = document.querySelector<HTMLElement>(capSelector)
-      if (cap) ro.observe(cap)
-    } else if (el.previousElementSibling) ro.observe(el.previousElementSibling)
-    /* Its own height changes when the card opens or closes */
-    ro.observe(el)
+    if (el.previousElementSibling) ro.observe(el.previousElementSibling)
+    document.querySelectorAll<HTMLElement>(floats).forEach((f) => ro.observe(f))
 
     return () => {
       if (raf) cancelAnimationFrame(raf)
       scroller.removeEventListener('scroll', schedule)
-      window.removeEventListener('scroll', schedule)
       window.removeEventListener('resize', schedule)
       ro.disconnect()
-      el.style.removeProperty(varName)
-      el.style.removeProperty('--ai-max')
-      el.removeAttribute('data-tall')
-      el.removeAttribute('data-long')
-      const last = el.previousElementSibling?.lastElementChild as HTMLElement | null
-      if (last) { last.style.removeProperty('min-height'); last.removeAttribute('data-fill') }
+      /* the screen keeps its two numbers · a tab without the column still holds the tabs where they are */
+      el.style.removeProperty('--ai-h')
     }
-  }, [ref, varName, reserveSelector, capSelector, min, gap])
+  }, [el, capSelector, min])
 }

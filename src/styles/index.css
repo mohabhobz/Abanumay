@@ -4026,6 +4026,9 @@ to{opacity:1;transform:none}
   padding:var(--sp-2) var(--sp-3);border-radius:var(--r1);background:rgba(var(--edgeC),.05);font-size:var(--fs-1)}
 .pc-algn .k{color:var(--t3)}
 .pc-algn b{font-weight:600;color:var(--t1)}
+.pc-algn>.pc-algn-avg{background:rgba(var(--edgeC),.1)}
+.pc-algn-avg b{font-weight:700}
+.pc-reco{display:flex;margin-top:calc(var(--sp-1) * -1)}
 .pc-stage{padding-top:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-3)}
 .pc-stage-t{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);
   font-size:var(--fs-2);font-family:var(--fd);font-weight:500}
@@ -6594,44 +6597,53 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
    its bounds reach the actual end of the content, and the sticky element
    scrolls the rest of the way with it. */
 @media (min-width:961px){
-  /* The override has to beat `.hasdock>.screen` (two classes), so it's written with three. */
-  .hasdock>.screen.hasg2,.viewstack>.screen.hasg2{padding-bottom:var(--sp-6)}
-  /* Padding lives inside the main column, not on the grid or on `.screen`: the
-     grid's padding is outside its rows, and the sticky element's slot **is the
-     row**. `.screen`'s padding is outside all the content, leaving scroll space
-     after the row ends — and inside that, the sticky card loses its spot and
-     rides up. The column stretches the row, and the row extends the sticky
-     element to the end of the scroll. */
-  .hasg2>.g2>.col:first-child{padding-bottom:clamp(calc(var(--sp-12) * 2 + var(--sp-3)), 17vh, calc(var(--sp-12) * 2 + var(--sp-9)))}
-  /* Client 26 Oct · the empty band under the grid · the reserved room is only for a grid that ends the
-     page · a card after it (the plan's phases, a tab's full-width table) starts one gap below */
-  .hasg2>.g2:has(~ .glass, ~ section, ~ .tblcard)>.col:first-child{padding-bottom:0}
-  /* The reports panel is an exception: its sticky column is capped at the bottom
-     of the cards (`capSelector`), so it ends with them without needing extra
-     sticking space — the padding here was leaving a gap to scroll through for no
-     reason. */
-  .hasg2.g2fit>.g2>.col:first-child{padding-bottom:0}
+  /* ═══ Client 25 Nov · the record page's two columns · the final rule ═══
+     Every patch before this one (a padding inside the main column, a reserve on the screen, a
+     floor and a ceiling on the card, a stretch written on the last card) fixed one tab and broke
+     another. They are gone. Two numbers, measured by `useFillHeight` from the live screen and
+     written on it, and two rules built on them:
 
-  /* 12 Oct · client · the assistant's column, one rule for every page:
-     · collapsed, its content sits centred in a card that fills the room beside the main column —
-       the screen's space from its position to the decision bar, never past the main column's end
-       (`useFillHeight` writes it as `--ai-fill`), so it grows and shrinks with the scroll;
-     · its content is never clipped: a fill is a floor (`min-height`), not a box, so a card whose
-       content is taller takes its own height;
-     · taller than the screen can give it (an open list of readings) → `data-tall`, it stops
-       sticking and the page scrolls through it, keeping the gutter of the decision bar and the
-       floating assistant under it. No inner scroll anywhere. */
-  .aiside{position:sticky;top:.35rem;align-self:start;display:flex;flex-direction:column}
-  .aiside>.aicard.aicard{flex:1 0 auto;min-height:var(--ai-fill,26rem);display:flex;flex-direction:column}
-  .aiside>.aicard.aishut{flex-direction:row;align-items:center;justify-content:center;overflow:visible}
+     `--ai-reserve` · the room under the content: from the screen's foot up to the top of whatever
+       floats there (the decision bar, «اسأل أبانمي», the chat button), plus one gap.
+     `--ai-room`   · the room the assistant gets once it sticks: from under the pinned tabs (one gap)
+       down to that same line.
+
+     Rule 1 · nothing ever ends under the bar. The screen keeps `--ai-reserve` at its foot, so the
+       last thing on any tab scrolls up clear of it; the assistant is never taller than the room
+       from where it sits to that line (`--ai-h`), and what it holds scrolls inside it.
+     Rule 2 · the two columns end on one line. The main column is never shorter than `--ai-room`,
+       and its last card grows to fill it (an empty card centres its content) · so at the end of
+       any tab, long or short, the main column and the assistant end together on the bar's line,
+       the assistant never rides up, and the page is always tall enough to keep the tabs pinned
+       where they are when you switch. */
+  .screen:has(.g2>.aiside){padding-bottom:var(--ai-reserve, var(--dock-h))}
+  .hasg2>.g2>.col:first-child{padding-bottom:0}
+  /* Client 25 Nov · the main column's floor is the assistant's height right now, not the full room ·
+     while the header still shows, an empty card stands as tall as the assistant beside it (both end
+     on the line), and both grow together as the page scrolls · the page's own floor (the element
+     after the pinned tabs, below) still holds the full room, so the tabs never move */
+  .screen:not(.g2fit) .g2:has(>.aiside)>.col:first-child{min-height:var(--ai-now, var(--ai-room, 0px))}
+  .screen:not(.g2fit) .g2:has(>.aiside)>.col:first-child>:last-child{flex-grow:1}
+  .screen:not(.g2fit) .g2:has(>.aiside)>.col:first-child>.glass:last-child:has(>.empty){justify-content:center}
+  /* Client 25 Nov · a tab that is only an empty card acts exactly like the assistant beside it: the
+     same height at every moment (never past the line, even while the header still shows), its
+     content centred, and scrolling inside it when the room is short */
+  .screen:not(.g2fit) .g2:has(>.aiside)>.col:first-child:has(>.glass:only-child>.empty){height:var(--ai-now, auto)}
+  .screen:not(.g2fit) .g2:has(>.aiside)>.col:first-child>.glass:only-child:has(>.empty){min-height:0;overflow-y:auto;
+    overscroll-behavior:contain;scrollbar-width:thin;justify-content:safe center}
+  /* a tab without the assistant (the plan's activities) keeps the same floor, so leaving it or
+     coming back never shortens the page under the pinned tabs */
+  .screen:not(.g2fit)>.tabs-pin ~ :last-child{min-height:var(--ai-room, 0px);flex-shrink:0}
+
+  .aiside{position:sticky;top:.35rem;align-self:start;display:flex;flex-direction:column;height:var(--ai-h, auto)}
+  .screen:has(.tabs-pin) .aiside{top:calc(var(--tabs-h, 56px) - var(--padt, 0px) + var(--gap))}
+  .aiside>.aicard.aicard{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:safe center;
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+  .aiside>.aicard.aishut{flex-direction:row;align-items:safe center;justify-content:center}
   .aiside>.aicard.aishut>.aishut-c{width:100%}
   .aiside .aiscroll{flex:1 0 auto;overflow:visible}
-  .aiside[data-tall]{position:relative;top:auto;margin-bottom:var(--dock-h)}
   /* 11 Oct · UI-004 · a side column of several cards sits in the flow at its own height */
-  .aiside:not(:has(>.aicard)){position:static}
-  /* A line after the grid (the closing page's rule note) is past the column's reserved padding,
-     so it ended under the decision bar and the floating button (UI-179). It keeps the same gutter. */
-  .hasg2 .g2 ~ :last-child{padding-bottom:var(--dock-h)}
+  .aiside:not(:has(>.aicard)){position:static;height:auto}
 }
 
 /* ── Collapsed state: the card starts like any other card ──
@@ -9170,20 +9182,6 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
   box-shadow:inset 0 -1px 0 var(--edge-1),0 8px 24px -16px rgb(0 0 0 / .18)}
 /* tabs inside a card (a plan's versions) keep a breath from what follows them */
 .glass .tabs:not(.tabs-pin){margin-bottom:var(--sp-5)}
-/* Client 27 Oct · the assistant's column · its card fills the room beside the page down to the
-   decision bar and no further · what it holds scrolls inside it */
-@media (min-width:961px){
-  .aiside{max-height:var(--ai-max,none)}
-  .aiside>.aicard.aicard{max-height:var(--ai-max,none);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
-  .aiside>.aicard.aicard .aiscroll{flex:1 0 auto}
-}
-/* Client 27 Oct · nothing ever ends under the decision bar · a page whose grid is followed by more
-   cards keeps the bar's room at its own end, so its last card scrolls up clear of the bar */
-@media (min-width:961px){
-  .hasdock>.screen.hasg2:has(>.g2 ~ :is(.glass,section,div:not(.dockslot))){
-    padding-bottom:clamp(calc(var(--sp-12) * 2 + var(--sp-6)), 17vh, calc(var(--sp-12) * 2 + var(--sp-12)))}
-  .hasg2 .g2 ~ .glass:last-child{padding-bottom:var(--pad)}
-}
 /* Client 27 Oct · «دايمًا يكون في آخر الكارت من تحت» · a card's footer row (its date and its call to
    action) always sits on the card's bottom inset, whatever the card holds above it · the gap the
    list before it asked for stays a floor, not a fixed push */
@@ -9214,11 +9212,6 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .bankcard-f>span{display:flex;flex-direction:column;gap:2px;min-width:0}
 .bankcard-f b{font-weight:600;font-size:var(--fs-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bankcard-k{font-size:var(--fs-0, 11px);opacity:.72}
-@media (min-width:961px){
-  /* centred while there is room, from the top once its content is taller (it scrolls, never clips) */
-  .aiside>.aicard.aicard{justify-content:safe center}
-  .aiside>.aicard.aishut{align-items:safe center}
-}
 /* Client 27 Oct · a face without a photo · the person icon, centred in the same box */
 .av.av-ic{display:inline-grid;place-items:center;color:var(--t2)}
 .av.av-ic svg{inline-size:60%;block-size:60%}
@@ -9375,21 +9368,6 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 /* Client 27 Oct · a record's status in its own card · a larger pill (the plan's «حالة التنفيذ») */
 .stbig>.tag{font-size:var(--fs-4);line-height:var(--lh-md);padding:var(--sp-1) var(--sp-5)}
 
-/* ═══ Client 9 Nov · the assistant's column ═══
-   · it sticks below the pinned tabs, never under them · `--tabs-h` is the row's height, written by
-     `Tabs` on its screen · the screen's top padding is what the sticky offset already counts from
-   · a floor it never goes under (`--ai-min`), and while it works (open) it takes the whole room down
-     to the decision bar (`--ai-max`) · what it holds scrolls inside it, the page doesn't
-   · when the main column is shorter, its last card is stretched to the column's height and its
-     content centred (`data-fill`, written by `useFillHeight`) */
-@media (min-width:961px){
-  .screen:has(.tabs-pin) .aiside{top:calc(var(--tabs-h, 56px) - var(--padt, 0px) + var(--sp-5))}
-  .aiside{max-height:none}
-  .aiside>.aicard.aicard{min-height:var(--ai-min, 420px);height:var(--ai-min, 420px);max-height:var(--ai-max, none)}
-  .aiside>.aicard.aicard:not(.aishut),
-  .aiside[data-long]>.aicard.aicard{height:max(var(--ai-min, 420px), var(--ai-max, 420px))}
-  .glass[data-fill]{display:flex;flex-direction:column;justify-content:center}
-}
 
 /* ═══ Client 9 Nov · a card with nothing in it yet reads like the assistant's closed card ═══
    One centred column, in the assistant's order: the mark (the growth art), the card's own title, the
@@ -9419,3 +9397,32 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 /* Client 14 Nov · a dropdown stretched wider than its text (a form grid, a wide toolbar slot) keeps its
    arrow on the end edge · the text takes the room between, the arrow never floats mid-field */
 .fsel-b>.fsel-sz{margin-inline-end:auto}
+
+/* Client 25 Nov · every table reads at one size and on one line.
+   Body cells used two sizes (14 for names, links and numbers, 13 for the sub lines) · now all take
+   the smaller one, the size the table already used for its quieter text. And a cell never wraps:
+   a long name, or a footer total with its note («42 يومًا في المتوسط»), ends in an ellipsis, and
+   the full text is in the hover tip. Tags and buttons keep their own sizes. */
+.tbl td,.tbl tfoot td{font-size:var(--fs-2)}
+.tbl td :is(.sub,.mono,.tlink,.tname,.trim1,.num,.prs-n,.date,b,strong,small,span,a:not(.btn)):not(.tag,.tag *,.btn,.btn *){font-size:inherit}
+.tbl td :is(.sub,.mono,.tlink,.tname,.trim1,.prs-n,.date,b,strong,small,a:not(.btn)):not(.tag,.btn){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tbl tfoot td small.sub{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbl tfoot td:has(>small.sub){white-space:nowrap;text-overflow:ellipsis}
+/* the footer's figure stays whole · only its note gives way */
+.tbl tfoot td .tfv{display:flex;max-width:100%;min-width:0}
+.tbl tfoot td .tfv>b{flex:none;overflow:visible}
+.tbl tfoot td .tfv>small.sub{display:block;min-width:0;flex:0 1 auto}
+
+/* Client 25 Nov · the saved-state menu.
+   Its button sits at the far end of the toolbar, and the menu opened from the button's start, so in
+   Arabic it ran 60px past the page's left edge and pushed the page sideways · now it hangs from the
+   button's end, inside the toolbar.
+   And its text lines started at three insets (the rows, the empty note, the name field) · the note
+   now starts where the rows and the field do. */
+.fviews>.fviews-m{inset-inline-start:auto;inset-inline-end:0}
+.fviews>.fviews-m{padding:var(--sp-3)}
+.fviews-m .fview{padding:0}
+.fviews-m .fview-0{padding-bottom:var(--sp-3);margin-bottom:var(--sp-3)}
+.fviews-m>.fmenu-e{padding:var(--sp-2) var(--sp-3)}
+.fviews-m>.fviews-f{padding:var(--sp-3) 0 0;margin-top:var(--sp-3)}
+.fviews-m>.fviews-n{padding:var(--sp-2) var(--sp-3) 0}

@@ -9,7 +9,7 @@ import type { ProjectRow } from '@/types/domain'
 import { critMax, criteriaFor, studyScore, type Criterion } from '@/data/intake/criteria'
 import { fieldsOf, type StudyField, type StudySection } from '@/data/intake/studyFields'
 import { maqasidResult, pctOf, suggestMaqasid, suggestWaqf, waqfResult } from '@/data/intake/alignment'
-import { alignAvg, alignTone } from '@/data/intake/alignScore'
+import { alignAvg, alignTone, recoOf } from '@/data/intake/alignScore'
 import { MaqasidCard, WaqfCard } from './StudyAlign'
 import { stampNow } from '@/data/clock'
 import { domainBudget } from '@/data/intake/insight'
@@ -149,7 +149,7 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
       <Glass className="stdy-sum">
         <span><span className="sub">الارتباط بمقاصد الشريعة</span><Tag tone={alignTone(mqP)}>{pct(mqP)}</Tag></span>
         <span><span className="sub">الارتباط بصك الوقفية</span><Tag tone={alignTone(wqP)}>{pct(wqP)}</Tag></span>
-        <span><span className="sub">متوسط الارتباط</span><Tag tone={alignTone(avgP)}>{pct(avgP)}</Tag></span>
+        <span><span className="sub">متوسط الارتباط</span><Tag tone={alignTone(avgP)}>{pct(avgP)}</Tag><Tag tone={recoOf(avgP).tone}>{recoOf(avgP).label}</Tag></span>
         {!editable && f.study && <span className="sub">دراسة <Person name={f.study.by} /> · الإصدار <Num>{f.study.version}</Num> · <DateText>{f.study.at}</DateText></span>}
       </Glass>
 
@@ -272,6 +272,8 @@ export function StudyTab({ row, me, editable }: { row: ProjectRow; me: string; e
           <span><span className="sub">الارتباط بمقاصد الشريعة</span><b>{pct(mqP)}</b></span>
           <span><span className="sub">الارتباط بصك الوقفية</span><b>{pct(wqP)}</b></span>
           <span><span className="sub">متوسط الارتباط</span><b className="algn-final">{pct(avgP)}</b></span>
+          {/* Client 24 Nov (meeting) · what the average recommends, in the client's five bands */}
+          <span><span className="sub">التوصية</span><Tag tone={recoOf(avgP).tone}>{recoOf(avgP).label}</Tag></span>
         </div>
       </Glass>
 

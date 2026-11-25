@@ -160,7 +160,8 @@ export function Select({
             half the same information. The box has a fixed width so picking a person doesn't shift
             the whole toolbar. */}
         {people
-          ? <span className="fsel-face">{current ? <Face name={optValue(current)} /> : icon && <Icon name={icon} size="sm" />}</span>
+          /* Client 25 Nov · the face's slot only when there's a face or an icon to put in it · empty, it pushed «الكل» off the start edge */
+          ? (current || icon) && <span className="fsel-face">{current ? <Face name={optValue(current)} /> : icon && <Icon name={icon} size="sm" />}</span>
           : icon && <Icon name={icon} size="sm" />}
         {/* The ghosts reserve the widest option's width, so picking
             a value never resizes the control (see `.fsel-sz`). */}
@@ -301,7 +302,7 @@ export function MultiSelect({
             no reason. The label shows the first name in both cases, so the face shows its face in
             both cases. */}
         {people
-          ? <span className="fsel-face">{values.length ? <Face name={values[0]} /> : icon && <Icon name={icon} size="sm" />}</span>
+          ? (values.length > 0 || icon) && <span className="fsel-face">{values.length ? <Face name={values[0]} /> : icon && <Icon name={icon} size="sm" />}</span>
           : icon && <Icon name={icon} size="sm" />}
         {/* Same ghosts as `Select`: the widest label the button can
             ever show, so toggling a value never resizes the row.

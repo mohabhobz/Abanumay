@@ -39,13 +39,14 @@ import { QuickRead } from '@/components/assistant'
 import { BulkBar, PageActions } from '@/components/shell'
 import { readProjects } from '@/data/readings'
 import { ProjectCard } from './ProjectCard'
+import { RECO_LABELS } from '@/data/intake/alignScore'
 
 
 /* These keys are the URL contract: every filter on the screen has a key here, and
    the same name is sent to the server as a query string once wired up. */
 const KEYS = [
   'q', 'status', 'stage', 'year', 'track', 'field', 'goal', 'region', 'city',
-  'tag', 'method', 'support', 'owner', 'unowned', 'overdue', 'shared', 'impact', 'portal', 'type', 'res',
+  'tag', 'method', 'support', 'reco', 'owner', 'unowned', 'overdue', 'shared', 'impact', 'portal', 'type', 'res',
   'sort', 'page', 'size', 'view', 'adv', 'group', 'tab', 'ord',
 ] as const
 
@@ -101,7 +102,7 @@ const MINE_LABEL: Partial<Record<string, string>> = {
 
 /** Default filter order — matches the `FILTER_DEFS` order inside the component. */
 const FILTER_KEYS = [
-  'year', 'stage', 'track', 'field', 'goal', 'region', 'city', 'tag', 'method', 'support', 'owner',
+  'year', 'stage', 'track', 'field', 'goal', 'region', 'city', 'tag', 'method', 'support', 'reco', 'owner',
 ]
 
 const SORTS: { key: ProjectSort; label: string }[] = [
@@ -144,7 +145,7 @@ export default function ProjectsListPage() {
     readFilterOrder('projects', FILTER_KEYS),
   )
 
-  useEffect(() => writeFilterOrder('projects', fOrder), [fOrder])
+  useEffect(() => writeFilterOrder('projects', fOrder, FILTER_KEYS), [fOrder])
   /* Last bulk decision plus its undo. The bar stays visible until the user dismisses
      it, so undo isn't racing a timer. */
   const [lastBulk, setLastBulk] = useState<{ text: string; undo?: () => void } | null>(null)
@@ -182,6 +183,7 @@ export default function ProjectsListPage() {
       tag: readList(v.tag),
       grantMethod: readList(v.method),
       supportStatus: readList(v.support),
+      reco: readList(v.reco),
       owner: readList(v.owner),
       unowned: v.unowned === '1',
       overdue: v.overdue === '1',
@@ -454,6 +456,8 @@ export default function ProjectsListPage() {
     { key: 'tag', label: 'الوسم' },
     { key: 'method', label: 'أسلوب المنح' },
     { key: 'support', label: 'حالة الدعم' },
+    /* Client 24 Nov · the recommendation the average reads as */
+    { key: 'reco', label: 'التوصية' },
     { key: 'owner', label: 'المالك' },
   ]
 
@@ -498,6 +502,7 @@ export default function ProjectsListPage() {
     tag: <MultiSelect label="الوسم" values={readList(v.tag)} options={TAGS} onChange={(x) => set({ tag: writeList(x) })} />,
     method: <MultiSelect label="أسلوب المنح" values={readList(v.method)} options={GRANT_METHODS} onChange={(x) => set({ method: writeList(x) })} />,
     support: <MultiSelect label="حالة الدعم" values={readList(v.support)} options={SUPPORT_STATUS} onChange={(x) => set({ support: writeList(x) })} />,
+    reco: <MultiSelect label="التوصية" values={readList(v.reco)} options={RECO_LABELS} onChange={(x) => set({ reco: writeList(x) })} />,
     owner: <MultiSelect label="المالك" people values={readList(v.owner)} options={OWNERS} onChange={(x) => set({ owner: writeList(x) })} />,
   }
 
@@ -505,7 +510,7 @@ export default function ProjectsListPage() {
     [
       ['status', 'الحالة'], ['stage', 'القسم'], ['year', 'السنة'], ['track', 'المسار'], ['field', 'المجال'],
       ['goal', 'الهدف'], ['region', 'المنطقة'], ['city', 'المدينة'], ['tag', 'الوسم'],
-      ['method', 'الأسلوب'], ['support', 'الدعم'], ['owner', 'المالك'], ['type', 'النوع'], ['res', 'النتيجة'],
+      ['method', 'الأسلوب'], ['support', 'الدعم'], ['reco', 'التوصية'], ['owner', 'المالك'], ['type', 'النوع'], ['res', 'النتيجة'],
     ] as [keyof Params, string][]
   )
     /* One chip per value, not per filter: someone with three regions selected wants

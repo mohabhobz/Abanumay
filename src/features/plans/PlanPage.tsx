@@ -100,7 +100,7 @@ export default function PlanPage() {
   const [cmp, setCmp] = useState<string | null>(null)
 
   const aside = useRef<HTMLDivElement>(null)
-  useFillHeight(aside, { varName: '--ai-fill', reserveSelector: '.decdock, .askfab', min: 320 })
+  useFillHeight(aside)
 
 
   const readings = useMemo(
