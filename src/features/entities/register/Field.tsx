@@ -30,7 +30,7 @@ export function Field({
   const locked = Boolean(f.dependsOn) && !parent
 
   return (
-    <FormField wide={f.wide} className={f.nl ? 'regf-nl' : undefined} label={f.label} required={f.req} after={tag}>
+    <FormField wide={f.wide} className={f.nl ? 'regf-nl' : undefined} label={f.label} required={f.req} after={tag} error={error}>
       {/* Note: `.fld` isn't a cosmetic class - it's the system's actual control for fields,
           registered in `ctlaudit` so its focus ring gets checked alongside search and filters. A
           field written specifically for this screen would have been a sixth corner case of the same
@@ -77,9 +77,7 @@ export function Field({
           />
         </FieldBox>
       )}
-      {error
-        ? <span className="bad regf-h">{error}</span>
-        : f.hint && <span className="sub regf-h">{f.hint}</span>}
+      {!error && f.hint && <span className="sub regf-h">{f.hint}</span>}
     </FormField>
   )
 }

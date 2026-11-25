@@ -5,7 +5,11 @@
    speaks · only an action taken now. */
 
 export type ToastTone = 'ok' | 'warn' | 'bad' | 'info'
-export interface ToastMsg { id: number; text: string; tone: ToastTone }
+/* Audit 26 Nov · every message in the system is this one toast, drawn by the one Toaster at the foot
+   of the screen · `sticky` keeps it until it's closed or put away (an error the user must read), and
+   `key` names it so its screen can take it back (`dismissToast`) or replace it */
+export interface ToastMsg { id: number; text: string; tone: ToastTone; sticky?: boolean; key?: string }
+export interface ToastOpts { sticky?: boolean; key?: string }
 
 const EVENT = 'ab:toast'
 let seq = 0
@@ -13,14 +17,25 @@ let last = { text: '', at: 0 }
 
 /** Say something now · the same line twice within a moment is said once */
 let pending: number | undefined
-export function toast(text: string, tone: ToastTone = 'ok'): void {
+export function toast(text: string, tone: ToastTone = 'ok', opts: ToastOpts = {}): void {
   if (typeof window === 'undefined' || !text) return
   /* a screen's own sentence replaces the store's generic line said in the same moment */
   if (pending !== undefined) { window.clearTimeout(pending); pending = undefined }
   const now = Date.now()
-  if (last.text === text && now - last.at < 800) return
+  if (!opts.key && last.text === text && now - last.at < 800) return
   last = { text, at: now }
-  window.dispatchEvent(new CustomEvent<ToastMsg>(EVENT, { detail: { id: ++seq, text, tone } }))
+  window.dispatchEvent(new CustomEvent<ToastMsg>(EVENT, { detail: { id: ++seq, text, tone, ...opts } }))
+}
+const GONE = 'ab:toast-gone'
+/** Take a named toast back (its screen's message no longer applies) */
+export function dismissToast(key: string): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent<string>(GONE, { detail: key }))
+}
+export const onToastGone = (fn: (key: string) => void) => {
+  const h = (e: Event) => fn((e as CustomEvent<string>).detail)
+  window.addEventListener(GONE, h)
+  return () => window.removeEventListener(GONE, h)
 }
 export const onToast = (fn: (m: ToastMsg) => void) => {
   const h = (e: Event) => fn((e as CustomEvent<ToastMsg>).detail)

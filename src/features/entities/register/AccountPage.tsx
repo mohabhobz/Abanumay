@@ -1,13 +1,12 @@
-import { useState, type FormEvent } from 'react'
-import { signIn } from '@/data/session'
+import { useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from '@/features/auth/AuthShell'
 import { ROUTES } from '@/app/routes'
-import { regRows, setRegAccount } from '@/data/mock/registration'
-import { createAccount, passwordOk } from '@/data/entities/auth'
-import { draftOf } from '@/data/entities/store'
+import { setRegAccount } from '@/data/mock/registration'
+import { createAccount } from '@/data/entities/auth'
 import { passwordIssues } from '@/data/entities/validate'
+import { ENTITY_RULES } from '@/data/entities/rules'
 
 /* Creating an entity account - its own screen.
 
@@ -29,9 +28,29 @@ import { passwordIssues } from '@/data/entities/validate'
    application portal instead - the line under the button says so and takes it there, rather than
    creating a second account and losing its first application.
 
-   The same card also brings an entity back (2.2.5 · 2.4.12): with the account's email and password
-   a saved draft opens where it was left, and a sent request opens its portal. A forgotten password
-   goes to the self-service reset. */
+   Audit 26 Nov · an entity that already has an account goes back through the one sign-in screen
+   (it opens its draft where it was left, or its request's portal, 2.2.5 · 2.4.12) · this card used to
+   turn itself into a second sign-in screen for that, which is gone · the way back to the terms is
+   beside it, each password field has its own eye, and the password's strength shows as it's typed. */
+
+/* How strong the password is, 0-4 · the rules met, then length and a symbol on top */
+const strength = (p: string, user: string): number => {
+  if (!p) return 0
+  let n = passwordIssues(p, user).length ? 1 : 2
+  if (p.length >= 12) n++
+  if (/[^A-Za-z0-9]/.test(p) && /[A-Z]/.test(p) && /[a-z]/.test(p)) n++
+  return Math.min(4, n)
+}
+const STRENGTH = ['', 'ضعيفة', 'مقبولة', 'جيدة', 'قوية']
+
+/* Audit 26 Nov · the password's rules as a checklist that ticks itself while typing · the same rules
+   the check uses (`ENTITY_RULES`), so the list and the verdict can't disagree */
+const RULES = (p: string, user: string) => [
+  { ok: p.length >= ENTITY_RULES.passMin, say: `${ENTITY_RULES.passMin} أحرف على الأقل` },
+  ...(ENTITY_RULES.passNeedsLetter ? [{ ok: /[A-Za-z؀-ۿ]/.test(p), say: 'حرف واحد على الأقل' }] : []),
+  ...(ENTITY_RULES.passNeedsDigit ? [{ ok: /\d/.test(p), say: 'رقم واحد على الأقل' }] : []),
+  ...(user.includes('@') ? [{ ok: !p || !p.toLowerCase().includes(user.toLowerCase().split('@')[0]), say: 'لا تتضمّن اسم البريد' }] : []),
+]
 
 /** Minimum password length - defined once so the requirement and the message stay in sync. */
 const MIN_PASS = 8
@@ -42,38 +61,44 @@ export default function RegisterAccountPage() {
   const [pass, setPass] = useState('')
   const [pass2, setPass2] = useState('')
   const [show, setShow] = useState(false)
+  const [show2, setShow2] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  /* Two jobs on one card: create the account, or come back to it (2.2.5 · 2.4.12) */
-  const [back, setBack] = useState(false)
 
-  /** Shows the error as a toast and hides it on its own - same behavior as the login screen. */
-  const fail = (message: string) => {
-    setErr(message)
-    setTimeout(() => setErr(''), 4000)
-  }
+  /* Audit 26 Nov · the message stays (the system's toast) until it's closed, a field changes, or the
+     form is sent again · and the field it's about says so on itself and takes the focus */
+  type F = 'email' | 'pass' | 'pass2'
+  const [bad, setBad] = useState<Partial<Record<F, string>>>({})
+  const refs = { email: useRef<HTMLInputElement>(null), pass: useRef<HTMLInputElement>(null), pass2: useRef<HTMLInputElement>(null) }
+  const fail = (message: string) => setErr(message)
+  const errOf = (f: F) => bad[f]
+  const edit = (f: F, set: (v: string) => void) => (v: string) => { set(v); if (bad[f]) setBad((b) => ({ ...b, [f]: undefined })) }
+  /* the confirmation is judged once the user leaves it (or sends), not on every key */
+  const [touched2, setTouched2] = useState(false)
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     /* Note: conditions are stated in the order the user actually hits them - one message at a time,
        naming the field. "Check your details" would make them hunt visually for what's wrong. */
-    if (!email.trim()) { fail('أدخل البريد الإلكتروني للجهة'); return }
-    if (!email.includes('@')) { fail('أدخل بريدًا إلكترونيًا صحيحًا، مثل name@org.sa'); return }
-    if (back) {
-      /* Coming back · the saved draft opens where it was left; a sent request opens its portal */
-      if (passwordOk(email, pass) === false) { fail('كلمة المرور غير صحيحة'); return }
-      setRegAccount(email)
-      const d = draftOf(email.trim())
-      const sent = regRows.find((r) => r.acctEmail === email.trim() && r.state !== 'draft')
-      /* The registrant's session · it opens its own request's portal and nothing else */
-      if (sent) signIn(email.trim(), 'entity', sent.state === 'approved' && sent.entityId ? { entityId: sent.entityId, reqId: sent.id } : { reqId: sent.id })
-      navigate(d?.state === 'draft' ? `${ROUTES.entityRegister}?step=form`
-        : sent ? `${ROUTES.entityPortal}?req=${sent.id}` : `${ROUTES.entityRegister}?step=form`, { replace: true })
+    /* Audit 26 Nov · every problem at once, each on its own field · the first takes the focus and
+       the toast counts them · it used to stop at the first one, so an empty form spoke of the email
+       alone */
+    const next: Partial<Record<F, string>> = {}
+    if (!email.trim()) next.email = 'أدخل البريد الإلكتروني للجهة'
+    else if (!email.includes('@')) next.email = 'أدخل بريدًا إلكترونيًا صحيحًا، مثل name@org.sa'
+    const weak = passwordIssues(pass, email)
+    if (!pass) next.pass = 'أدخل كلمة المرور'
+    else if (pass.length < MIN_PASS || weak.length) next.pass = `كلمة المرور لا تستوفي: ${weak.join('، ') || `${MIN_PASS} أحرف على الأقل`}`
+    if (!pass2) next.pass2 = 'أعد إدخال كلمة المرور للتأكيد'
+    else if (pass !== pass2) next.pass2 = 'لا تطابق كلمة المرور'
+    const keys = (['email', 'pass', 'pass2'] as F[]).filter((k) => next[k])
+    if (keys.length) {
+      setBad(next)
+      setTouched2(true)
+      refs[keys[0]].current?.focus()
+      fail(keys.length === 1 ? next[keys[0]]! : `صحّح ${keys.length === 2 ? 'حقلين' : `${keys.length} حقول`} قبل المتابعة`)
       return
     }
-    const weak = passwordIssues(pass, email)
-    if (pass.length < MIN_PASS || weak.length) { fail(`كلمة المرور: ${weak.join('، ') || `${MIN_PASS} أحرف على الأقل`}`); return }
-    if (pass !== pass2) { fail('كلمتا المرور غير متطابقتين. أعد إدخال التأكيد.'); return }
 
     setErr('')
     setBusy(true)
@@ -87,20 +112,25 @@ export default function RegisterAccountPage() {
     }, 700)
   }
 
-  const eye = (
+  /* Audit 26 Nov · each password field has its own eye · showing the confirmation no longer meant
+     pressing the eye of the field above it */
+  const eye = (on: boolean, set: (f: (v: boolean) => boolean) => void) => (
     <Button plain
       type="button"
       className="leye"
-      onClick={() => setShow((v) => !v)}
-      aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-      title={show ? 'إخفاء' : 'إظهار'}
+      onClick={() => set((v) => !v)}
+      aria-label={on ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+      title={on ? 'إخفاء' : 'إظهار'}
     >
-      <Icon name={show ? icons.eyeOff : icons.eye} size="md" />
+      <Icon name={on ? icons.eyeOff : icons.eye} size="md" />
     </Button>
   )
+  const lvl = strength(pass, email)
+  const rules = RULES(pass, email)
+  const mismatch = touched2 && pass2 && pass !== pass2 ? 'لا تطابق كلمة المرور' : undefined
 
   return (
-    <AuthShell title={back ? 'العودة إلى طلبك' : 'إنشاء حساب الجهة'} sub={back ? 'بالحساب الذي أنشأته عند التسجيل' : 'الخطوة الأولى في تسجيل جهة جديدة'} err={err}>
+    <AuthShell title="إنشاء حساب الجهة" sub="الخطوة الثانية في تسجيل جهة جديدة" err={err}>
       <form className="lform" onSubmit={submit} method="post" action="#" noValidate>
         <AuthField
           id="ra-email"
@@ -109,59 +139,74 @@ export default function RegisterAccountPage() {
           icon={icons.mail}
           type="email"
           value={email}
-          onChange={setEmail}
+          onChange={edit('email', setEmail)}
+          error={errOf('email')}
+          inputRef={refs.email}
           autoComplete="email"
           enterKeyHint="next"
         />
         <AuthField
           id="ra-pass"
-          name={back ? 'password' : 'new-password'}
+          name="new-password"
           label="كلمة المرور"
           icon={icons.lock}
           type={show ? 'text' : 'password'}
           value={pass}
-          onChange={setPass}
-          autoComplete={back ? 'current-password' : 'new-password'}
-          enterKeyHint={back ? 'go' : 'next'}
-          trailing={eye}
-          hint={back ? undefined : <><span className="num">{MIN_PASS}</span> أحرف على الأقل، فيها حرف ورقم</>}
+          onChange={edit('pass', setPass)}
+          error={errOf('pass')}
+          inputRef={refs.pass}
+          autoComplete="new-password"
+          enterKeyHint="next"
+          trailing={eye(show, setShow)}
+          hint={<>
+            {/* Audit 26 Nov · the password's strength, and its rules ticking themselves while typing ·
+                once all are met, one green line says so */}
+            <span className={`lmeter s-${lvl}`} aria-hidden="true"><i /><i /><i /><i /></span>
+            {pass && rules.every((r) => r.ok)
+              ? <span className="lrule ok"><Icon name={icons.check} size="sm" />كلمة المرور مناسبة · قوتها <b>{STRENGTH[lvl]}</b></span>
+              : <ul className="lrules">
+                  {rules.map((r) => (
+                    <li key={r.say} className={`lrule${r.ok ? ' ok' : ''}`}>
+                      {r.ok ? <Icon name={icons.check} size="sm" /> : <i className="lrule-dot" aria-hidden="true" />}{r.say}
+                    </li>
+                  ))}
+                </ul>}
+          </>}
         />
-        {!back && <AuthField
+        <AuthField
           id="ra-pass2"
           name="confirm-password"
           label="تأكيد كلمة المرور"
           icon={icons.lock}
-          type={show ? 'text' : 'password'}
+          type={show2 ? 'text' : 'password'}
           value={pass2}
-          onChange={setPass2}
+          onChange={edit('pass2', setPass2)}
+          error={errOf('pass2') ?? mismatch}
+          inputRef={refs.pass2}
+          onBlur={() => setTouched2(true)}
           autoComplete="new-password"
           enterKeyHint="go"
-          /* Note: match is stated while typing, not after clicking - a condition stated after a
-             click makes the user go back and clear two fields instead of fixing one character. */
-          hint={pass2 && pass !== pass2
-            ? <span className="bad">لا تطابق كلمة المرور</span>
-            : undefined}
-        />}
+          trailing={eye(show2, setShow2)}
+          /* Audit 26 Nov · the match is judged when the user leaves the confirmation (or sends), not
+             on every key · a half-typed confirmation isn't a mistake yet */
+          hint={!mismatch && pass2 && pass === pass2 ? <span className="lrule ok"><Icon name={icons.check} size="sm" />مطابقة</span> : undefined}
+        />
 
         <Button variant="p" full type="submit" disabled={busy}>
-          {back ? 'افتح طلبي' : busy ? 'جارٍ إنشاء الحساب…' : 'أنشئ الحساب وتابع التسجيل'}
+          {busy ? 'جارٍ إنشاء الحساب…' : 'أنشئ الحساب وتابع التسجيل'}
         </Button>
       </form>
 
-      {/* Other paths - styled as a ghost so they don't compete with the primary button. */}
-      <div className="lalt">
-        <Button
-          variant="2" full
-          type="button"
-          onClick={() => { setBack((x) => !x); setErr('') }}
-        >
-          {back ? 'ليس لديك حساب؟ أنشئ حسابًا' : 'لديك حساب بالفعل؟ عُد إلى طلبك'}
+      {/* Audit 26 Nov · the other ways from here · back to the terms (the step before), or the one
+          sign-in screen for an entity that already has an account */}
+      <div className="lalt lalt-2">
+        <Button variant="2" full type="button" onClick={() => navigate(ROUTES.entityRegister)}>
+          <Icon name={icons.chevronBack} size="sm" />
+          الضوابط
         </Button>
-        {back && (
-          <p className="lnote sub">
-            نسيت كلمة المرور؟ <Button plain type="button" className="llink" onClick={() => navigate(ROUTES.forgot)}>استعدها</Button>
-          </p>
-        )}
+        <Button variant="2" full type="button" onClick={() => navigate(ROUTES.login)}>
+          لديك حساب؟ سجّل الدخول
+        </Button>
       </div>
     </AuthShell>
   )

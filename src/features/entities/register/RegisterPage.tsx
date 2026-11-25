@@ -35,6 +35,7 @@ import {
 } from '@/data/entities/validate'
 import { ENTITY_RULES } from '@/data/entities/rules'
 import { HeroSuccess } from '@/components/soul'
+import { AuthShell } from '@/features/auth/AuthShell'
 
 /* New entity registration request - entity screen.
 
@@ -110,6 +111,14 @@ export default function RegisterPage() {
      stage of the journey. */
   const tab = FORM_STAGES.some((s) => s.key === v.tab) ? (v.tab as string) : FIRST_FORM_STAGE
   const setTab = (x: string) => set({ tab: x === FIRST_FORM_STAGE ? undefined : x })
+  /* Audit 26 Nov · a stage the entity has left (Next, or a jump on the stepper) shows each of its
+     empty required fields on the field itself («هذا الحقل مطلوب»), with the system's one error
+     message · a stage not visited yet stays quiet · a format problem shows as soon as it's typed */
+  const [visited, setVisited] = useState<Set<string>>(() => new Set())
+  const prevTab = useRef(tab)
+  useEffect(() => {
+    if (prevTab.current !== tab) { const left = prevTab.current; setVisited((x) => new Set(x).add(left)); prevTab.current = tab }
+  }, [tab])
   useEntityFlow()
   /* A draft saved under this account comes back where it was left (2.2.5 · 2.4.12) */
   const [draft0] = useState(() => (regAccount.email ? draftOf(regAccount.email) : undefined))
@@ -689,7 +698,7 @@ export default function RegisterPage() {
                               value={val[f.key] ?? ''}
                               parent={f.dependsOn ? val[f.dependsOn] ?? '' : ''}
                               onChange={(x) => setField(f.key, x)}
-                              error={errs[f.key]}
+                              error={errs[f.key] ?? (visited.has(s.key) && f.req && !(val[f.key] ?? '').trim() ? 'هذا الحقل مطلوب' : dups.find((d) => d.field === f.key) ? `مسجَّل لـ«${dups.find((d) => d.field === f.key)!.who}»` : undefined)}
                             />
                           ))}
                         </div>
@@ -853,6 +862,37 @@ export default function RegisterPage() {
           </div>
         )}
       </div>
+  )
+
+  /* Audit 26 Nov · the first step for someone coming from the sign-in screen is the same screen as
+     the one before it (sign-in) and the one after it (the account): the tree video and its glass card
+     (`AuthShell`) · it used to be a full internal page (the system's background, a wide card, a header
+     row), so the three steps of one way in looked like three products */
+  if (!inside && phase === 'terms') return (
+    <AuthShell title="تسجيل جهة جديدة" sub="ضوابط قبول الجهة · الخطوة الأولى">
+      <div className="lform">
+        <ul className="regterms lterms">
+          {REG_TERMS.map((t, i) => (
+            <li key={t}>
+              <span className="regterms-n num">{i + 1}</span>
+              <span>{t}</span>
+            </li>
+          ))}
+        </ul>
+        <label className="lcheck lagree">
+          <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+          <span>أقرّ بأن الجهة مستوفية للضوابط الخمسة أعلاه</span>
+        </label>
+        <Button variant="p" full disabled={!agreed}
+          title={agreed ? 'تابع إلى إنشاء حساب الجهة' : 'أقرّ بالضوابط أولًا'}
+          onClick={() => navigate(ROUTES.entityRegisterAccount)}>
+          تابع إلى إنشاء الحساب
+        </Button>
+      </div>
+      <div className="lalt">
+        <Button variant="2" full type="button" onClick={() => navigate(ROUTES.login)}>لديك حساب؟ سجّل الدخول</Button>
+      </div>
+    </AuthShell>
   )
 
   /* The background and shell use the same components - the only difference is the rail and

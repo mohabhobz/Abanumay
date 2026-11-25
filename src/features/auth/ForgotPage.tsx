@@ -37,7 +37,7 @@ export default function ForgotPage() {
   const [err, setErr] = useState('')
   const [note, setNote] = useState('')
 
-  const fail = (m: string) => { setErr(m); setTimeout(() => setErr(''), 4000) }
+  const fail = (m: string) => setErr(m)  /* audit 26 Nov · stays until closed or a field changes */
 
   const identify = (e: FormEvent) => {
     e.preventDefault()

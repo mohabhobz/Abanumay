@@ -1,16 +1,16 @@
 import { readDisplay } from '@/lib/prefs'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Button, Icon, icons } from '@/components/ui'
 import { AuthShell, AuthField } from './AuthShell'
 import { useArmed } from './useArmed'
 import { AFTER_LOGIN, ROUTES } from '@/app/routes'
 import { signIn } from '@/data/session'
-import { STAFF_DIRECTORY, STAFF_LOGINS, staffLogin, writeRole } from '@/data/roles'
+import { STAFF_DIRECTORY, staffLogin, writeRole } from '@/data/roles'
 import { findAccount, passwordOk } from '@/data/entities/auth'
-import { AUTH_RULES, lockLeft, loginFailed, loginSucceeded } from '@/data/authGuard'
+import { lockLeft, loginFailed, loginSucceeded } from '@/data/authGuard'
 import { hasStaffPassword, staffPasswordOk } from '@/data/staffAuth'
-import { regRows } from '@/data/mock/registration'
+import { regRows, setRegAccount } from '@/data/mock/registration'
 
 /* Login screen.
 
@@ -39,7 +39,12 @@ import { regRows } from '@/data/mock/registration'
    - entity: "register a new entity" below, and from there "already have an account? open your
    application portal" - the actual path an entity follows. */
 
-const WRONG = 'يوجد خطأ في البريد الإلكتروني أو كلمة المرور'
+/* Audit 26 Nov · the field is «اسم المستخدم», so the message says so (it used to say «البريد») */
+const WRONG = 'اسم المستخدم أو كلمة المرور غير صحيحة'
+/* Audit 26 Nov · a lock is said on its own, not after «wrong password» · the two read as one sentence
+   that contradicts itself */
+const LOCKED = 'قُفل الحساب مؤقتًا بعد محاولات دخول خاطئة متتالية'
+const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -55,32 +60,52 @@ export default function LoginPage() {
   const [err, setErr] = useState('')
   const { armed, formProps } = useArmed()
 
-  /**
-   * Shows the error as a toast and hides it on its own - the message is an alert, not a persistent
-   * state.
-   */
-  const fail = (message: string) => {
-    setErr(message)
-    setTimeout(() => setErr(''), 4000)
-  }
+  /* Audit 26 Nov · what went wrong stays on screen (AuthShell's toast) until it's closed, a field
+     changes, or the form is sent again · it used to leave after 4s, unread */
+  const fail = (message: string) => setErr(message)
+  /* Audit 26 Nov · a missing name or password gets one message for both, the same either way, and no
+     field is marked (client · security: the sign-in screen never says which of the two is missing or
+     wrong) · the focus still moves to the first empty field so the user can type straight away */
+  const userRef = useRef<HTMLInputElement>(null)
+  const passRef = useRef<HTMLInputElement>(null)
+  /* Audit 26 Nov · while the name typed is locked, the button rests with the time left on it, the
+     time counts down each second, and the way out (reset the password) sits right under it */
+  const [, setTick] = useState(0)
+  /* Audit 26 Nov · the lock stays on screen for the account it fell on, whatever is typed after it ·
+     it used to follow the name field, so editing or clearing the name hid the countdown and the
+     button looked free again */
+  const [lockedFor, setLockedFor] = useState('')
+  const lockWho = user.trim() && lockLeft(user) ? user : lockedFor
+  /* a name that is locked is held as soon as it's typed (not only after a send) */
+  useEffect(() => { if (user.trim() && lockLeft(user) && user !== lockedFor) setLockedFor(user) }, [user, lockedFor])
+  const lockSecs = lockWho ? lockLeft(lockWho) : 0
+  useEffect(() => {
+    if (!lockSecs) return
+    const id = window.setInterval(() => setTick((t) => t + 1), 1000)
+    return () => window.clearInterval(id)
+  }, [lockSecs > 0])
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!user.trim() || !pass) {
-      fail('أدخل اسم المستخدم وكلمة المرور')
+      ;(!user.trim() ? userRef : passRef).current?.focus()
+      fail('أكمل بيانات الدخول للمتابعة')
       return
     }
     /* Batch 8 · a locked account waits out its lock */
     const locked = lockLeft(user)
     if (locked) {
-      fail(`الحساب مقفل مؤقتًا بعد محاولات خاطئة متتالية · حاول بعد ${Math.ceil(locked / 60)} دقيقة أو استعد كلمة المرور`)
+      setLockedFor(user)
+      fail(LOCKED)
       return
     }
     /* A portal account whose password was set (registration or reset) must match it (2.3.pw-11) */
     if (passwordOk(user, pass) === false) {
       const left = loginFailed(user)
       /* Client 23 Oct · one message for a wrong user or password · it never says which of the two */
-      fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : `${WRONG} · قُفل الحساب ${AUTH_RULES.lockMinutes} دقيقة`)
+      if (!left) setLockedFor(user)
+      fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : LOCKED)
+      setTick((t) => t + 1)
       return
     }
     /* Client 14 Nov · a staff account with a password kept (an added account, or one that set its
@@ -93,7 +118,9 @@ export default function LoginPage() {
     }
     if (stf && staffPasswordOk(stf.login, pass) === false) {
       const left = loginFailed(user)
-      fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : `${WRONG} · قُفل الحساب ${AUTH_RULES.lockMinutes} دقيقة`)
+      if (!left) setLockedFor(user)
+      fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : LOCKED)
+      setTick((t) => t + 1)
       return
     }
     loginSucceeded(user)
@@ -103,17 +130,25 @@ export default function LoginPage() {
       /* An entity signs in to its own portal, not to the staff system */
       const acct = findAccount(user)
       if (acct) {
-        signIn(user.trim(), 'entity', acct.kind === 'entity' ? { entityId: acct.id.slice(2) } : { reqId: regRows.find((r) => r.acctEmail === acct.email)?.id })
-        const req = acct.kind === 'reg' ? regRows.find((r) => r.acctEmail === acct.email) : undefined
+        /* Audit 26 Nov · the one sign-in screen also brings back an entity in registration (the
+           account card no longer doubles as a second sign-in) · a sent request opens its portal,
+           an unsent one opens its draft form where it was left (2.2.5 · 2.4.12) */
+        const sent = acct.kind === 'reg' ? regRows.find((r) => r.acctEmail === acct.email && r.state !== 'draft') : undefined
+        if (acct.kind === 'reg' && !sent) {
+          setRegAccount(acct.email)
+          navigate(`${ROUTES.entityRegister}?step=form`, { replace: true })
+          return
+        }
+        signIn(user.trim(), 'entity', acct.kind === 'entity' ? { entityId: acct.id.slice(2) } : { reqId: sent?.id })
         navigate(acct.kind === 'entity'
           ? `${ROUTES.entityPortal}?entity=${acct.id.slice(2)}`
-          : req ? `${ROUTES.entityPortal}?req=${req.id}` : ROUTES.entityRegister, { replace: true })
+          : `${ROUTES.entityPortal}?req=${sent!.id}`, { replace: true })
         return
       }
       const staff = staffLogin(user)
       if (!staff) {
         setBusy(false)
-        fail(`${WRONG} · حسابات التجربة: ${STAFF_LOGINS}`)
+        fail(WRONG)  /* audit 26 Nov · a sign-in screen never lists account names */
         return
       }
       writeRole(staff.role)
@@ -140,6 +175,7 @@ export default function LoginPage() {
               icon={icons.user}
               value={user}
               onChange={setUser}
+              inputRef={userRef}
               autoComplete="username"
               armed={armed}
               enterKeyHint="next"
@@ -152,6 +188,7 @@ export default function LoginPage() {
               type={show ? 'text' : 'password'}
               value={pass}
               onChange={setPass}
+              inputRef={passRef}
               autoComplete="current-password"
               armed={armed}
               enterKeyHint="go"
@@ -180,9 +217,17 @@ export default function LoginPage() {
               </Button>
             </div>
 
-            <Button variant="p" full type="submit" disabled={busy}>
-              {busy ? 'جارٍ التحقق…' : 'تسجيل الدخول'}
+            <Button variant="p" full type="submit" disabled={busy || lockSecs > 0}
+              title={lockSecs > 0 ? `الحساب مقفل مؤقتًا · يُفتح بعد ${mmss(lockSecs)}` : undefined}>
+              {busy ? 'جارٍ التحقق…' : lockSecs > 0 ? 'الحساب مقفل مؤقتًا' : 'تسجيل الدخول'}
             </Button>
+            {lockSecs > 0 && (
+              <p className="llock" role="status">
+                <Icon name={icons.lock} size="sm" />
+                <span>يُفتح الدخول بعد <b className="num">{mmss(lockSecs)}</b> · أو</span>
+                <Button plain type="button" className="llink" onClick={() => navigate(ROUTES.forgot)}>استعد كلمة المرور</Button>
+              </p>
+            )}
           </form>
 
           {/* A completely separate flow, so it's styled as a ghost - not a second option competing

@@ -874,7 +874,10 @@
      contrast doesn't depend on whatever's behind the gradient mesh (see the
      note below at `.btn-p:disabled`). White on it measures 5.21, above the
      threshold. */
-  --solid-off:#4E7374; --on-solid-off:var(--on-solid);
+  /* Audit 26 Nov · the dimmed primary still read as a pressable button (white on a mid teal), so a
+     form's «تابع» looked ready before its condition was met · a disabled primary is now a pale tint
+     with muted ink, clearly at rest beside an active one (its text still reads, above 4.5:1) */
+  --solid-off:#D5E1E0; --on-solid-off:#4A6260;
   --solidC:20,69,71;                       /* Same color as a number: for the secondary variant */
   --link:#3E5A08;
   /* `--warn-ink` sat right at the AA threshold like `--t3`: `#8A5C05` over
@@ -3522,8 +3525,8 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .login-v.on{opacity:1}
 /* 14 Oct · client · the tree grows alone for 3s, then the card (and any notice) comes in · a key
    or a click brings it at once (`AuthShell wait`) · hidden from focus too while it waits */
-.login-mid,.lnotice{transition:opacity var(--mo-5) var(--ease-out),visibility 0s linear 0s}
-.login-wait .login-mid,.login-wait .lnotice{opacity:0;visibility:hidden;
+.login-mid,.ltoasts{transition:opacity var(--mo-5) var(--ease-out),visibility 0s linear 0s}
+.login-wait .login-mid,.login-wait .ltoasts{opacity:0;visibility:hidden;
   transition:opacity var(--mo-5) var(--ease-out),visibility 0s linear var(--mo-5)}
 .login-mid{position:relative;z-index:3;height:100%;overflow:auto;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -3535,6 +3538,13 @@ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 /* The copyright line sits on the floor at the screen's foot, not on the trunk under the card */
 @media (min-width:761px) and (min-height:700px){
   .login-mid>.lfoot{position:absolute;inset-inline:0;bottom:var(--sp-5);text-align:center;margin:0}
+}
+/* Audit 26 Nov · on a phone (or a short screen) the line sat right under the card, over the trunk,
+   and the dark bark ate its contrast · it now sits at the screen's foot there too: the card takes the
+   free space above and below it (auto margins) and the line closes the column, on the light floor */
+@media (max-width:760px), (max-height:699px){
+  .login-mid>.lcard{margin-block:auto}
+  .login-mid>.lfoot{margin:0;text-align:center}
 }
 /* Same glass as the interior cards (`var(--g-card)`), just with a deeper outer shadow,
    since it sits over video rather than a calm background. */
@@ -3647,7 +3657,8 @@ to{opacity:1;transform:none}
    secondary. */
 /* "Why an account" line above the form; reuses `.lnote` as-is. */
 .lwhy{margin-bottom:var(--sp-5)}
-.lalt{margin-top:var(--sp-6)}
+/* Audit 26 Nov · one field-gap (12px) under «تسجيل الدخول», the two read as a pair */
+.lalt{margin-top:var(--sp-2)}
 .lnote{display:block;text-align:center;font-size:var(--fs-1);color:var(--t2);margin-top:var(--sp-3);line-height:var(--lh-text)}
 /* The "quick demo login" row was removed, and its classes (`.ldemo` and friends) went
    with it. The sign-in gate isn't the place for demo tooling: a row labeled "for
@@ -9430,3 +9441,82 @@ svg.ic2-on{--loop-exempt:"Active item's icon stays alive";
 .fviews-m>.fmenu-e{padding:var(--sp-2) var(--sp-3)}
 .fviews-m>.fviews-f{padding:var(--sp-3) 0 0;margin-top:var(--sp-3)}
 .fviews-m>.fviews-n{padding:var(--sp-2) var(--sp-3) 0}
+
+/* Audit 26 Nov · «تسجيل جهة جديدة» on the sign-in card · it was the secondary button's 10% tint, so
+   the moving tree behind the glass card showed through it and its text lost contrast as the video
+   moved · it now stands on an opaque surface (the same `--pop` the menus use), the size and outline
+   of the fields above it, so it reads as the second way in, steady over any frame of the video */
+.lalt>.btn-2{background:var(--pop);box-shadow:inset 0 0 0 1px rgba(var(--solidC, 20,69,71), .35), var(--el-1, 0 1px 2px rgb(0 0 0 / .06))}
+.lalt>.btn-2:hover{background:color-mix(in srgb, var(--pop) 88%, var(--solid))}
+
+/* Audit 26 Nov · the sign-in fields' icons (the person, the lock) are labels, not controls · the
+   system's «a hovered label pops its icon» (colour, scale and a tilt) made them look pressable beside
+   the eye, which is · they now hold still and keep the field's own colour; the eye still answers,
+   but only when the pointer is on the eye itself, not anywhere over its field */
+.lfield:hover .lbox>svg.ic2.ic2,
+.lfield:hover .lbox .leye:not(:hover) svg.ic2.ic2{color:inherit;scale:1;rotate:0deg}
+.lbox>svg.ic2.ic2{transition:none}
+
+/* Audit 26 Nov · the auth screens' toasts are the system's toast (`.toasts .toast`, the foot of the
+   screen, centred) · above the video, with a close of their own since an error now stays */
+.ltoasts{z-index:8;inset-block-end:calc(var(--sp-12) + var(--sp-2))}
+.toast:has(>.toast-x){cursor:default;padding-inline-end:var(--sp-2)}
+.toast-x{flex:none;display:grid;place-items:center;inline-size:calc(var(--sp-8) - var(--sp-2));block-size:calc(var(--sp-8) - var(--sp-2));
+  border-radius:var(--rp);color:var(--t2);cursor:pointer}
+.toast-x:hover{background:var(--ctl-quiet-h);color:var(--t1)}
+.ltoasts .toast{max-inline-size:min(34rem, calc(100vw - var(--sp-6) * 2))}
+/* Audit 26 Nov · a field that's empty or wrong says so on itself · a red ring and the reason under it */
+.lfield.bad .lbox,.lfield.bad .lbox:focus-within{box-shadow:inset 0 0 0 1.5px var(--no)}
+.lfield.bad .lbox>svg.ic2.ic2.ic2{color:var(--no-ink, var(--no))}
+/* Audit 26 Nov · under a locked sign-in button · the time left, and the way out */
+.llock{display:flex;align-items:center;flex-wrap:wrap;justify-content:center;gap:var(--sp-2);margin:0;
+  font-size:var(--fs-2);color:var(--t2);text-align:center}
+.llock>svg{flex:none;color:var(--t3)}
+.llock .llink{font-weight:600;color:var(--t1);text-decoration:underline;text-underline-offset:3px}
+/* Audit 26 Nov · on the sign-in screens (no decision bar) the one Toaster sits lower, between the card
+   and the copyright line, above the video · a toast is no longer a button itself, its × closes it */
+:root:has(.login) .toasts{z-index:95;inset-block-end:calc(var(--sp-12) + var(--sp-2))}
+.toasts .toast{cursor:default;max-inline-size:min(34rem, calc(100vw - var(--sp-6) * 2))}
+/* Audit 26 Nov · the password's strength under its field · four steps that fill and take the tone of
+   the level (weak · fair · good · strong), the word beside the rule */
+.lhint:has(>.lmeter){display:flex;flex-direction:column;gap:var(--sp-2)}
+.lmeter{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-1);block-size:4px;direction:rtl}
+.lhint .bad{color:var(--no-ink)}
+.lmeter>i{border-radius:var(--rp);background:rgba(var(--edgeC),.14);transition:background var(--mo-2) var(--ease-std)}
+.lmeter.s-1>i:nth-child(-n+1){background:var(--no)}
+.lmeter.s-2>i:nth-child(-n+2){background:var(--warn)}
+.lmeter.s-3>i:nth-child(-n+3){background:var(--teal, #00A59B)}
+.lmeter.s-4>i{background:var(--ok)}
+.lmeter-t b{font-weight:600;color:var(--t1)}
+/* two ways out side by side (back to the terms · sign in) */
+.lalt-2{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-3)}
+.lalt-2>.btn{inline-size:auto}
+.lalt-2>.btn-2{background:var(--pop);box-shadow:inset 0 0 0 1px rgba(var(--solidC, 20,69,71), .35), var(--el-1, 0 1px 2px rgb(0 0 0 / .06))}
+
+/* ═══ Audit 26 Nov · one validation message for every input in the system ═══
+   `FieldError` (`.ferr`): the alert icon, then the reason, in the error ink, at the hint size · and
+   the field it belongs to takes the error ring · the same on the sign-in card, every registration
+   step, the record pages and settings. A paragraph that already says what's wrong (`p.bad`, the
+   forms' own notes) wears the same: icon, ink and size. */
+.ferr{display:flex;align-items:flex-start;gap:var(--sp-2);margin:0;
+  font-family:var(--fb, inherit);font-size:var(--fs-1);font-weight:500;line-height:var(--lh-text);color:var(--no-ink)}
+.ferr>svg{flex:none;margin-block-start:.15em;color:var(--no-ink)}
+.regf.has-err .fld,.regf.has-err .fld:focus-within,
+.regf:has([aria-invalid="true"]) .fld{box-shadow:inset 0 0 0 1.5px var(--no)}
+.ferr>svg.ic2.ic2.ic2{color:var(--no-ink);scale:1;rotate:0deg}
+.lfield.bad .lbox,.lfield.bad .lbox:focus-within{box-shadow:inset 0 0 0 1.5px var(--no)}
+p.bad,span.bad[role="alert"]{display:block;position:relative;padding-inline-start:calc(var(--ic-sm, 16px) + var(--sp-2));
+  font-size:var(--fs-1);font-weight:500;line-height:var(--lh-text);color:var(--no-ink)}
+p.bad::before,span.bad[role="alert"]::before{content:'';position:absolute;inset-inline-start:0;inset-block-start:.2em;inline-size:var(--ic-sm, 16px);block-size:var(--ic-sm, 16px);background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm0 192a88 88 0 1 1 88-88 88.1 88.1 0 0 1-88 88Zm-8-80V80a8 8 0 0 1 16 0v56a8 8 0 0 1-16 0Zm20 36a12 12 0 1 1-12-12 12 12 0 0 1 12 12Z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm0 192a88 88 0 1 1 88-88 88.1 88.1 0 0 1-88 88Zm-8-80V80a8 8 0 0 1 16 0v56a8 8 0 0 1-16 0Zm20 36a12 12 0 1 1-12-12 12 12 0 0 1 12 12Z'/%3E%3C/svg%3E") center/contain no-repeat}
+
+/* the password's rules, ticking themselves (the account card) */
+.lrules{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:var(--sp-1) var(--sp-4)}
+.lrule{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-1);color:var(--t2)}
+.lrule.ok{color:var(--ok-ink, #1F7A3A)}
+.lrule.ok>svg{color:var(--ok-ink, #1F7A3A)}
+.lrule-dot{flex:none;inline-size:6px;block-size:6px;border-radius:50%;background:var(--t3);margin-inline:5px}
+
+/* Audit 26 Nov · a toast that runs onto a second line keeps soft corners, not a stretched capsule */
+.toast{border-radius:calc(var(--h-md) / 2)}

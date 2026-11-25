@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { Icon } from './Icon'
+import { icons } from './icons'
 
 /* The system's form field shell.
 
@@ -23,14 +25,17 @@ export interface FormFieldProps {
   as?: 'label' | 'div' | 'span'
   className?: string
   children?: ReactNode
+  /** What's wrong with the value · the field takes the error ring and the message under it */
+  error?: ReactNode
 }
 
-export function FormField({ label, required, after, wide, as: Tag = 'label', className, children }: FormFieldProps) {
-  const cls = ['regf', wide && 'regf-w', className].filter(Boolean).join(' ')
+export function FormField({ label, required, after, wide, as: Tag = 'label', className, children, error }: FormFieldProps) {
+  const cls = ['regf', wide && 'regf-w', error && 'has-err', className].filter(Boolean).join(' ')
   return (
     <Tag className={cls}>
       <span className="lb">{label}{required && <b className="regf-r" aria-label="إلزامي">*</b>}{after}</span>
       {children}
+      {error && <FieldError>{error}</FieldError>}
     </Tag>
   )
 }
@@ -38,4 +43,16 @@ export function FormField({ label, required, after, wide, as: Tag = 'label', cla
 export function FieldBox({ area, className, children }: { area?: boolean; className?: string; children?: ReactNode }) {
   const cls = ['fld', area && 'fld-a', className].filter(Boolean).join(' ')
   return <span className={cls}>{children}</span>
+}
+
+/* Audit 26 Nov · the system's one validation message, on every input · the alert icon, then the
+   reason in red, at the field's hint size · every form (sign-in, registration, the record pages,
+   settings) shows a field's problem with this and nothing else */
+export function FieldError({ id, children }: { id?: string; children: ReactNode }) {
+  return (
+    <span className="ferr" id={id} role="alert">
+      <Icon name={icons.alert} size="sm" />
+      <span>{children}</span>
+    </span>
+  )
 }

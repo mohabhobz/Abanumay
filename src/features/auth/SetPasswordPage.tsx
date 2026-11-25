@@ -33,7 +33,7 @@ export default function SetPasswordPage() {
 
   const save = (e: FormEvent) => {
     e.preventDefault()
-    if (!ready) { setErr(!match ? 'التأكيد لا يطابق كلمة المرور' : 'كلمة المرور لا تستوفي الشروط'); setTimeout(() => setErr(''), 4000); return }
+    if (!ready) { setErr(!match ? 'التأكيد لا يطابق كلمة المرور' : 'كلمة المرور لا تستوفي الشروط'); return }
     redeemInvite(token, pw)
     navigate(ROUTES.login, { replace: true, state: { reset: true, user: inv.email } })
   }

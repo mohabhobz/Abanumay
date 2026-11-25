@@ -1,7 +1,8 @@
 import type { IconGlyph } from '@/components/ui/icons'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import Logo from '@/assets/LogoColor'
-import { Button, Icon, icons } from '@/components/ui'
+import { FieldError, Icon } from '@/components/ui'
+import { dismissToast, toast } from '@/data/feedback'
 
 /* Shared wrapper for the auth screens - written once.
 
@@ -26,9 +27,10 @@ export interface AuthShellProps {
   /** Line under the title. */
   sub: string
   children: ReactNode
-  /** Alert message that floats over the card and disappears on its own. */
+  /** What went wrong · a toast at the screen's foot (the system's toast place) that stays until
+      closed, a field changes, or the form is sent again (audit 26 Nov) */
   err?: string
-  /** Why the user landed here (session ended, password changed) · a toast at the screen's top that
+  /** Why the user landed here (session ended, password changed) · a toast in the same place that
       stays until closed, so it isn't missed and doesn't take room inside the card (12 Oct · client) */
   notice?: string
   /** The sign-in screen lets the tree grow first · the card comes in after this many ms (any key
@@ -86,7 +88,15 @@ function LoginVideo() {
 }
 
 export function AuthShell({ title, sub, children, err, notice, wait = 0 }: AuthShellProps) {
-  const [shut, setShut] = useState<string | undefined>()
+  /* Audit 26 Nov · the screen's messages go to the system's one Toaster (the foot of the screen,
+     the same shape and icons as every other message) · an error stays until it's closed, a field
+     changes, or the form is sent again (a new error replaces it) · the notice stays until closed */
+  const [errAt, setErrAt] = useState(0)
+  useEffect(() => {
+    const on = () => setErrAt((n) => n + 1)
+    window.addEventListener('submit', on, true)
+    return () => window.removeEventListener('submit', on, true)
+  }, [])
   const reduced = useReducedMotion()
   const [shown, setShown] = useState(() => wait <= 0 || reduced)
   useEffect(() => {
@@ -101,29 +111,23 @@ export function AuthShell({ title, sub, children, err, notice, wait = 0 }: AuthS
       window.removeEventListener('pointerdown', show)
     }
   }, [shown, wait])
+  useEffect(() => {
+    if (!err || !shown) { dismissToast('auth-err'); return }
+    toast(err, 'bad', { sticky: true, key: 'auth-err' })
+  }, [err, errAt, shown])
+  useEffect(() => {
+    if (!notice || !shown) return
+    toast(notice, 'info', { sticky: true, key: 'auth-notice' })
+    return () => dismissToast('auth-notice')
+  }, [notice, shown])
+  useEffect(() => () => dismissToast('auth-err'), [])
   return (
     <div className={`login${shown ? '' : ' login-wait'}`}>
       <LoginVideo />
 
-      {notice && shut !== notice && (
-        <div className="lnotice" role="status">
-          <Icon name={icons.info} size="sm" />
-          <span>{notice}</span>
-          <Button plain type="button" className="lnotice-x" aria-label="إغلاق التنبيه" onClick={() => setShut(notice)}>
-            <Icon name={icons.close} size="sm" />
-          </Button>
-        </div>
-      )}
-
-      <main className="login-mid">
+      {/* typing in a field puts the error away · sending the form again brings back its answer */}
+      <main className="login-mid" onInput={() => { if (err) dismissToast('auth-err') }}>
         <div className="lcard glass">
-          {/* Toast: floats over the form without pushing anything, and disappears on its own. */}
-          {err && (
-            <div className="ltoast" role="alert">
-              <Icon name={icons.alert} size="sm" />
-              <span>{err}</span>
-            </div>
-          )}
 
           <div className="lhead">
             <span className="lmark"><Logo /></span>
@@ -159,22 +163,31 @@ export interface AuthFieldProps {
   hint?: ReactNode
   /** Sign-in form armed as a whole (`useArmed`) · without it the field arms itself on first touch */
   armed?: boolean
+  /** What's wrong with this field · a red ring and the line under it (audit 26 Nov) */
+  error?: string
+  /** The input itself, so a form can move the focus to its first wrong field */
+  inputRef?: Ref<HTMLInputElement>
+  /** Leaving the field · a form judges some values only then (a confirmation) */
+  onBlur?: () => void
 }
 
 export function AuthField({
   id, name, label, icon, value, onChange,
-  type = 'text', trailing, autoComplete, enterKeyHint, hint, armed: formArmed,
+  type = 'text', trailing, autoComplete, enterKeyHint, hint, armed: formArmed, error, inputRef, onBlur,
 }: AuthFieldProps) {
   const [own, setOwn] = useState(false)
   const armed = formArmed ?? own
   const arm = () => { if (formArmed === undefined && !own) setOwn(true) }
   return (
-    <label className="lfield" htmlFor={id}>
+    <label className={`lfield${error ? ' bad' : ''}`} htmlFor={id}>
       <span className="llbl">{label}</span>
       <span className="lbox">
         <Icon name={icon} size="md" />
         <input
+          ref={inputRef}
           id={id}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-err` : undefined}
           name={armed ? name : undefined}
           type={armed || type !== 'password' ? type : 'text'}
           className={!armed && type === 'password' ? 'lmask' : undefined}
@@ -183,6 +196,7 @@ export function AuthField({
           autoComplete={armed ? autoComplete : 'off'}
           onPointerDown={arm}
           onFocus={arm}
+          onBlur={onBlur}
           enterKeyHint={enterKeyHint}
           autoCapitalize="none"
           autoCorrect="off"
@@ -191,7 +205,8 @@ export function AuthField({
         />
         {trailing}
       </span>
-      {hint && <span className="lhint sub">{hint}</span>}
+      {error ? <FieldError id={`${id}-err`}>{error}</FieldError>
+        : hint && <span className="lhint sub">{hint}</span>}
     </label>
   )
 }
