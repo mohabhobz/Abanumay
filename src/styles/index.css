@@ -6629,16 +6629,20 @@ body.colresizing{user-select:none;-webkit-user-select:none;cursor:col-resize}
      same height at every moment (never past the line, even while the header still shows), its
      content centred, and scrolling inside it when the room is short */
   .screen:not(.g2fit) .g2:has(>.aiside)>.col:first-child:has(>.glass:only-child>.empty){height:var(--ai-now, auto)}
-  .screen:not(.g2fit) .g2:has(>.aiside)>.col:first-child>.glass:only-child:has(>.empty){min-height:0;overflow-y:auto;
-    overscroll-behavior:contain;scrollbar-width:thin;justify-content:safe center}
+  /* Client 25 Nov · it never holds the wheel: no scroll of its own (it grows with the page's scroll
+     instead), so scrolling over it always moves the page, back up to the top as well */
+  .screen:not(.g2fit) .g2:has(>.aiside)>.col:first-child>.glass:only-child:has(>.empty){min-height:0;overflow:hidden;
+    justify-content:safe center}
   /* a tab without the assistant (the plan's activities) keeps the same floor, so leaving it or
      coming back never shortens the page under the pinned tabs */
-  .screen:not(.g2fit)>.tabs-pin ~ :last-child{min-height:var(--ai-room, 0px);flex-shrink:0}
+  .screen.hasg2:not(.g2fit)>.tabs-pin ~ :last-child{min-height:var(--ai-room, 0px);flex-shrink:0}
 
   .aiside{position:sticky;top:.35rem;align-self:start;display:flex;flex-direction:column;height:var(--ai-h, auto)}
   .screen:has(.tabs-pin) .aiside{top:calc(var(--tabs-h, 56px) - var(--padt, 0px) + var(--gap))}
   .aiside>.aicard.aicard{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:safe center;
-    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+    overflow-y:auto;scrollbar-width:thin}
+  /* Client 25 Nov · the assistant scrolls its own readings, and once they reach their end the wheel
+     goes on to the page (no `overscroll-behavior:contain`) · the page is never stuck under the cursor */
   .aiside>.aicard.aishut{flex-direction:row;align-items:safe center;justify-content:center}
   .aiside>.aicard.aishut>.aishut-c{width:100%}
   .aiside .aiscroll{flex:1 0 auto;overflow:visible}

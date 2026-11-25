@@ -10,6 +10,7 @@ import { onToast, toast } from '@/data/feedback'
 import { rowGo } from '@/lib/rowGo'
 import { LANE_SAY, todayFor, type Lane, type TodayItem } from './today'
 import { setTrail } from './trail'
+import { useBoardRoom } from '@/hooks/useBoardRoom'
 
 /* «اليوم» · the person's working day on one screen (client brief, 17 Oct · layout reworked 18 Oct
    on the client's comment: «the layout is bad, nothing alive, it isn't clear what to do first»).
@@ -31,6 +32,7 @@ const TONE_OF: Record<Lane, string> = { due: 'warn', returned: 'teal', waiting: 
 const DAY_SHORT = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت']
 
 export default function HomePage() {
+  useBoardRoom()
   const { role, user } = useRole()
   const navigate = useNavigate()
   const [tick, setTick] = useState(0)

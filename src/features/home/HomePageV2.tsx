@@ -10,6 +10,7 @@ import { onToast, toast } from '@/data/feedback'
 import { rowGo } from '@/lib/rowGo'
 import { LANE_SAY, todayFor, type Lane, type TodayItem } from './today'
 import { setTrail } from './trail'
+import { useBoardRoom } from '@/hooks/useBoardRoom'
 
 /* «اليوم» · second version for comparison (client 7 Nov · «نسخة تانية من صفحة اليوم وسيب القديمة») ·
    the same data, sections and order as `HomePage`, with the polish pass applied:
@@ -32,6 +33,7 @@ const TONE_OF: Record<Lane, string> = { due: 'warn', returned: 'teal', waiting: 
 const DAY_SHORT = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت']
 
 export default function HomePageV2() {
+  useBoardRoom()
   const { role, user } = useRole()
   const navigate = useNavigate()
   const [tick, setTick] = useState(0)
