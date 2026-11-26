@@ -14,7 +14,7 @@ import { closingAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { TONE } from '@/lib/tone'
 import { ButtonLink, Button, type TabItem, Tabs,
-  BackTo, DateText, Empty, Glass, Head, Icon, KV, Money, Mono, Num, StepArc, Tag,
+  BackTo, DateText, Glass, Head, Icon, KV, Money, Mono, Num, StepArc, Tag,
   icons, type GateStep,
 } from '@/components/ui'
 import { AnalysisCard } from '@/components/assistant/AnalysisCard'
@@ -44,6 +44,7 @@ import { CloseActionDock } from './CloseActionDock'
 import { SealedTitle } from '@/components/soul'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { closeOutcome } from '@/data/shared/outcome'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* Closing page.
 
@@ -102,27 +103,7 @@ export default function ClosePage() {
 
   const readings = useMemo(() => (c ? [...closeReadings(c), ...closingAi(c)] : []), [c, tick])
 
-  if (!c) {
-    return (
-      <AppLayout assistantContext={assistFor.page('طلب إغلاق غير موجود')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <BackTo label="الإغلاق" onClick={() => navigate(ROUTES.closings)} />
-            <Glass>
-              <Empty
-                title="لا يوجد طلب إغلاق بهذا الرقم."
-                actions={
-                  <Button variant="2" onClick={() => navigate(ROUTES.closings)}>
-                    افتح صندوق الإغلاق
-                  </Button>
-                }
-              />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!c) return <NotFound module="closings" id={id} />
 
   const pr = projectById(c.projectId)
   const cycle = closeCycle(c)

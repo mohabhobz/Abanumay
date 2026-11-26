@@ -3,7 +3,7 @@ import { reportableEntity } from '@/data/shared/testData'
 import { meOf, readRole } from '@/data/roles'
 import { useNavigate } from 'react-router-dom'
 import {
-  Button, DateField, Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, PAGE_SIZES, Pager, SearchBox, Segments,
+  Button, DateField, Glass, Icon, icons, Money, MultiSelect, GroupPicker, PAGE_SIZES, Pager, SearchBox, Segments,
   Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -38,6 +38,7 @@ import {
 } from '@/components/table'
 import { exportXlsx, type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
+import { isVoid, ModuleEmpty } from '@/features/shared/EmptyStates'
 
 const KEYS = [
   'q', 'activation', 'type', 'licensor', 'region', 'city', 'governance',
@@ -351,10 +352,11 @@ export default function EntitiesListPage() {
     ...(v.to ? [['to', `سُجّلت حتى ${v.to}`] as [keyof Params, string]] : []),
   ]
 
+  const voidAll = isVoid(counts.total)
   return (
     <AppLayout assistantContext={assistFor.entities()}>
       <div className={`viewstack${selected.size > 0 ? ' hasdock' : ''}`}>
-        <div className="screen col">
+        <div className={`screen col${voidAll ? ' is-void' : ''}`}>
           <header>
             <div>
               <h1 className="ptitle">الجهات</h1>
@@ -391,6 +393,7 @@ export default function EntitiesListPage() {
               create={ENTITY_RULES.registerBy.includes(role) ? { label: ENTITY_CREATE_LABEL, to: ROUTES.entityNew } : undefined}
             />
           </header>
+          {voidAll && <ModuleEmpty module="entities" />}
 
           {/* Quick read.
               Placed right after the title, not after the filters: this is a reading of the page,
@@ -530,12 +533,7 @@ export default function EntitiesListPage() {
           </Glass>
 
           {result.total === 0 ? (
-            <Glass>
-              <Empty
-                title="لا توجد جهات بهذه الفلاتر."
-                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
-              />
-            </Glass>
+            <ModuleEmpty module="entities" filtered onClear={clear} />
           ) : view === 'cards' ? (
             <div className="elist">
               {result.rows.map((e) => <EntityCard key={e.id} row={e} />)}

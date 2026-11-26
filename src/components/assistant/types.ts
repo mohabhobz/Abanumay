@@ -8,6 +8,24 @@ export type EvidenceBlock =
   | { kind: 'ledger'; rows: { k: string; v: string; strong?: boolean }[] }
   | { kind: 'bars'; items: { k: string; real: number; plan?: number }[]; note?: string }
   | { kind: 'list'; items: { t: string; s: string; tone: Tone | '' }[] }
+  /* Audit 26 Nov · recognition over recall · when a question needs a project or an entity, the answer
+     offers the likely ones as cards to pick from, instead of asking for a name to be typed */
+  | { kind: 'pick'; what: 'project' | 'entity'; items: PickItem[] }
+
+export interface PickItem {
+  id: string
+  title: string
+  /** The line under the title · the entity and the city, or the type and the city */
+  sub: string
+  /** A status tag beside the code */
+  tag?: { t: string; tone: Tone | '' }
+  /** Two figures at the card's foot */
+  figs: { k: string; v: string; money?: boolean }[]
+  /** 0–1 · how far through its stage window (a project) */
+  bar?: { v: number; label: string; tone: Tone | '' }
+  /** What picking it asks next */
+  prompt: string
+}
 
 export interface AssistantAction {
   label: string

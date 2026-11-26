@@ -80,7 +80,7 @@ export function AiMessage({
         </div>
       )}
 
-      {done && message.block && <EvidenceBlock block={message.block} />}
+      {done && message.block && <EvidenceBlock block={message.block} onPick={onFollow} />}
       {done && message.more && <div className="ctext rise">{md(message.more)}</div>}
 
       {done && message.advisory && (

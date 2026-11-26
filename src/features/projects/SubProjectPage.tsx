@@ -23,6 +23,7 @@ import { Said } from '@/features/partners/parts'
 import type { Reading } from '@/components/assistant/reading'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { subOutcome } from '@/data/shared/outcome'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* A portfolio's sub-project on a page of its own (client 20 Oct · #17 – #20 · #27).
 
@@ -52,16 +53,7 @@ export default function SubProjectPage() {
   const found = subOf(id, sid)
   const back = `${ROUTES.portfolio(id)}${asPartner ? '?as=partner' : ''}`
 
-  if (!found) {
-    return (
-      <AppLayout assistantContext={assistFor.page('المشروع الفرعي')}>
-        <div className="viewstack"><div className="screen col">
-          <BackTo label="المحفظة" onClick={() => navigate(back)} />
-          <Glass><Empty title="المشروع الفرعي غير موجود." /></Glass>
-        </div></div>
-      </AppLayout>
-    )
-  }
+  if (!found) return <NotFound module="subproject" id={sid} back={{ label: 'المحفظة', to: back }} />
   const { pf, sub: x } = found
   const by = asPartner ? entityName(pf) : user.name
   const sup = !asPartner && role.key === 'supervisor'

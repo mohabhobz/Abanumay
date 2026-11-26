@@ -6,7 +6,7 @@ import { ROUTES } from '@/app/routes'
 import { setRegAccount } from '@/data/mock/registration'
 import { createAccount } from '@/data/entities/auth'
 import { passwordIssues } from '@/data/entities/validate'
-import { ENTITY_RULES } from '@/data/entities/rules'
+import { PassRules } from '@/features/auth/PassRules'
 
 /* Creating an entity account - its own screen.
 
@@ -33,24 +33,6 @@ import { ENTITY_RULES } from '@/data/entities/rules'
    turn itself into a second sign-in screen for that, which is gone · the way back to the terms is
    beside it, each password field has its own eye, and the password's strength shows as it's typed. */
 
-/* How strong the password is, 0-4 · the rules met, then length and a symbol on top */
-const strength = (p: string, user: string): number => {
-  if (!p) return 0
-  let n = passwordIssues(p, user).length ? 1 : 2
-  if (p.length >= 12) n++
-  if (/[^A-Za-z0-9]/.test(p) && /[A-Z]/.test(p) && /[a-z]/.test(p)) n++
-  return Math.min(4, n)
-}
-const STRENGTH = ['', 'ضعيفة', 'مقبولة', 'جيدة', 'قوية']
-
-/* Audit 26 Nov · the password's rules as a checklist that ticks itself while typing · the same rules
-   the check uses (`ENTITY_RULES`), so the list and the verdict can't disagree */
-const RULES = (p: string, user: string) => [
-  { ok: p.length >= ENTITY_RULES.passMin, say: `${ENTITY_RULES.passMin} أحرف على الأقل` },
-  ...(ENTITY_RULES.passNeedsLetter ? [{ ok: /[A-Za-z؀-ۿ]/.test(p), say: 'حرف واحد على الأقل' }] : []),
-  ...(ENTITY_RULES.passNeedsDigit ? [{ ok: /\d/.test(p), say: 'رقم واحد على الأقل' }] : []),
-  ...(user.includes('@') ? [{ ok: !p || !p.toLowerCase().includes(user.toLowerCase().split('@')[0]), say: 'لا تتضمّن اسم البريد' }] : []),
-]
 
 /** Minimum password length - defined once so the requirement and the message stay in sync. */
 const MIN_PASS = 8
@@ -125,8 +107,6 @@ export default function RegisterAccountPage() {
       <Icon name={on ? icons.eyeOff : icons.eye} size="md" />
     </Button>
   )
-  const lvl = strength(pass, email)
-  const rules = RULES(pass, email)
   const mismatch = touched2 && pass2 && pass !== pass2 ? 'لا تطابق كلمة المرور' : undefined
 
   return (
@@ -158,20 +138,7 @@ export default function RegisterAccountPage() {
           autoComplete="new-password"
           enterKeyHint="next"
           trailing={eye(show, setShow)}
-          hint={<>
-            {/* Audit 26 Nov · the password's strength, and its rules ticking themselves while typing ·
-                once all are met, one green line says so */}
-            <span className={`lmeter s-${lvl}`} aria-hidden="true"><i /><i /><i /><i /></span>
-            {pass && rules.every((r) => r.ok)
-              ? <span className="lrule ok"><Icon name={icons.check} size="sm" />كلمة المرور مناسبة · قوتها <b>{STRENGTH[lvl]}</b></span>
-              : <ul className="lrules">
-                  {rules.map((r) => (
-                    <li key={r.say} className={`lrule${r.ok ? ' ok' : ''}`}>
-                      {r.ok ? <Icon name={icons.check} size="sm" /> : <i className="lrule-dot" aria-hidden="true" />}{r.say}
-                    </li>
-                  ))}
-                </ul>}
-          </>}
+          hint={<PassRules pass={pass} user={email} />}
         />
         <AuthField
           id="ra-pass2"

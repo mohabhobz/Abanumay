@@ -1,13 +1,50 @@
 import { nf } from '@/lib/format'
-import { Money, Riyal } from '@/components/ui'
+import { Icon, Money, Riyal, Tag, icons } from '@/components/ui'
+import { EntityMark } from '@/components/ui/EntityMark'
 import type { EvidenceBlock as Block } from './types'
 
 /**
  * Evidence block under an assistant answer.
  * Each shape answers a different question, so there's no single block for every case.
  */
-export function EvidenceBlock({ block }: { block: Block }) {
+export function EvidenceBlock({ block, onPick }: { block: Block; onPick?: (prompt: string) => void }) {
   switch (block.kind) {
+    /* Audit 26 Nov · the likely projects or entities as cards to pick from · the whole card is the
+       button, and picking asks the same question about that one */
+    case 'pick':
+      return (
+        <div className={`pick rise pick-${block.what}`} role="list">
+          {block.items.map((it, i) => (
+            <button key={it.id} type="button" role="listitem" className="pick-c" style={{ animationDelay: `${i * 50}ms` }}
+              onClick={() => onPick?.(it.prompt)} aria-label={`اختر ${it.title}`}>
+              <span className="pick-h">
+                {block.what === 'entity'
+                  ? <EntityMark size="sm" />
+                  : <span className="pick-id num" dir="ltr">PRJ-{it.id}</span>}
+                {it.tag && <Tag tone={it.tag.tone}>{it.tag.t}</Tag>}
+              </span>
+              <b className="pick-t">{it.title}</b>
+              <span className="pick-s sub">{it.sub}</span>
+              {it.bar && (
+                <span className={`pick-bar t-${it.bar.tone}`}>
+                  <i style={{ inlineSize: `${Math.round(it.bar.v * 100)}%` }} />
+                  <small>{it.bar.label}</small>
+                </span>
+              )}
+              <span className="pick-f">
+                {it.figs.map((f) => (
+                  <span key={f.k}>
+                    <small className="sub">{f.k}</small>
+                    <b className="num">{f.v}{f.money && <Riyal />}</b>
+                  </span>
+                ))}
+                <span className="pick-go" aria-hidden="true"><Icon name={icons.chevron} size="sm" /></span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )
+
     case 'meter': {
       const pct = Math.round((block.limit / block.value) * 100)
       return (

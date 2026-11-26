@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { readClauses } from '@/data/shared/ai'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { FormField, FieldBox, Modal, ModalHead, Button, EditButton, type TabItem, Tabs, DockActions,
-  BackTo, CheckMark, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person,
+  BackTo, CheckMark, DateText, FieldSelect, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person,
   StepArc, Tag, type GateStep,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -33,6 +33,7 @@ import { RecordEntityCard, RecordProjectCard } from '@/features/shared/RecordPar
 import { RecordFiles } from '@/features/shared/RecordFiles'
 import type { LogEvent } from '@/data/mock/log'
 import { agreementOutcome } from '@/data/shared/outcome'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* A single agreement · every station of the flow on one screen (BPD-008).
 
@@ -96,27 +97,10 @@ function ladderFor(a: AgreementRow): GateStep[] {
 
 export default function AgreementPage() {
   const { id = '' } = useParams()
-  const navigate = useNavigate()
   useAgreements()
   useBudget()
   const a = agreementById(id)
-  if (!a) {
-    return (
-      <AppLayout assistantContext={assistFor.page('الاتفاقيات')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <BackTo label="الاتفاقيات" onClick={() => navigate(ROUTES.agreements)} />
-            <Glass>
-              <Empty
-                title="الاتفاقية غير موجودة."
-                actions={<Button variant="2" onClick={() => navigate(ROUTES.agreements)}>ارجع إلى الصندوق</Button>}
-              />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!a) return <NotFound module="agreements" id={id} />
   /* The editable state lives in a child keyed by the agreement's station, so it starts fresh
      whenever the agreement moves */
   return <AgreementView key={`${a.id}-${a.version}-${a.stage}-${agrHolder(a)}`} a={a} />

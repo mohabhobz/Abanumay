@@ -15,6 +15,7 @@ import { budgetTree, liveRows, type BudgetNode, type LiveRow } from '@/data/mock
 import { CYCLES } from '@/data/budgetPlan'
 import { FieldSpend, PlanCoverage, SpendGauge, YearSpend } from '@/features/budget/BudgetCharts'
 import { ImpactPanel } from './ImpactPanel'
+import { ModuleEmpty, NotFound } from '@/features/shared/EmptyStates'
 
 /**
  * One catalog report screen.
@@ -37,20 +38,7 @@ export default function LiveReport() {
   const { key = '' } = useParams<{ key: string }>()
   const spec = specByKey(key)
 
-  if (!spec) {
-    return (
-      <AppLayout assistantContext={assistFor.page('التقارير')}>
-        <div className="viewstack"><div className="screen col">
-          <Glass>
-            <Empty
-              title="هذه الشاشة غير موجودة في الكتالوج."
-              actions={<ButtonLink variant="2" to={ROUTES.reportTab('catalog')}>كتالوج التقارير</ButtonLink>}
-            />
-          </Glass>
-        </div></div>
-      </AppLayout>
-    )
-  }
+  if (!spec) return <NotFound module="reports" id={key} />
 
   return (
     <AppLayout assistantContext={assistFor.page(spec.title)}>
@@ -321,7 +309,7 @@ function Rows({ spec }: { spec: LiveSpec }) {
 
       <Glass className="tblcard">
         {shown.length === 0 ? (
-          <Empty title="لا توجد صفوف بهذه الفلاتر." />
+          <ModuleEmpty bare filtered module="reports" />
         ) : (
         <div className="tblwrap">
           <div className="tblock">

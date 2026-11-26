@@ -1,5 +1,5 @@
 import { Toaster } from '@/components/feedback/Toaster'
-import { Navigate, Outlet, Route, BrowserRouter, Routes } from 'react-router-dom'
+import { Navigate, Route, BrowserRouter, Routes } from 'react-router-dom'
 import LoginPage from '@/features/auth/LoginPage'
 import ProjectPage from '@/features/projects/ProjectPage'
 import HomePage from '@/features/home/HomePage'
@@ -79,6 +79,7 @@ import PortfolioPage from '@/features/projects/PortfolioPage'
 import SubProjectPage from '@/features/projects/SubProjectPage'
 import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
+import { RouteGate } from './RouteGate'
 import { PortalGate } from './PortalGate'
 
 /**
@@ -119,7 +120,8 @@ export default function App() {
         <Route
           element={
             <RequireAuth>
-              <Outlet />
+              {/* 26 Nov · audit #60 · each screen opens on its outline, then its content */}
+              <RouteGate />
             </RequireAuth>
           }
         >

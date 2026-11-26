@@ -1,7 +1,7 @@
 import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { FormField, FieldBox, Button, FieldMultiSelect, DateText, Empty, Glass, Head, Num, Pager, SearchBox, Select, Tabs, Tag } from '@/components/ui'
+import { FormField, FieldBox, Button, FieldMultiSelect, DateText, Glass, Head, Num, Pager, SearchBox, Select, Tabs, Tag } from '@/components/ui'
 import { DockSlotProvider, SaveBar, useDockSlot } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { useRole } from '@/hooks/useRole'
@@ -14,6 +14,7 @@ import {
 } from '@/data/shared/notify'
 import { Who } from './parts'
 import { useAllStores } from './useAllStores'
+import { ModuleEmpty } from '@/features/shared/EmptyStates'
 
 /* Notifications · cross «الإشعارات».
 
@@ -99,7 +100,7 @@ export default function NotifyHubPage() {
                 </div>
               </Glass>
               <Glass className="tblcard">
-                {rows.length === 0 ? <Empty title="لا رسائل بهذا التصفية." /> : (
+                {rows.length === 0 ? <ModuleEmpty bare filtered module="notify" /> : (
                   <div className="tblwrap">
                     <table className="tbl" aria-label="سجل الإرسال">
                       <thead>

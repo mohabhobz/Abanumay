@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { DateText, Empty, Glass, Mono, MultiSelect, Num, SearchBox, Segments, Tag } from '@/components/ui'
+import { DateText, Glass, Mono, MultiSelect, Num, SearchBox, Segments, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { Crumbs } from '@/components/shell'
 import { ROUTES } from '@/app/routes'
@@ -11,6 +11,7 @@ import { countOf, NOUN } from '@/lib/format'
 import { OUTCOME_SAY, outcomeMatches, outcomeOptions, regOutcome } from '@/data/shared/outcome'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { UPD_ROWS, UPD_STATE_SAY, useEntityFlow, type UpdState, type UpdateRequest } from '@/data/entities/store'
+import { isVoid, ModuleEmpty } from '@/features/shared/EmptyStates'
 
 /* Update requests inbox (2.3.upd · 2.4.1).
 
@@ -76,16 +77,18 @@ export default function UpdatesPage() {
   const rows = useMemo(() => inRes.filter((u) => !v.state || u.state === v.state), [inRes, v.state])
   const resBase = useMemo(() => scope.filter((u) => !v.state || u.state === v.state), [scope, v.state])
 
+  const voidAll = isVoid(rows.length)
   return (
     <AppLayout assistantContext={assistFor.page('طلبات تحديث بيانات الجهات')}>
       <div className="viewstack">
-        <div className="screen col">
+        <div className={`screen col${voidAll ? ' is-void' : ''}`}>
           <Crumbs items={[{ label: 'الجهات', to: ROUTES.entities }, { label: 'طلبات التحديث' }]} />
           <header>
             <div>
               <h1 className="ptitle">طلبات تحديث بيانات الجهات</h1>
             </div>
           </header>
+          {voidAll && <ModuleEmpty module="updates" />}
 
           <Segments
             active={v.state ?? ''}
@@ -112,7 +115,7 @@ export default function UpdatesPage() {
           </Glass>
 
           {rows.length === 0 ? (
-            <Glass><Empty title="لا توجد طلبات تحديث بهذه الفلاتر." /></Glass>
+            <ModuleEmpty module="updates" filtered />
           ) : (
             <Glass className="tblcard">
               <DataTable

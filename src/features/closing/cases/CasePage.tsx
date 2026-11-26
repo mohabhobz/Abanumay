@@ -5,7 +5,7 @@ import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Button, Tabs, BackTo, DateText, DockActions, Empty, Glass, Head, Icon, KV, Money, MoneyField, Mono, Person, Tag, icons } from '@/components/ui'
+import { Button, Tabs, BackTo, DateText, DockActions, Glass, Head, Icon, KV, Money, MoneyField, Mono, Person, Tag, icons } from '@/components/ui'
 import { UploadButton } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -23,6 +23,7 @@ import { readCase } from '@/data/recordReadings'
 import { cancelOpenRequests, usePayments } from '@/data/payments/store'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { caseOutcome } from '@/data/shared/outcome'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* A distress case · 10.9.
 
@@ -48,16 +49,7 @@ export default function CasePage() {
   const [actual, setActual] = useState('')
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
 
-  if (!c) {
-    return (
-      <AppLayout assistantContext={assistFor.page('حالة تعثّر')}>
-        <div className="viewstack"><div className="screen col">
-          <BackTo label="حالات التعثر" onClick={() => navigate(ROUTES.distresses)} />
-          <Glass><Empty title="لا توجد حالة بهذا الرقم." /></Glass>
-        </div></div>
-      </AppLayout>
-    )
-  }
+  if (!c) return <NotFound module="cases" id={id} />
 
   const actions = caseActions(c, role.key, asEntity)
   const phase = stopPhase(c.projectId)

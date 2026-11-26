@@ -296,7 +296,7 @@ export default function UpdateRequestPage() {
                     {saved && <p className="sub cnote" role="status">حُفظ الطلب مسودة.</p>}
                     <footer className="payq-f">
                       <span className="sub payq-when"><Num>{changes.length}</Num> حقول · <Num>{banks.length}</Num> حسابات · <Num>{docs.length}</Num> وثائق</span>
-                      <Button variant="2" disabled={nothing} onClick={() => { saveUpdate(payload(), false); setSaved(true) }}>احفظ مسودة</Button>
+                      <Button variant="2" disabled={nothing} onClick={() => { saveUpdate(payload(), false); setSaved(true) }}>احفظ كمسودة</Button>
                       <Button
                         variant="p"
                         disabled={nothing || gaps.length > 0}

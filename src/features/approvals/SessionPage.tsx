@@ -30,6 +30,7 @@ import {
 } from '@/data/approvals/store'
 import { FinKV } from '@/features/approvals/AmountCard'
 import { MoneyField } from '@/components/ui'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* One session of the executive committee or the board (6.2.2 – 6.2.9 · 7.2.2 – 7.2.11).
 
@@ -49,16 +50,7 @@ export default function SessionPage() {
   const s = id ? sessionById(id) : undefined
   const role = readRole()
   const me = meOf(role)
-  if (!s) {
-    return (
-      <AppLayout assistantContext={assistFor.page('جلسة')}>
-        <div className="viewstack"><div className="screen col">
-          <BackTo label="اللجنة التنفيذية" onClick={() => navigate(ROUTES.committee)} />
-          <Glass><Empty title="الجلسة غير موجودة." note="ربما يكون الرابط قديمًا." /></Glass>
-        </div></div>
-      </AppLayout>
-    )
-  }
+  if (!s) return <NotFound module="sessions" id={id} />
   const may = mayRecord(s.body, role) && s.state === 'planned'
   const add = awaitingSession(s.body).filter((p) => !s.items.some((i) => i.projectId === p.id))
   const decided = s.items.filter((i) => i.outcome).length

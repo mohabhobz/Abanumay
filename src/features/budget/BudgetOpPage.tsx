@@ -28,6 +28,7 @@ import {
 } from '@/data/budget/store'
 import { BUDGET_RULES, noReviewStep } from '@/data/budget/rules'
 import { NoteModal } from './doc/DocFlow'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* A budget operation request (1.3) · transfer between two lines of one budget, an increase, or a
    decrease · prepared, then the grants manager, finance and the executive director in turn.
@@ -115,16 +116,7 @@ export default function BudgetOpPage() {
   const myStep = step === 'manager' || step === 'finance' || step === 'exec' ? (mayAct(step, role) ? step : null) : null
   const execBlocked = myStep === 'exec' ? issues : []
 
-  if (id && !existing) {
-    return (
-      <AppLayout assistantContext={assistFor.page('طلب عملية ميزانية')}>
-        <div className="viewstack"><div className="screen col">
-          <BackTo label="طلبات العمليات" onClick={() => navigate(ROUTES.budgetOps)} />
-          <Glass><Empty title="الطلب غير موجود." /></Glass>
-        </div></div>
-      </AppLayout>
-    )
-  }
+  if (id && !existing) return <NotFound module="budgetOps" id={id} />
 
   /* v3 · 1.1.desc-4 · a new request is prepared by the authority holders settings name */
   if (!id && !mayAct('prepare', role)) {

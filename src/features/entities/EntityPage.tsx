@@ -2,7 +2,8 @@ import { accountSay, accountWhy } from '@/data/shared/decisions'
 import { activationTone } from '@/lib/tone'
 import { useEffect, useMemo, useRef } from 'react'
 import { expiryAhead } from '@/data/shared/ai'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { NotFound } from '@/features/shared/EmptyStates'
 import { EntityMark, Mono, Num, Tabs, Tag } from '@/components/ui'
 import { Crumbs } from '@/components/shell'
 import { PartnerCard } from '@/features/partners/parts'
@@ -64,7 +65,7 @@ export default function EntityPage() {
     viewArchived(id, meOf(readRole()))
   }, [archived, id])
 
-  if (!entity) return <Navigate to={ROUTES.entities} replace />
+  if (!entity) return <NotFound module="entities" id={id} />
 
   const active: EntityTabSlug =
     ENTITY_TABS.find((t) => t.slug === tab)?.slug ?? DEFAULT_ENTITY_TAB

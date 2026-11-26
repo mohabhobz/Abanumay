@@ -2,7 +2,7 @@ import { Related } from '@/components/related/Related'
 import { Fragment } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  Button, BackTo, DateText, Empty, Glass, Head, Icon, icons, Mono, Num, Riyal, Tag,
+  Button, DateText, Empty, Glass, Head, Icon, icons, Mono, Num, Riyal, Tag,
 } from '@/components/ui'
 import { Crumbs } from '@/components/shell'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -14,6 +14,7 @@ import { projectById } from '@/data/mock/projects'
 import { printArea } from '@/lib/export'
 import { basisOfRequest, usePayments } from '@/data/payments/store'
 import { extDocsOf, isExternalParty } from '@/data/partners/store'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* Disbursement order - step 16, and the spec's first output.
 
@@ -52,20 +53,7 @@ export default function OrderPage() {
   usePayments()
   const r = payRequestById(id)
 
-  if (!r) {
-    return (
-      <AppLayout assistantContext={assistFor.page('أمر الصرف')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
-            <Glass>
-              <Empty title="السجل غير موجود." />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!r) return <NotFound module="payments" id={id} />
 
   const ext = isExternalParty(r.entityId)
   /* The order is generated at step 16, i.e. after finance approval - before that, the request is

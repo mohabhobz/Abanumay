@@ -16,6 +16,8 @@ export interface AssistantController {
   send: (text: string) => void
   stop: () => void
   reset: () => void
+  /** Shows a saved conversation as it ended (every answer complete) */
+  load: (msgs: ChatMessage[]) => void
 }
 
 /**
@@ -78,6 +80,7 @@ export function useAssistant(): AssistantController {
   }, [])
 
   const reset = useCallback(() => setMsgs([]), [])
+  const load = useCallback((list: ChatMessage[]) => setMsgs(list.map((m) => (m.who === 'ai' ? { ...m, state: 'done', chars: (m.text ?? '').length, step: (m.think ?? []).length } : m))), [])
 
-  return { msgs, busy, send, stop, reset }
+  return { msgs, busy, send, stop, reset, load }
 }

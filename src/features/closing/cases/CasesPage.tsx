@@ -1,5 +1,6 @@
+import { ModuleEmpty } from '@/features/shared/EmptyStates'
 import { Link, useNavigate } from 'react-router-dom'
-import { Button, BackTo, DateText, Empty, Glass, Head, Money, MultiSelect, Num, Tag } from '@/components/ui'
+import {  BackTo, DateText, Glass, Head, Money, MultiSelect, Num, Tag } from '@/components/ui'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { caseOutcome, outcomeMatches, outcomeOptions } from '@/data/shared/outcome'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
@@ -70,8 +71,8 @@ export default function CasesPage() {
                 ))}
               </ul>
             ) : res.length || kinds.length
-              ? <Empty title="لا حالات بهذه النتيجة." actions={<Button type="button" variant="2" onClick={() => set({ res: undefined, kind: undefined })}>مسح الفلتر</Button>} />
-              : <Empty title="لا حالات تعثّر." />}
+              ? <ModuleEmpty bare filtered module="cases" onClear={() => set({ res: undefined, kind: undefined })} />
+              : <ModuleEmpty bare module="cases" />}
           </Glass>
         </div>
       </div>

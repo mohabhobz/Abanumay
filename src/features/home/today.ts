@@ -28,15 +28,15 @@ import { projectById } from '@/data/mock/projects'
 
 export type Lane = 'due' | 'returned' | 'waiting' | 'coming'
 export const LANE_SAY: Record<Lane, string> = {
-  due: 'مستحق اليوم',
+  due: 'عاجل',
   returned: 'أُعيد إليك',
   waiting: 'بانتظارك',
   coming: 'قادم',
 }
 export const LANE_NOTE: Record<Lane, string> = {
-  due: 'تجاوز مدته أو تنتهي مدته اليوم',
+  due: 'متأخر عن مدته أو تنتهي مدته اليوم',
   returned: 'رجع إليك للتعديل أو الاستكمال',
-  waiting: 'في محطتك وضمن مدته',
+  waiting: 'في محطتك ولم تنتهِ مدته بعد',
   coming: 'يصلك أو يحين موعده قريبًا',
 }
 

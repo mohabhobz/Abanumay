@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button,
-  Empty, Glass, GroupPicker, Icon, MultiSelect, SearchBox, Segments,
+  Glass, GroupPicker, Icon, MultiSelect, SearchBox, Segments,
   Toggle, ViewToggle, icons,
 } from '@/components/ui'
 import { countOf, NOUN, nounAfter } from '@/lib/format'
@@ -28,6 +28,7 @@ import type { Sheet } from '@/lib/export'
 import { PlanCard } from './PlanCard'
 import { COLS, GROUPS } from './columns'
 import { OUTCOME_PICK_SAY, planOutcome, outcomeMatches, outcomeOptions, type OutcomePick } from '@/data/shared/outcome'
+import { isVoid, ModuleEmpty } from '@/features/shared/EmptyStates'
 
 const KEYS = ['q', 'stage', 'chg', 'owner', 'wait', 'late', 'stuck', 'entity', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -162,10 +163,11 @@ export default function PlansPage() {
     })),
   )
 
+  const voidAll = isVoid(counts.total)
   return (
     <AppLayout assistantContext={assistFor.page('خطط المشاريع')}>
       <div className="viewstack">
-        <div className="screen col">
+        <div className={`screen col${voidAll ? ' is-void' : ''}`}>
           <header>
             <div>
               <h1 className="ptitle">خطط المشاريع</h1>
@@ -186,6 +188,7 @@ export default function PlansPage() {
                 doesn't add a button "for consistency" and break the actual rule. */}
             <PageActions settings={ROUTES.planSettings} />
           </header>
+          {voidAll && <ModuleEmpty module="plans" />}
 
           <QuickRead
             variant="bar"
@@ -348,12 +351,7 @@ export default function PlansPage() {
           </Glass>
 
           {sorted.length === 0 ? (
-            <Glass>
-              <Empty
-                title="لا توجد خطط بهذه الفلاتر."
-                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
-              />
-            </Glass>
+            <ModuleEmpty module="plans" filtered onClear={clear} />
           ) : view === 'table' ? (
             <>
               <Glass className="tblcard">

@@ -53,10 +53,51 @@
          Mono was removed: it was a fourth, off-brand font used for code. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- 26 Nov · audit #60 · the font no longer holds the first paint: it loads beside the page
+         and swaps in when it arrives, so the boot outline below shows at once -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet" /></noscript>
+
+    <!-- 26 Nov · audit #60 · the boot outline · drawn before any code arrives, so the first open
+         of any screen is never an empty page. The app replaces it when it mounts; it is the same
+         outline the screens show while they open (src/components/ui/Skeleton.tsx). Standalone
+         colors, since the stylesheet isn't loaded yet. -->
+    <style>
+      .bt{position:fixed;inset:0;display:flex;background:#F1F5F3;direction:rtl}
+      [data-theme=dark] .bt{background:#0A0C0C}
+      .bt-auth .bt-rail,.bt-auth .bt-main{display:none}
+      .bt-auth::after{content:'';margin:auto;width:min(420px,90vw);height:460px;border-radius:24px;background:rgba(255,255,255,.55)}
+      [data-theme=dark] .bt-auth::after{background:rgba(255,255,255,.04)}
+      .bt-rail{width:60px;flex:none;display:flex;flex-direction:column;align-items:center;gap:22px;padding-top:20px;border-inline-end:1px solid rgba(20,69,71,.08)}
+      .bt-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:24px;padding:36px clamp(28px,3vw,40px)}
+      .bt-row{display:flex;gap:16px;align-items:center}
+      .bt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+      .bt-card{height:120px;border-radius:16px;background:rgba(255,255,255,.55)}
+      [data-theme=dark] .bt-card{background:rgba(255,255,255,.04)}
+      .bt-big{height:280px}
+      .bt b{display:block;border-radius:999px;background:linear-gradient(90deg,rgba(20,69,71,.08),rgba(20,69,71,.15),rgba(20,69,71,.08));background-size:200% 100%;animation:btw 1.4s ease-in-out infinite}
+      [data-theme=dark] .bt b{background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.1),rgba(255,255,255,.05));background-size:200% 100%}
+      .bt-sp{flex:1}
+      @keyframes btw{from{background-position:100% 0}to{background-position:-100% 0}}
+      @media (max-width:860px){.bt-rail{display:none}.bt-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media (prefers-reduced-motion:reduce){.bt b{animation:none}}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="bt" role="status" aria-busy="true" aria-label="جارٍ تجهيز الصفحة">
+      <div class="bt-rail"><b style="width:30px;height:30px;border-radius:10px"></b><b style="width:36px;height:36px;border-radius:12px"></b><b style="width:22px;height:22px;border-radius:7px"></b><b style="width:22px;height:22px;border-radius:7px"></b><b style="width:22px;height:22px;border-radius:7px"></b><b style="width:22px;height:22px;border-radius:7px"></b><b style="width:22px;height:22px;border-radius:7px"></b></div>
+      <div class="bt-main">
+        <div class="bt-row"><b style="width:240px;height:28px"></b><span class="bt-sp"></span><b style="width:128px;height:40px;border-radius:12px"></b></div>
+        <b style="width:340px;max-width:70%;height:12px"></b>
+        <div class="bt-row"><b style="width:84px;height:14px"></b><b style="width:110px;height:14px"></b><b style="width:92px;height:14px"></b><b style="width:120px;height:14px"></b></div>
+        <div class="bt-grid"><div class="bt-card"></div><div class="bt-card"></div><div class="bt-card"></div><div class="bt-card"></div></div>
+        <div class="bt-card bt-big"></div>
+      </div>
+    </div></div>
+    <script>
+      /* The sign-in and the outsiders' screens have no rail · their outline is one card */
+      if (/^\/(login|forgot|set-password|advice|entities\/(register|portal|update))/.test(location.pathname)) document.querySelector('.bt').classList.add('bt-auth')
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -208,6 +208,9 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
         </Button>
       </div>
 
+      {/* Audit #63 · the items scroll on their own when the window is shorter than the list, so the
+          last module, the bell and the account always stay in reach (styles · «the rail's items») */}
+      <div className="railnav">
       {allowed.map((item) => {
         /* lit by its path, plus the paths it owns elsewhere, minus the ones another entry owns */
         const at = (p: string) => path === p || path.startsWith(p.endsWith('/') ? p : `${p}/`)
@@ -239,6 +242,7 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
           </NavLink>
         )
       })}
+      </div>
 
       {/* "Ask Abanumay" moved to the decision dock at the bottom of the screen — it's not a nav
           item, and being close to the point of decision is what gets it used. */}

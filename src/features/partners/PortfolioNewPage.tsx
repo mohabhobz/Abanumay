@@ -99,7 +99,7 @@ export default function PortfolioNewPage() {
               <Glass>
                 <KV rows={[{ k: 'القيمة', v: `${nf.format(Number(total) || 0)} ريال` }, { k: 'ينقص', v: missing.length ? missing.join('، ') : 'لا شيء' }]} />
                 <div className="apv-row mt-3">
-                  <Button type="button" variant="2" onClick={() => save(false)}>احفظ مسودة</Button>
+                  <Button type="button" variant="2" onClick={() => save(false)}>احفظ كمسودة</Button>
                   <Button type="button" variant="p" disabled={missing.length > 0} onClick={() => save(true)}>{asPartner ? 'أرسل الطلب' : 'أرسل للدراسة'}</Button>
                 </div>
                 <Said said={said} />

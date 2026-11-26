@@ -230,7 +230,7 @@ function RelocForm({ row, base, paid, onClose }: { row: ProjectRow; base?: Reloc
         </div>
         <div className="mf">
           <Button variant="p" disabled={issues.length > 0} title={issues[0]} onClick={() => { const w = saveRelocation(req, true); setSaid(w); if (!w.length) onClose() }}>أرسل للاعتماد النهائي</Button>
-          <Button variant="2" onClick={() => { const w = saveRelocation(req, false); setSaid(w); if (!w.length) onClose() }}>احفظ مسودة</Button>
+          <Button variant="2" onClick={() => { const w = saveRelocation(req, false); setSaid(w); if (!w.length) onClose() }}>احفظ كمسودة</Button>
           <Button variant="2" onClick={onClose}>إلغاء</Button>
         </div>
       </Modal>

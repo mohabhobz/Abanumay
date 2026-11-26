@@ -31,6 +31,7 @@ import type { Sheet } from '@/lib/export'
 import { RequestCard } from './RequestCard'
 import { COLS, GROUPS } from './columns'
 import { OUTCOME_PICK_SAY, outcomeMatches, outcomeOptions, payOutcome, type OutcomePick } from '@/data/shared/outcome'
+import { isVoid, ModuleEmpty } from '@/features/shared/EmptyStates'
 
 const KEYS = ['q', 'state', 'heat', 'owner', 'entity', 'bank', 'hold', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -255,10 +256,11 @@ export default function PaymentsPage() {
     })),
   )
 
+  const voidAll = isVoid(counts.total)
   return (
     <AppLayout assistantContext={assistFor.page('الصرف')}>
       <div className="viewstack">
-        <div className="screen col">
+        <div className={`screen col${voidAll ? ' is-void' : ''}`}>
           {/* Note: this is a list header, not a details header. It used to be `phead phead-g2` with
               the reading text in the second column - that's the entity and project detail-page
               header. The result: the reading text got squeezed to half width and truncated with an
@@ -287,6 +289,7 @@ export default function PaymentsPage() {
               create={{ label: role.key === 'supervisor' ? 'جدول الدفعات · إذن صرف' : 'متطلبات دفعة', to: ROUTES.paymentNew() }}
             />
           </header>
+          {voidAll && <ModuleEmpty module="payments" />}
 
           {/* === Quick read ===
               Its own row right after the title and before the toolbar - the same position exactly
@@ -468,12 +471,7 @@ export default function PaymentsPage() {
           </Glass>
 
           {sorted.length === 0 ? (
-            <Glass id={STAGE_ANCHORS.includes(hashId) ? hashId : undefined}>
-              <Empty
-                title="لا توجد طلبات بهذه الفلاتر."
-                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
-              />
-            </Glass>
+            <div id={STAGE_ANCHORS.includes(hashId) ? hashId : undefined}><ModuleEmpty module="payments" filtered onClear={clear} /></div>
           ) : view === 'table' ? (
             <>
               <Glass className="tblcard" id={STAGE_ANCHORS.includes(hashId) ? hashId : undefined}>

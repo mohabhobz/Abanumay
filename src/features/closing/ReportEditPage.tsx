@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ButtonLink, FormField, FieldBox, Button, BackTo, Empty, Glass, Head, Icon, Num, Tag, icons } from '@/components/ui'
+import { ButtonLink, FormField, FieldBox, Button, BackTo, Glass, Head, Icon, Num, Tag, icons } from '@/components/ui'
 import { DocList, DocReadNote, UploadButton, useDocReads, type DocRow } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
@@ -13,6 +13,7 @@ import { projectRows } from '@/data/mock/projects'
 import { addLink, attachDoc, saveReport, useClosing } from '@/data/closing/store'
 import { ReportFiles, TargetActual } from './report'
 import { REPORT_TERMS, type TvaKey } from './reportData'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* Final report editor - written by the entity.
 
@@ -54,27 +55,7 @@ export default function ReportEditPage() {
   const [contribution, setContribution] = useState(c?.report.contribution ?? '')
   const [template, setTemplate] = useState<'foundation' | 'own'>(c?.report.template ?? 'own')
 
-  if (!c) {
-    return (
-      <AppLayout assistantContext={assistFor.page('تقرير غير موجود')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <BackTo label="الإغلاق" onClick={() => navigate(ROUTES.closings)} />
-            <Glass>
-              <Empty
-                title="لا يوجد طلب إغلاق بهذا الرقم."
-                actions={
-                  <Button variant="2" onClick={() => navigate(ROUTES.closings)}>
-                    العودة إلى صندوق الإغلاق
-                  </Button>
-                }
-              />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!c) return <NotFound module="closings" id={id} />
 
   /* The entity writes while the report is with it · in review or after closing it reads (rule 21) */
   /* Re-audit 7 Oct · the report is the entity's to write, from its own account · staff read it (10.2.4) */

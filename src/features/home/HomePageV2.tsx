@@ -8,7 +8,7 @@ import { useRole } from '@/hooks/useRole'
 import { assistFor } from '@/data/mock/assistant'
 import { onToast, toast } from '@/data/feedback'
 import { rowGo } from '@/lib/rowGo'
-import { LANE_SAY, todayFor, type Lane, type TodayItem } from './today'
+import { LANE_NOTE, LANE_SAY, todayFor, type Lane, type TodayItem } from './today'
 import { setTrail } from './trail'
 import { useBoardRoom } from '@/hooks/useBoardRoom'
 
@@ -64,7 +64,7 @@ export default function HomePageV2() {
       toast(after ? `تم · التالي: ${after.title}` : 'تم · أنجزت كل ما ينتظرك', 'ok')
     }, 260)
   }
-  const col = (l: Lane) => day.byLane[l].filter((i) => (!queue || i.queueKey === queue) && !(next && key(i) === key(next)))
+  const col = (l: Lane) => day.byLane[l].filter((i) => (!queue || i.queueKey === queue))
   /* the busiest stages first · the rest one press away, so the row stays one line */
   const qs = [...day.queues].sort((a, b) => b.count - a.count || b.late - a.late)
   const todayIso = [...day.progress.days].reverse().find((d) => !d.future)?.day ?? ''
@@ -216,6 +216,7 @@ export default function HomePageV2() {
                     <b>{LANE_SAY[l]}</b>
                     <span className="num tday-n">{rows.length}</span>
                   </div>
+                  <p className="tday-col-note">{LANE_NOTE[l]}</p>
                   <ul className="tday-cards">
                     {(all ? rows : rows.slice(0, SHOW)).map((i) => <Card key={key(i)} i={i} go={go} />)}
                   </ul>

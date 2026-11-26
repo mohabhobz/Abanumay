@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { OTP_SAY, mmss, useTick } from './otp'
+import { OtpBoxes } from '@/features/auth/OtpBoxes'
 import { Button, Icon, icons, Mono, Num } from '@/components/ui'
 import {
   OTP_LEN, expiresIn, otp, resendIn, sendOtp, triesLeft, verifyOtp, type OtpPurpose,
@@ -38,35 +39,24 @@ export function OtpPanel({
   const wait = resendIn()
   const dead = !c || c.dead || left === 0
 
-  const check = () => {
-    const r = verifyOtp(code)
+  const check = (value = code) => {
+    const r = verifyOtp(value)
     if (r === 'ok') { setMsg(''); onVerified(); return }
     setMsg(r === 'wrong' ? `${OTP_SAY.wrong} تبقّى ${triesLeft()} ${triesLeft() === 1 ? 'محاولة' : 'محاولات'}.` : OTP_SAY[r])
-    setCode('')
+    /* the code typed stays · one wrong character is fixed, not the whole code retyped */
   }
 
   return (
     <div className="otp">
       <p className="sub cnote">
-        أُرسل رمز من <Num>{OTP_LEN}</Num> أرقام إلى{' '}
+        أُرسل رمز من <Num>{OTP_LEN}</Num> خانات إلى{' '}
         {c?.to.map((t, i) => <span key={t}>{i > 0 && ' و'}<Mono>{t}</Mono></span>)}
         {onEdit && <> · <Button plain type="button" className="lnk" onClick={onEdit}>تعديل</Button></>}
       </p>
       <div className="otp-row">
-        <label className="payamt otp-in">
-          <span className="lb">رمز التحقّق</span>
-          <input
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            value={code}
-            maxLength={OTP_LEN}
-            disabled={dead}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-            onKeyDown={(e) => { if (e.key === 'Enter' && code.length === OTP_LEN) check() }}
-            aria-label="رمز التحقّق"
-          />
-        </label>
-        <Button type="button" variant="p" disabled={dead || code.length !== OTP_LEN} onClick={check}>
+        {/* client 26 Nov · the same six boxes as the password reset · paste and autofill fill them all */}
+        <OtpBoxes value={code} onChange={setCode} onComplete={(v) => { if (!dead) check(v) }} disabled={dead} invalid={Boolean(msg)} />
+        <Button type="button" variant="p" disabled={dead || code.length !== OTP_LEN} onClick={() => check()}>
           تحقّق
         </Button>
         <Button

@@ -13,6 +13,7 @@ import {
 import { planGrantOf, projectWindow, requestChange, savePlanPhases, sendPlanFor, usePlans } from '@/data/plans/store'
 import { useRole } from '@/hooks/useRole'
 import type { PlanPhase } from '@/types/domain'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* Plan editor.
 
@@ -64,20 +65,7 @@ export default function PlanEditPage() {
     [p, phases, grant],
   )
 
-  if (!p) {
-    return (
-      <AppLayout assistantContext={assistFor.page('خطة غير موجودة')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <BackTo label="الخطط" onClick={() => navigate(ROUTES.plans)} />
-            <Glass>
-              <Empty title="لا توجد خطة بهذا الرقم." />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!p) return <NotFound module="plans" id={id} />
 
   const cost = phases.reduce((s, ph) => s + ph.cost, 0)
   /* #36 · the request's own fields · its type (a change only) and its justification */

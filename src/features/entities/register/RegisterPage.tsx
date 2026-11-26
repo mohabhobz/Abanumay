@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Button, BackTo, CopyId, Glass, Head, Icon, icons, Mono, Num, Person, Steps, Tag, DockWhy,
-  DateText,
+  DateText, Modal, ModalHead,
 } from '@/components/ui'
 import { DocFile } from '@/components/docs'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -115,6 +115,7 @@ export default function RegisterPage() {
      empty required fields on the field itself («هذا الحقل مطلوب»), with the system's one error
      message · a stage not visited yet stays quiet · a format problem shows as soon as it's typed */
   const [visited, setVisited] = useState<Set<string>>(() => new Set())
+  const [leaving, setLeaving] = useState(false)
   const prevTab = useRef(tab)
   useEffect(() => {
     if (prevTab.current !== tab) { const left = prevTab.current; setVisited((x) => new Set(x).add(left)); prevTab.current = tab }
@@ -346,7 +347,7 @@ export default function RegisterPage() {
               <DockWhy n={missing.length} />
             </>
       )}
-      {phase === 'otp' && <>أدخل الرمز المرسَل إلى الجوال · <Num>{OTP_LEN}</Num> أرقام</>}
+      {phase === 'otp' && <>أدخل الرمز المرسَل إلى الجوال · <Num>{OTP_LEN}</Num> خانات</>}
       {phase === 'sent' && <>رقم طلبك <b>{v.req ?? reqId}</b></>}
 
     </span>
@@ -373,7 +374,7 @@ export default function RegisterPage() {
               comes back to it from the account screen (2.2.5 · 2.4.12) */}
           {(inside || regAccount.email) && (
             <Button variant="2" onClick={saveDraft} title="يُحفظ على حساب الجهة ويُستكمل في أي وقت">
-              احفظ مسودة
+              احفظ كمسودة
             </Button>
           )}
 
@@ -465,7 +466,9 @@ export default function RegisterPage() {
                 <span className="sub">مؤسسة سليمان أبانمي الأهلية</span>
               </div>
               <span className="pc-sp" />
-              <Button variant="2" size="sm" onClick={() => navigate(ROUTES.login)}>
+              {/* Audit 26 Nov · leaving a request that holds anything asks first, and says the data is kept:
+                  it's saved as a draft on the entity's account and opens again from the sign-in screen */}
+              <Button variant="2" size="sm" onClick={() => (phase === 'form' && (Object.values(val).some((x) => x?.trim()) || banks.some((b) => b.iban || b.bankHolder) || docs.size) ? setLeaving(true) : navigate(ROUTES.login))}>
                 لديك حساب؟ سجّل الدخول
               </Button>
             </div>
@@ -556,8 +559,17 @@ export default function RegisterPage() {
                       <Head
                         title={s.label}
                         meta={
+                          /* Audit 26 Nov · a stage's tag says what it is: a value that's wrong is «خطأ» (red),
+                             one not given yet is «ناقص» · both when both */
                           shortBy[s.key].length
-                            ? <Tag tone="warn"><Num>{shortBy[s.key].length}</Num> ناقص</Tag>
+                            ? (() => {
+                                const bad = s.fields.filter((f) => errs[f.key]).length + dups.filter((d) => s.fields.some((f) => f.key === d.field)).length
+                                const miss = shortBy[s.key].length - bad
+                                return <span className="rowf gp-2">
+                                  {bad > 0 && <Tag tone="no"><Num>{bad}</Num> {bad === 1 ? 'خطأ' : 'أخطاء'}</Tag>}
+                                  {miss > 0 && <Tag tone="warn"><Num>{miss}</Num> ناقص</Tag>}
+                                </span>
+                              })()
                             : <Tag tone="ok">مكتمل</Tag>
                         }
                       />
@@ -895,6 +907,19 @@ export default function RegisterPage() {
     </AuthShell>
   )
 
+  const leaveModal = leaving && (
+    <Modal label="الخروج من طلب التسجيل" onClose={() => setLeaving(false)} escape>
+      <ModalHead icon={icons.logout} title="الخروج من طلب التسجيل" />
+      <div className="mb col">
+        <p className="cnote">تُحفظ بياناتك مسودةً على حساب الجهة{regAccount.email ? <> (<span dir="ltr">{regAccount.email}</span>)</> : null}، وتستكملها لاحقًا من حيث توقفت بتسجيل الدخول بالبريد نفسه.</p>
+      </div>
+      <div className="mf">
+        <Button variant="p" onClick={() => { saveDraft(); setLeaving(false); navigate(ROUTES.login) }}>احفظ واخرج</Button>
+        <Button variant="2" onClick={() => setLeaving(false)}>ابقَ في الطلب</Button>
+      </div>
+    </Modal>
+  )
+
   /* The background and shell use the same components - the only difference is the rail and
      assistant aren't present, since they have no meaning for someone without an account. */
   return inside ? (
@@ -905,6 +930,7 @@ export default function RegisterPage() {
       <div className="app">
         <div className="shell">{body}</div>
       </div>
+      {leaveModal}
     </>
   )
 }

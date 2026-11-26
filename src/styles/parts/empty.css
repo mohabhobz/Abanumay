@@ -1,0 +1,20 @@
+/* 26 Nov · audit #61 · the empty page and the «not found» page (features/shared/EmptyStates.tsx)
+   · one card · the module's rail icon on a soft tile, a title, what happened, the ways on
+   · a page with nothing in it at all says so instead of its tabs, filters, quick read and table:
+     `.screen.is-void` keeps the header, the path and the card, and hides the rest */
+.mempty,.glass.mempty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--sp-3);
+  padding:clamp(var(--sp-9),6vw,calc(var(--sp-12) + var(--sp-4))) var(--sp-7)}
+.glass.mempty{padding:clamp(var(--sp-9),6vw,calc(var(--sp-12) + var(--sp-4))) var(--sp-7)}
+.mempty-bare{padding:var(--sp-9) var(--sp-5)}
+.mempty-ic{display:grid;place-items:center;inline-size:72px;block-size:72px;border-radius:22px;margin-block-end:var(--sp-3);
+  color:var(--solid);background:linear-gradient(160deg,rgba(var(--solidC,20,69,71),.10),rgba(var(--solidC,20,69,71),.04));
+  box-shadow:inset 0 0 0 1px rgba(var(--solidC,20,69,71),.12)}
+.mempty-ic svg{inline-size:32px;block-size:32px}
+.mempty-t{margin:0;font-family:var(--fd);font-weight:700;font-size:var(--fs-5);line-height:var(--lh-head);color:var(--t1)}
+.mempty-t bdi{font-weight:600}
+.mempty-p{max-inline-size:52ch;font-size:var(--fs-3);line-height:var(--lh-long);color:var(--t2)}
+.mempty-p p{margin:0}
+.mempty-p ul{margin:var(--sp-2) 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--sp-1);color:var(--t3);font-size:var(--fs-2)}
+.mempty-p li::before{content:"·";margin-inline-end:var(--sp-2)}
+.mempty-a{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--sp-3);margin-block-start:var(--sp-5)}
+.screen.is-void>:not(header):not(.phead):not(.waypoint):not(nav):not(.crumbs):not(.mempty){display:none}

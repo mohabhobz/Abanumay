@@ -2,7 +2,7 @@ import { NextStep } from '@/components/assistant/NextStep'
 import { suggestNext } from '@/data/shared/agent'
 import { accountLine, accountSay } from '@/data/shared/decisions'
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import {  useParams } from 'react-router-dom'
 import { ButtonLink, FormField, Button, BankGrid, BankCard, StopsPopup, DateText, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, Person, Tabs, Tag, blockerCount, type Blocker } from '@/components/ui'
 import { DocList } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
@@ -27,6 +27,7 @@ import {
 } from '@/data/entities/store'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { regOutcome } from '@/data/shared/outcome'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* Reviewing an entity's update request (2.3.upd-9 – 2.3.upd-13).
 
@@ -44,7 +45,6 @@ const show = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? <DateText>{v}</Date
 export default function UpdateReviewPage() {
   useEntityFlow()
   const { id } = useParams()
-  const navigate = useNavigate()
   const u = id ? updById(id) : undefined
   const [ask, setAsk] = useState<'return' | 'reject' | null>(null)
   const { values: q, set: setQ } = useQueryParams(['tab'])
@@ -58,21 +58,7 @@ export default function UpdateReviewPage() {
   const me = meOf(role)
   const may = canDecide('update', role)
 
-  if (!u) {
-    return (
-      <AppLayout assistantContext={assistFor.page('طلبات تحديث بيانات الجهات')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <Crumbs items={[{ label: 'الجهات', to: ROUTES.entities }, { label: 'طلبات التحديث', to: ROUTES.entityUpdates }]} />
-            <Glass>
-              <Empty title="الطلب غير موجود."
-                actions={<Button variant="2" onClick={() => navigate(ROUTES.entityUpdates)}>العودة إلى طلبات التحديث</Button>} />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!u) return <NotFound module="updates" id={id} />
 
   const e = entityById(u.entityId)
   const waiting = u.changes.filter((c) => !c.direct)

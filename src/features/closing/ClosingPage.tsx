@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ButtonLink, Button,
-  Empty, Glass, Icon, icons, MultiSelect, GroupPicker, SearchBox, Segments, Select,
+  Glass, Icon, icons, MultiSelect, GroupPicker, SearchBox, Segments, Select,
   Toggle, ViewToggle,
 } from '@/components/ui'
 import { countOf, NOUN, nounAfter, REQUEST_NOUN } from '@/lib/format'
@@ -26,6 +26,7 @@ import type { Sheet } from '@/lib/export'
 import { CloseCard } from './CloseCard'
 import { COLS, GROUPS } from './columns'
 import { OUTCOME_PICK_SAY, closeOutcome, outcomeMatches, outcomeOptions, type OutcomePick } from '@/data/shared/outcome'
+import { isVoid, ModuleEmpty } from '@/features/shared/EmptyStates'
 
 const KEYS = ['q', 'stage', 'cycle', 'owner', 'late', 'short', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -164,10 +165,11 @@ export default function ClosingPage() {
     })),
   )
 
+  const voidAll = isVoid(counts.total)
   return (
     <AppLayout assistantContext={assistFor.page('إغلاق المشاريع')}>
       <div className="viewstack">
-        <div className="screen col">
+        <div className={`screen col${voidAll ? ' is-void' : ''}`}>
           <header>
             <div>
               <h1 className="ptitle">إغلاق المشاريع</h1>
@@ -182,6 +184,7 @@ export default function ClosingPage() {
             {/* 10.9 · stops and value changes live in their own list */}
             <ButtonLink variant="2" size="sm" to={ROUTES.distresses}>حالات التعثر</ButtonLink>
           </header>
+          {voidAll && <ModuleEmpty module="closings" />}
 
           <QuickRead
             variant="bar"
@@ -334,12 +337,7 @@ export default function ClosingPage() {
           </Glass>
 
           {sorted.length === 0 ? (
-            <Glass>
-              <Empty
-                title="لا توجد طلبات إغلاق بهذه الفلاتر."
-                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
-              />
-            </Glass>
+            <ModuleEmpty module="closings" filtered onClear={clear} />
           ) : view === 'table' ? (
             <>
               <Glass className="tblcard">

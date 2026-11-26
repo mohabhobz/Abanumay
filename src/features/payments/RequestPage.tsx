@@ -14,7 +14,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { readFiles, readNeeds } from '@/data/shared/ai'
 import { useDocReads } from '@/lib/docCache'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ButtonLink, Button, BankGrid, BankCard,
+import { ButtonLink, BankGrid, BankCard,
   BackTo, DateText, Empty, Glass, Head, Icon, icons, KV, Money, Mono, Num, Person, Riyal,
   StepArc, Tabs, Tag, type GateStep, type TabItem,
 } from '@/components/ui'
@@ -40,6 +40,7 @@ import { FundingTab } from '@/features/projects/tabs/FundingTab'
 import { planOfProject } from '@/data/mock/plans'
 import { projectById } from '@/data/mock/projects'
 import { payOutcome } from '@/data/shared/outcome'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* A single disbursement request - screens 3, 4 and 5 in the disbursement spec.
 
@@ -170,27 +171,7 @@ export default function RequestPage() {
   )
   const bankBad = useMemo(() => (r ? bankIssues(r, payBank) : []), [r, payBank])
 
-  if (!r) {
-    return (
-      <AppLayout assistantContext={assistFor.page('الصرف')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
-            <Glass>
-              <Empty
-                title="السجل غير موجود."
-                actions={
-                  <Button variant="2" onClick={() => navigate(ROUTES.payments)}>
-                    العودة إلى صندوق الصرف
-                  </Button>
-                }
-              />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!r) return <NotFound module="payments" id={id} />
 
   /* the arc's hollow center · who holds the request now, like the agreement's */
   const center: { k: string; t: string; rest: ReactNode[] } =

@@ -30,7 +30,7 @@ import { CLOSE_NOTES } from './closing/store'
 import { PARTNER_NOTES } from './partners/store'
 import { entityNotices } from './shared/notify'
 
-export type NoteKind = 'decide' | 'msg' | 'late' | 'info'
+export type NoteKind = 'decide' | 'msg' | 'late' | 'esc' | 'info'
 
 /**
  * Who or what the notification comes from · drives the mark at the start of the card.
@@ -60,7 +60,8 @@ export interface Note {
 export const NOTE_GROUPS: { kind: NoteKind; label: string }[] = [
   { kind: 'decide', label: 'يحتاج قرارك' },
   { kind: 'msg', label: 'رسائل وتعليقات' },
-  { kind: 'late', label: 'تجاوز حدّه الزمني' },
+  { kind: 'late', label: 'متأخر عندك' },
+  { kind: 'esc', label: 'تصعيدات من محطات أخرى' },
   { kind: 'info', label: 'للعلم' },
 ]
 

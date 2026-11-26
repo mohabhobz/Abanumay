@@ -262,3 +262,41 @@
 .tday-card-f{flex-wrap:wrap;min-inline-size:0}
 .tday-card-f>.tday-pill{min-inline-size:0;max-inline-size:100%;white-space:normal;line-height:var(--lh-text)}
 .tday-card-f>:last-child:not(.tday-pill){margin-inline-start:auto;white-space:nowrap}
+
+/* #53 · each lane says what it holds, under its name */
+.tday-col-note{margin:calc(var(--sp-1) * -1) 0 0;padding-inline-start:calc(var(--sp-3) + var(--sp-2));font-size:var(--fs-1);color:var(--t3);line-height:var(--lh-text)}
+
+/* 26 Nov · audit #55 · #56 · the bell
+   · the active filter carries the solid ring and the solid count, so which one is on reads at a glance
+   · each card says its kind with a small mark on the corner of its sender's mark
+   · an unread card carries a brand edge on its start side, beside the tint and the weight */
+.nfilter{flex-wrap:nowrap;gap:var(--sp-1)}
+.nfilter .fchip{gap:var(--sp-2);padding-inline:var(--sp-3);font-size:var(--fs-2)}
+.nfilter .fchip.on{box-shadow:inset 0 0 0 1.5px var(--solid)}
+.nmark-w{position:relative;flex:none;display:grid}
+.nkind{position:absolute;inset-block-end:calc(var(--sp-1) * -1);inset-inline-start:calc(var(--sp-1) * -1);
+  display:grid;place-items:center;inline-size:22px;block-size:22px;border-radius:50%;
+  background:var(--pop);box-shadow:0 0 0 2px var(--note-read);color:var(--t2)}
+.ncard.unread .nkind{box-shadow:0 0 0 2px var(--note-unread)}
+.nkind svg{inline-size:14px;block-size:14px}
+.nmark-k{border-radius:var(--ric);background:var(--pop);box-shadow:inset 0 0 0 1px var(--edge-2);color:var(--t2)}
+.nmark-k.k-late,.nmark-k.k-esc{color:var(--no-ink);background:color-mix(in srgb,var(--no-ink) 8%,var(--pop))}
+.nmark-k.k-decide{color:var(--solid)}
+.nkind.k-late,.nkind.k-esc{color:var(--no-ink)}
+.nkind.k-decide{color:var(--solid)}
+.ncard{position:relative}
+.ncard.unread::before{content:"";position:absolute;inset-block:var(--sp-3);inset-inline-start:0;inline-size:3px;border-radius:2px;background:var(--solid)}
+
+/* 26 Nov · audit #62 · dark mode · the week's empty days and the progress card's empty leaves read
+   at ~1.3:1 on the dark card · the empty marks take a visible edge and the day names the secondary
+   ink, so an empty week still reads as seven days and five leaves */
+:root[data-theme="dark"] .tday-week .wk-0{background:rgba(255,255,255,.26)}
+:root[data-theme="dark"] .tday-week>.fut i{background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+:root[data-theme="dark"] .tday-week small{color:var(--t2)}
+:root[data-theme="dark"] .tday-week>.fut small{opacity:1;color:var(--t3)}
+:root[data-theme="dark"] .tday-week>.on small{color:var(--ch-2);font-weight:700}
+:root[data-theme="dark"] .tday-leaves>span{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);color:rgba(255,255,255,.42)}
+:root[data-theme="dark"] .tday-leaves>span.half{background:rgba(47,199,182,.14);color:var(--ch-2)}
+:root[data-theme="dark"] .tday-leaves>span.on{background:var(--ch-1);color:var(--on-ch-1);box-shadow:none}
+:root[data-theme="dark"] .tday-bar{background:rgba(255,255,255,.14)}
+:root[data-theme="dark"] .tday-empty{color:var(--t2)}

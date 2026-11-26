@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { ButtonLink, BackTo, Empty, Glass, icons, Mono, Money, Num, Person, Select } from '@/components/ui'
+import { BackTo, Glass, icons, Mono, Money, Num, Person, Select } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { ROUTES } from '@/app/routes'
@@ -17,6 +17,7 @@ import { days } from '@/lib/tone'
 import { type Sheet } from '@/lib/export'
 import { ExportMenu } from '@/components/export'
 import { ImpactPanel } from './ImpactPanel'
+import { ModuleEmpty, NotFound } from '@/features/shared/EmptyStates'
 
 /**
  * Full report.
@@ -50,22 +51,7 @@ export default function ReportView() {
   const card = boardCards(period).find((c) => c.key === key)
   const table = useMemo(() => buildTable(key, period), [key, period])
 
-  if (!card || !table) {
-    return (
-      <AppLayout assistantContext={assistFor.page('التقارير')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <Glass>
-              <Empty
-                title="التقرير غير موجود."
-                actions={<ButtonLink variant="2" to={ROUTES.reportTab('board')}>العودة إلى لوحة التقارير</ButtonLink>}
-              />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!card || !table) return <NotFound module="reports" id={key} />
 
   const sheet: Sheet = {
     file: `abanumay-report-${key}-${period}`,
@@ -125,7 +111,7 @@ export default function ReportView() {
 
           <Glass className="tblcard">
             {table.rows.length === 0 ? (
-              <Empty title="لا توجد صفوف في هذه الفترة." />
+              <ModuleEmpty bare module="reports" title="لا بيانات في هذه الفترة" note="جرّب فترة أخرى من منتقي الفترة أعلى الصفحة." />
             ) : (
               <div className="tblwrap">
                 <div className="tblock">

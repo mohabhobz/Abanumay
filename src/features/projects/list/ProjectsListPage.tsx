@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { reportable } from '@/data/shared/testData'
 import { useNavigate } from 'react-router-dom'
 import {
-  FieldBox, Button, Empty, Glass, Icon, icons, Money, MultiSelect, GroupPicker, Pager, PAGE_SIZES, Person, SearchBox,
+  FieldBox, Button, Glass, Icon, icons, Money, MultiSelect, GroupPicker, Pager, PAGE_SIZES, Person, SearchBox,
   Segments, Select, Toggle, ViewToggle,
 } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
@@ -40,6 +40,7 @@ import { BulkBar, PageActions } from '@/components/shell'
 import { readProjects } from '@/data/readings'
 import { ProjectCard } from './ProjectCard'
 import { RECO_LABELS } from '@/data/intake/alignScore'
+import { isVoid, ModuleEmpty } from '@/features/shared/EmptyStates'
 
 
 /* These keys are the URL contract: every filter on the screen has a key here, and
@@ -526,10 +527,11 @@ export default function ProjectsListPage() {
     ] as [keyof Params, string][]
   ).filter(([k]) => v[k] === '1')
 
+  const voidAll = isVoid(total)
   return (
     <AppLayout assistantContext={assistFor.projects()}>
       <div className={`viewstack${selected.size > 0 ? ' hasdock' : ''}`}>
-        <div className="screen col">
+        <div className={`screen col${voidAll ? ' is-void' : ''}`}>
           <header>
             <div>
               <h1 className="ptitle">المشاريع</h1>
@@ -553,6 +555,7 @@ export default function ProjectsListPage() {
               create={{ label: 'مشروع جديد', to: ROUTES.projectNew }}
             />
           </header>
+          {voidAll && <ModuleEmpty module="projects" />}
 
           {/* Quick read sits right after the title, not after the filters: it's a summary
               of the page, and a summary belongs before the tools, not wedged between them
@@ -759,12 +762,7 @@ export default function ProjectsListPage() {
 
           {/* Results. */}
           {result.total === 0 ? (
-            <Glass>
-              <Empty
-                title="لا توجد مشاريع بهذه الفلاتر."
-                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
-              />
-            </Glass>
+            <ModuleEmpty module="projects" filtered onClear={clear} />
           ) : view === 'cards' ? (
             <div className="plist">
               {result.rows.map((r) => (

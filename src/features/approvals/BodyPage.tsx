@@ -1,7 +1,7 @@
 import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FormField, FieldBox, Button, FieldMultiSelect, DateField, DateText, Empty, Glass, Head, Icon, KV, Money, Num, Person, Tabs, Tag, icons } from '@/components/ui'
+import { FormField, FieldBox, Button, FieldMultiSelect, DateField, DateText, Glass, Head, Icon, KV, Money, Num, Person, Tabs, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ExportMenu } from '@/components/export'
 import { type Sheet } from '@/lib/export'
@@ -21,6 +21,7 @@ import { liveBudgets } from '@/data/budget/store'
 import { closeRows } from '@/data/mock/closing'
 import { paidToDate, useClosing } from '@/data/closing/store'
 import { moneyOf, rootOf } from '@/data/mock/budgetTree'
+import { ModuleEmpty } from '@/features/shared/EmptyStates'
 
 /* The executive committee's and the board's desk (BPD-006 · BPD-007) · what's referred to them and
    waiting for a session, their sessions (planned, then closed and locked), and for the board the
@@ -75,7 +76,7 @@ export default function BodyPage({ body }: { body: Session['body'] }) {
             <>
               <Glass className="tblcard">
                 <Head title="المشاريع المحالة" meta={<span className="sub"><Num>{waiting.length}</Num> مشروع</span>} />
-                {waiting.length === 0 ? <Empty title="لا مشاريع محالة الآن." /> : (
+                {waiting.length === 0 ? <ModuleEmpty bare module="approvals" /> : (
                   <div className="tblwrap">
                     <table className="tbl">
                       <thead><tr><th>المشروع</th><th>الجهة</th><th className="n">المبلغ</th><th>الحد</th><th>الجلسة</th></tr></thead>

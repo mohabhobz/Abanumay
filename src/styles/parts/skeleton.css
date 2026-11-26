@@ -1,0 +1,39 @@
+/* 26 Nov · audit #60 · the loading outline · one language for every screen (components/ui/Skeleton.tsx)
+   · bars in the edge ink at low strength, with a slow light passing over them
+   · the outline fades in after a short wait, so a page ready at once never flashes it
+   · reduced motion · no sweep, the bars stand still */
+.sk{display:block;flex:none;max-inline-size:100%;border-radius:var(--rp);
+  background:linear-gradient(90deg,rgba(var(--edgeC),.08) 0%,rgba(var(--edgeC),.15) 50%,rgba(var(--edgeC),.08) 100%);
+  background-size:200% 100%;animation:skwave 1.4s ease-in-out infinite}
+.sk-box{border-radius:var(--r1)}
+.sk-pill{border-radius:var(--rp)}
+.sk-dot{border-radius:50%}
+@keyframes skwave{from{background-position:100% 0}to{background-position:-100% 0}}
+@keyframes skin{from{opacity:0}to{opacity:1}}
+.sk-page{display:flex;flex-direction:column;gap:var(--sp-6);opacity:0;animation:skin var(--mo-2,.2s) ease-out 80ms forwards}
+.sk-lines{display:flex;flex-direction:column;gap:var(--sp-3);min-inline-size:0}
+.sk-head{display:flex;justify-content:space-between;align-items:center;gap:var(--sp-5)}
+.sk-tabs{display:flex;gap:var(--sp-6);padding-block-end:var(--sp-3);border-block-end:1px solid rgba(var(--edgeC),.12);overflow:hidden}
+.sk-tools{display:flex;gap:var(--sp-3);flex-wrap:wrap}
+.sk-tools .sk-end{margin-inline-start:auto}
+.glass.sk-card{display:flex;flex-direction:column;gap:var(--sp-5);padding:var(--sp-6)}
+.glass.sk-table{display:flex;flex-direction:column;padding:0}
+.sk-row{display:grid;grid-template-columns:2fr 1fr 1.4fr 1fr 1fr;gap:var(--sp-5);align-items:center;padding:var(--sp-5) var(--sp-6);border-block-start:1px solid rgba(var(--edgeC),.08)}
+.sk-row-h{border-block-start:0}
+.sk-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+.sk-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
+.sk-grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+.sk-g2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:var(--gap);align-items:start}
+.sk-col{display:flex;flex-direction:column;gap:var(--gap)}
+.sk-chat{display:flex;flex-direction:column;align-items:center;gap:var(--sp-4);margin:auto;inline-size:min(720px,100%);padding-block:var(--sp-9)}
+.sk-chat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-3);inline-size:100%;margin-block:var(--sp-5)}
+@media (max-width:860px){
+  .sk-kpis,.sk-grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sk-grid2,.sk-g2,.sk-chat-grid{grid-template-columns:minmax(0,1fr)}
+  .sk-row{grid-template-columns:2fr 1fr 1fr}
+  .sk-row>:nth-child(n+4){display:none}
+  .sk-head>.sk-box{display:none}
+}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}.sk-page{animation:none;opacity:1}}
+:root[data-motion=reduce] .sk{animation:none}
+:root[data-motion=reduce] .sk-page{animation:none;opacity:1}

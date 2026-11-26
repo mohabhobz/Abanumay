@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { regTrends } from '@/data/shared/ai'
 import { useNavigate } from 'react-router-dom'
 import { ButtonLink, Button, StatRow,
-  DateField, DateText, Empty, Glass, Icon, icons, GroupPicker, MultiSelect, Num, SearchBox, Segments, Stat,
+  DateField, DateText, Glass, Icon, icons, GroupPicker, MultiSelect, Num, SearchBox, Segments, Stat,
   Toggle, ViewToggle,
 } from '@/components/ui'
 import { countOf, NOUN, nounAfter, pct, REQUEST_NOUN } from '@/lib/format'
@@ -29,6 +29,7 @@ import { RegCard } from './RegCard'
 import { COLS, GROUPS } from './columns'
 import { OUTCOME_PICK_SAY, outcomeMatches, outcomeOptions, regOutcome, type OutcomePick } from '@/data/shared/outcome'
 import { useEntityFlow } from '@/data/entities/store'
+import { isVoid, ModuleEmpty } from '@/features/shared/EmptyStates'
 
 const KEYS = ['q', 'state', 'type', 'region', 'city', 'lic', 'from', 'to', 'short', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -166,10 +167,11 @@ export default function RequestsPage() {
     })),
   )
 
+  const voidAll = isVoid(counts.total)
   return (
     <AppLayout assistantContext={assistFor.page('طلبات تسجيل الجهات')}>
       <div className="viewstack">
-        <div className="screen col">
+        <div className={`screen col${voidAll ? ' is-void' : ''}`}>
           {/* Note: this page is a child of "Entities" (opened from the "Registration requests"
               button there) - it used to have no breadcrumb, so users had no way back except the
               rail. Same `Crumbs` as the entity and review pages. */}
@@ -193,6 +195,7 @@ export default function RequestsPage() {
               {ENTITY_CREATE_LABEL}
             </ButtonLink>
           </header>
+          {voidAll && <ModuleEmpty module="requests" />}
 
           <QuickRead
             variant="bar"
@@ -397,12 +400,7 @@ export default function RequestsPage() {
           </Glass>
 
           {sorted.length === 0 ? (
-            <Glass>
-              <Empty
-                title="لا توجد طلبات بهذه الفلاتر."
-                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
-              />
-            </Glass>
+            <ModuleEmpty module="requests" filtered onClear={clear} />
           ) : view === 'table' ? (
             <>
               <Glass className="tblcard">

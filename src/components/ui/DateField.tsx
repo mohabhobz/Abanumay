@@ -81,7 +81,9 @@ export function DateField({ value, onChange, label, disabled, min, max, end }: D
     const days = new Date(at.y, at.m + 1, 0).getDate()
     const cells: (number | null)[] = Array(lead).fill(null)
     for (let d = 1; d <= days; d += 1) cells.push(d)
-    while (cells.length % 7 !== 0) cells.push(null)
+    /* Audit 26 Nov · always six weeks · a month spanning four, five or six rows made the box grow
+       and shrink from its top while paging with the arrows, moving the arrows under the pointer */
+    while (cells.length < 42) cells.push(null)
     return cells
   }, [at])
 

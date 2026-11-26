@@ -30,6 +30,7 @@ import { NodeModal } from './doc/NodeModal'
 import { LineActModal } from './doc/LineActModal'
 import { NoteModal } from './doc/DocFlow'
 import { DocRequests, LedgerCard, SourceLedgerCard } from './doc/DocLedger'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* Budget - create, edit, review and run, one screen.
 
@@ -182,23 +183,7 @@ export default function BudgetDocPage() {
     if (!id) navigate(ROUTES.budgetDoc(theId), { replace: true })
   }
 
-  if (missing) {
-    return (
-      <AppLayout assistantContext={assistFor.page('الميزانية')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <BackTo label="الميزانية" onClick={() => navigate(ROUTES.budget)} />
-            <Glass>
-              <Empty
-                title="الميزانية غير موجودة."
-                actions={<Button variant="2" onClick={() => navigate(ROUTES.budget)}>ارجع إلى الميزانية</Button>}
-              />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (missing) return <NotFound module="budget" id={id} />
 
   /* v3 · 1.1.desc-4 · a new budget is prepared by the authority holders settings name · anyone else
      is told who prepares, not handed a form they can't send */

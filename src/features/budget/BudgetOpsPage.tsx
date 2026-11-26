@@ -1,7 +1,8 @@
+import { ModuleEmpty } from '@/features/shared/EmptyStates'
 import { rowGo } from '@/lib/rowGo'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ButtonLink, BackTo, DateText, Empty, Glass, Head, Icon, Mono, Money, MultiSelect, Num, Tag, icons } from '@/components/ui'
+import { ButtonLink, BackTo, DateText, Glass, Head, Icon, Mono, Money, MultiSelect, Num, Tag, icons } from '@/components/ui'
 import { readList, useQueryParams, writeList } from '@/hooks/useQueryParams'
 import { budgetReqOutcome, outcomeMatches, outcomeOptions } from '@/data/shared/outcome'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
@@ -88,7 +89,7 @@ export default function BudgetOpsPage() {
           <Glass className="tblcard">
             <Head title="الطلبات" meta={<span className="sub"><Num>{rows.length}</Num> طلب</span>} />
             {rows.length === 0 ? (
-              <Empty title="لا طلبات هنا." />
+              <ModuleEmpty bare module="budgetOps" title="لا طلبات في هذا التبويب" />
             ) : (
               <div className="tblwrap">
                 <table className="tbl">

@@ -18,6 +18,7 @@ import {
 import { inForceOf } from '@/data/agreements/store'
 import { AssistantAside } from '@/features/shared/AssistantAside'
 import type { PayDoc } from '@/types/domain'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 const KEYS = ['project', 'pay', 'as'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -151,27 +152,7 @@ export default function RequestForm() {
     )
   }
 
-  if (missingId) {
-    return (
-      <AppLayout assistantContext={assistFor.page('الصرف')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <BackTo label="الصرف" onClick={() => navigate(ROUTES.payments)} />
-            <Glass>
-              <Empty
-                title="السجل غير موجود."
-                actions={
-                  <Button variant="2" onClick={() => navigate(ROUTES.payments)}>
-                    العودة إلى صندوق الصرف
-                  </Button>
-                }
-              />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (missingId) return <NotFound module="payments" id={id} />
 
   return (
     <AppLayout assistantContext={assistFor.page(title, project?.name ?? '')}>

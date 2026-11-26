@@ -40,6 +40,7 @@ import { LogTab } from '@/features/projects/tabs'
 import type { LogEvent } from '@/data/mock/log'
 import { entityById } from '@/data/mock/entities'
 import { planOutcome, planChangeOutcome } from '@/data/shared/outcome'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* Names inside the fan's sectors · who holds each step, like the project's roles */
 const STEP_LABEL: Record<string, string> = {
@@ -115,27 +116,7 @@ export default function PlanPage() {
     [p, tick],
   )
 
-  if (!p) {
-    return (
-      <AppLayout assistantContext={assistFor.page('خطة غير موجودة')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <BackTo label="الخطط" onClick={() => navigate(ROUTES.plans)} />
-            <Glass>
-              <Empty
-                title="لا توجد خطة بهذا الرقم."
-                actions={
-                  <Button variant="2" onClick={() => navigate(ROUTES.plans)}>
-                    العودة إلى صندوق الخطط
-                  </Button>
-                }
-              />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!p) return <NotFound module="plans" id={id} />
 
   const pr = projectById(p.projectId)
   /* client 18 Oct (#32) · a portfolio's plan · its value and its page are the portfolio's */

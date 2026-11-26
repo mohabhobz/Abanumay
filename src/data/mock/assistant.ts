@@ -1,6 +1,9 @@
 import type { IconName } from '@/components/ui'
 import type { AssistantAnswer, AssistantContext } from '@/components/assistant/types'
 import { units } from '@/lib/format'
+import type { PickItem } from '@/components/assistant/types'
+import { projectRows } from './projects'
+import { entityRows } from './entities'
 
 export interface AssistantRole {
   key: string
@@ -795,9 +798,69 @@ const fallback: AssistantAnswer = {
   follow: ['لخّص لي مشروع 20940', 'ما رصيد بند العلم الشرعي؟', 'ما المتأخر في اليوم؟'],
 }
 
+/* Audit 26 Nov · a question about «the project» or «the entity» that names neither is answered with
+   the likely ones as cards (recognition, not recall) · picking one asks the same question about it */
+const nf0 = new Intl.NumberFormat('en-US')
+const dayLeft = (h: number) => Math.round(h / 24)
+const projectPick = (question: string, ask: (id: string) => string): AssistantAnswer => {
+  const late = /تأخر|متأخر|التأخير/.test(question)
+  const rows = projectRows.filter((r) => !r.archived && !['مكتمل', 'مغلق بوفر', 'مرفوض', 'ملغى', 'مسودة'].includes(r.statusGroup))
+    .sort((a, b) => late ? (b.hoursInStage / b.stageLimit) - (a.hoursInStage / a.stageLimit) : b.amountRequested - a.amountRequested)
+    .slice(0, 6)
+  const items: PickItem[] = rows.map((r) => {
+    const ratio = r.stageLimit ? r.hoursInStage / r.stageLimit : 0
+    const over = r.hoursInStage - r.stageLimit
+    return {
+      id: r.id, title: r.name, sub: `${r.entityName} · ${r.city}`,
+      tag: { t: r.stage, tone: '' },
+      figs: [
+        { k: 'المطلوب', v: nf0.format(r.amountRequested), money: true },
+        { k: 'الوزن', v: String(r.weight) },
+      ],
+      bar: { v: over > 0 ? 1 : Math.min(1, ratio), label: over > 0 ? `متأخر ${dayLeft(over)} يومًا عن مدته` : `يتبقى ${dayLeft(-over)} يومًا على مدته`, tone: over > 0 ? 'no' : ratio > .75 ? 'warn' : 'ok' },
+      prompt: ask(r.id),
+    }
+  })
+  return {
+    think: ['أحدّد ما يحتاجه السؤال', late ? 'أرتّب المشاريع المفتوحة بالأطول تأخرًا' : 'أرتّب المشاريع المفتوحة بالأكبر مبلغًا'],
+    text: `أي مشروع تقصد؟ اختر من ${late ? 'أكثر المشاريع تأخرًا' : 'أبرز المشاريع المفتوحة'} أدناه، أو اكتب رقمه.`,
+    block: { kind: 'pick', what: 'project', items },
+    sources: ['قائمة المشاريع'],
+    advisory: false,
+  }
+}
+const entityPick = (ask: (name: string) => string): AssistantAnswer => {
+  const rows = [...entityRows].filter((e) => !e.archived).sort((a, b) => (b.projectsRunning + b.projectsApproved) - (a.projectsRunning + a.projectsApproved)).slice(0, 6)
+  const items: PickItem[] = rows.map((e) => ({
+    id: e.id, title: e.name, sub: `${e.type} · ${e.city}`,
+    tag: { t: e.governance || 'غير مقيَّمة', tone: '' },
+    figs: [
+      { k: 'المشاريع الجارية', v: String(e.projectsRunning) },
+      { k: 'المعتمدة', v: String(e.projectsApproved) },
+    ],
+    prompt: ask(e.name),
+  }))
+  return {
+    think: ['أحدّد ما يحتاجه السؤال', 'أرتّب الجهات بعدد مشاريعها'],
+    text: 'أي جهة تقصد؟ اختر من الجهات الأنشط أدناه، أو اكتب اسمها.',
+    block: { kind: 'pick', what: 'entity', items },
+    sources: ['قائمة الجهات'],
+    advisory: false,
+  }
+}
+const needsProject = (q: string) => /(^|\s)(ال)?مشروع(ال)?(\s|؟|$)|هذا المشروع/.test(q) && !/\d{4,}/.test(q)
+const needsEntity = (q: string) => /(^|\s)(ال)?جهة(\s|؟|$)|هذه الجهة/.test(q) && !/جمعية|مؤسسة|منصة/.test(q)
+
 /** Returns the closest prepared answer to the question, or an explicit "I don't know" response */
 export function respond(text: string): AssistantAnswer {
   const question = String(text ?? '')
+  if (needsProject(question)) {
+    if (/تأخر|متأخر|التأخير/.test(question)) return projectPick(question, (id) => `لماذا تأخر مشروع ${id}؟`)
+    if (/الناقص|نواقص|استكمال|مرفقات/.test(question)) return projectPick(question, (id) => `ما الناقص في مرفقات مشروع ${id}؟`)
+    if (/المصروف|الصرف|المخطط/.test(question)) return projectPick(question, (id) => `لماذا المصروف أقل من المخطط في مشروع ${id}؟`)
+    return projectPick(question, (id) => `لخّص لي مشروع ${id}`)
+  }
+  if (needsEntity(question)) return entityPick((n) => `سجل الجهة ${n}`)
   const hit = answers.find((a) => a.match.some((m) => question.includes(m)))
   if (!hit) return fallback
   const { match: _match, ...answer } = hit

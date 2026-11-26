@@ -35,6 +35,12 @@ export const formatIssue = (key: string, kind: string, value: string): string =>
   if (kind === 'email' && !isEmail(v)) return 'بريد إلكتروني صحيح، مثل name@org.sa.'
   if ((kind === 'url' || key === 'website') && !isUrl(v)) return 'عنوان موقع صحيح، مثل www.org.sa.'
   if ((kind === 'digits' || key === 'licenseNo') && !isLicense(v)) return 'أرقام فقط · من 5 إلى 12 رقمًا.'
+  /* Audit 26 Nov · an end date already past says what it means for the request and the two ways out
+     (a wrong date, or a renewal) · not a bare «enter a date that hasn't passed» */
+  if (kind === 'date' && v < todayIso()) {
+    if (key === 'boardEndsAt') return 'لا يمكن التسجيل بمجلس منتهي التكليف · صحّح التاريخ إن كان خطأً، أو جدّد التكليف أولًا.'
+    if (key === 'licenseEndsAt') return 'لا يمكن التسجيل بترخيص منتهٍ · صحّح التاريخ إن كان خطأً، أو جدّد الترخيص أولًا.'
+  }
   return ''
 }
 
@@ -157,11 +163,33 @@ export const expiredDocs = (values: Record<string, string>, uploaded: Iterable<s
 
 /* ── Passwords (2.3.pw-8) ── */
 
+/* Audit 26 Nov · a password made of one character repeated, a straight run (1234, abcd, 9876), very
+   few distinct characters, or a well-known one, meets the length and the letter-and-digit rules on
+   paper and is still guessed first · it's refused everywhere a password is set (an entity's account,
+   the reset, a staff member's own) */
+const COMMON = ['password', 'passw0rd', 'qwerty', 'abanumay', 'admin', 'welcome', 'letmein', 'abc123', '123456', '111111']
+export const PASS_PATTERN_RULE = 'بلا تكرار أو تسلسل (مثل 1111 أو 1234)'
+export const weakPattern = (pass: string): boolean => {
+  if (!pass) return false
+  const p = pass.toLowerCase()
+  if (new Set(p).size < Math.min(5, Math.max(1, p.length - 2))) return true
+  if (/(.)\1{3,}/.test(p)) return true
+  let up = 1, down = 1
+  for (let i = 1; i < p.length; i++) {
+    const d = p.charCodeAt(i) - p.charCodeAt(i - 1)
+    up = d === 1 ? up + 1 : 1
+    down = d === -1 ? down + 1 : 1
+    if (up >= 4 || down >= 4) return true
+  }
+  return COMMON.some((w) => p.includes(w))
+}
+
 export const passwordIssues = (pass: string, user = ''): string[] => {
   const out: string[] = []
   if (pass.length < ENTITY_RULES.passMin) out.push(`${ENTITY_RULES.passMin} أحرف على الأقل`)
   if (ENTITY_RULES.passNeedsLetter && !/[A-Za-z؀-ۿ]/.test(pass)) out.push('حرف واحد على الأقل')
   if (ENTITY_RULES.passNeedsDigit && !/\d/.test(pass)) out.push('رقم واحد على الأقل')
   if (user && pass && pass.toLowerCase().includes(user.toLowerCase().split('@')[0])) out.push('لا تتضمّن اسم المستخدم')
+  if (weakPattern(pass)) out.push(PASS_PATTERN_RULE)
   return out
 }

@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Empty, Glass, Icon, icons, MultiSelect, Num, SearchBox, Tag } from '@/components/ui'
+import { Button, Glass, Icon, icons, MultiSelect, Num, SearchBox, Tag } from '@/components/ui'
 import { ROUTES } from '@/app/routes'
 import { nf, NOUN, nounAfter } from '@/lib/format'
 import { LIVE_SPECS, catalogTotals, type LiveSpec } from '@/data/liveReports'
+import { ModuleEmpty } from '@/features/shared/EmptyStates'
 
 /**
  * Report catalog — every screen in the current system, with everything
@@ -98,7 +99,7 @@ export function Catalog() {
       </Glass>
 
       {list.length === 0 ? (
-        <Glass><Empty title="لا توجد شاشة بهذا الوصف." /></Glass>
+        <ModuleEmpty filtered module="reports" title="لا تقرير بهذا الوصف" />
       ) : (
         <div className="catg">
           {list.map((s) => <Card key={s.key} s={s} />)}

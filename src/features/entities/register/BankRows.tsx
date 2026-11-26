@@ -93,19 +93,25 @@ export function BankRows({
               </FieldBox>
             </FormField>
 
-            <FormField label="رقم الآيبان" required>
-              <FieldBox>
+            {/* Audit 26 Nov · «SA» is the box's fixed start, not part of what's typed · the entity types the
+                22 digits after it (a pasted IBAN with its SA reads the same) · the field still keeps the
+                whole IBAN · its problem shows with the system's one error message */}
+            <FormField label="رقم الآيبان" required
+              error={b.iban.replace(/\s/g, '').length >= 24 && !ibanValid(b.iban) ? 'الآيبان غير صحيح · تحقّق من الأرقام' : undefined}>
+              <FieldBox className="fld-pre">
                 <input
-                  value={b.iban}
+                  value={b.iban.replace(/^\s*SA\s*/i, '')}
                   dir="ltr"
-                  /* Upper case, letters and digits only · what was pasted with dashes still reads */
-                  onChange={(e) => patch(b.id, { iban: e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '') })}
-                  aria-label={`آيبان الحساب ${i + 1}`}
-                  placeholder="SA00 0000 0000 0000 0000 0000"
+                  inputMode="numeric"
+                  onChange={(e) => {
+                    const rest = e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '').replace(/^\s*SA\s*/, '')
+                    patch(b.id, { iban: rest.trim() ? `SA${rest}` : '' })
+                  }}
+                  aria-label={`آيبان الحساب ${i + 1} · بعد SA`}
+                  placeholder="00 0000 0000 0000 0000 0000"
                 />
+                <span className="fld-pre-t num" aria-hidden="true">SA</span>
               </FieldBox>
-              {/* 2.4.6 · checked as it is typed: shape first, then the check digits */}
-              {b.iban.replace(/\s/g, '').length >= 24 && !ibanValid(b.iban) && <span className="bad regf-h">الآيبان غير صحيح · تحقّق من الأرقام</span>}
             </FormField>
           </div>
 

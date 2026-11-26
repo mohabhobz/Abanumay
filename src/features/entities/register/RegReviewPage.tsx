@@ -8,7 +8,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { registrationAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ButtonLink, FormField, Button, BankGrid, BankCard, FieldMultiSelect,
-  DateText, EditButton, EditModal, Empty, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, OrgName, Person, StepArc, Tabs, Tag, type EditField, type GateStep,
+  DateText, EditButton, EditModal, FieldSelect, Glass, Head, Icon, icons, KV, Mono, Num, OrgName, Person, StepArc, Tabs, Tag, type EditField, type GateStep,
   blockerCount, type Blocker, type StepItem } from '@/components/ui'
 import { DocFile, DocList, UploadButton } from '@/components/docs'
 import { Crumbs } from '@/components/shell'
@@ -34,6 +34,7 @@ import { BANKS, REG_STAGES, citiesOf } from '@/data/mock/registration'
 import { ENTITY_RULES } from '@/data/entities/rules'
 import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { regOutcome } from '@/data/shared/outcome'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* Registration request review - system admin's screen.
 
@@ -116,33 +117,7 @@ export default function RegReviewPage() {
     : []), [r, flowV])
   const warnFiles = r?.files ? Object.entries(r.files).filter(([, f]) => f.warn) : []
 
-  if (!r) {
-    return (
-      <AppLayout assistantContext={assistFor.page('طلبات تسجيل الجهات')}>
-        <div className="viewstack">
-          <div className="screen col">
-            {/* Empty state: no request, so there's no last stage to name. */}
-            <Crumbs
-              items={[
-                { label: 'الجهات', to: ROUTES.entities },
-                { label: 'طلبات التسجيل' },
-              ]}
-            />
-            <Glass>
-              <Empty
-                title="الطلب غير موجود."
-                actions={
-                  <Button variant="2" onClick={() => navigate(ROUTES.entityRequests)}>
-                    العودة إلى صندوق الطلبات
-                  </Button>
-                }
-              />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!r) return <NotFound module="requests" id={id} />
 
   const decided = r.state === 'approved' || r.state === 'rejected'
   const open = r.state === 'review'

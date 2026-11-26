@@ -15,6 +15,7 @@ import { closeOutcome } from '@/data/shared/outcome'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useRole } from '@/hooks/useRole'
 import { orgOutputsOf, outputLine } from '@/data/intake/flow'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* Project evaluation editor - written by the grants supervisor, not the entity.
 
@@ -62,27 +63,7 @@ export default function EvalEditPage() {
     start?.indicators.map((i) => i.actual?.toString() ?? '') ?? [],
   )
 
-  if (!c) {
-    return (
-      <AppLayout assistantContext={assistFor.page('تقييم غير موجود')}>
-        <div className="viewstack">
-          <div className="screen col">
-            <BackTo label="الإغلاق" onClick={() => navigate(ROUTES.closings)} />
-            <Glass>
-              <Empty
-                title="لا يوجد طلب إغلاق بهذا الرقم."
-                actions={
-                  <Button variant="2" onClick={() => navigate(ROUTES.closings)}>
-                    العودة إلى صندوق الإغلاق
-                  </Button>
-                }
-              />
-            </Glass>
-          </div>
-        </div>
-      </AppLayout>
-    )
-  }
+  if (!c) return <NotFound module="closings" id={id} />
 
   /* Note: absence is stated with its reason - "unavailable" makes the supervisor go looking for a
      missing permission, when the real reason is a rule in the spec. */

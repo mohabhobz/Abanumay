@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button,
-  Empty, Glass, Icon, icons, MultiSelect, GroupPicker, SearchBox, Segments, Select,
+  Glass, Icon, icons, MultiSelect, GroupPicker, SearchBox, Segments, Select,
   Toggle, ViewToggle,
   Riyal,
 } from '@/components/ui'
@@ -28,6 +28,7 @@ import type { Sheet } from '@/lib/export'
 import { AgreementCard } from './AgreementCard'
 import { COLS, GROUPS } from './columns'
 import { OUTCOME_PICK_SAY, agreementOutcome, outcomeMatches, outcomeOptions, type OutcomePick } from '@/data/shared/outcome'
+import { isVoid, ModuleEmpty } from '@/features/shared/EmptyStates'
 
 const KEYS = ['q', 'stage', 'heat', 'owner', 'kind', 'hold', 'res', 'view', 'group', 'adv', 'ord'] as const
 type Params = Record<(typeof KEYS)[number], string | undefined>
@@ -187,10 +188,11 @@ export default function AgreementsPage() {
     })),
   )
 
+  const voidAll = isVoid(counts.total)
   return (
     <AppLayout assistantContext={assistFor.page('الاتفاقيات')}>
       <div className="viewstack">
-        <div className="screen col">
+        <div className={`screen col${voidAll ? ' is-void' : ''}`}>
           <header>
             <div>
               <h1 className="ptitle">الاتفاقيات</h1>
@@ -210,6 +212,7 @@ export default function AgreementsPage() {
                 new agreement". This line exists so a future change doesn't add a button "for
                 consistency" and break the actual rule. */}
           </header>
+          {voidAll && <ModuleEmpty module="agreements" />}
 
           <QuickRead
             variant="bar"
@@ -360,12 +363,7 @@ export default function AgreementsPage() {
           </Glass>
 
           {sorted.length === 0 ? (
-            <Glass>
-              <Empty
-                title="لا توجد اتفاقيات بهذه الفلاتر."
-                actions={<Button variant="2" onClick={clear}>مسح الفلاتر</Button>}
-              />
-            </Glass>
+            <ModuleEmpty module="agreements" filtered onClear={clear} />
           ) : view === 'table' ? (
             <>
               <Glass className="tblcard">

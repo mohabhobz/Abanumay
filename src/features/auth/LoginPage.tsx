@@ -43,7 +43,9 @@ import { regRows, setRegAccount } from '@/data/mock/registration'
 const WRONG = 'اسم المستخدم أو كلمة المرور غير صحيحة'
 /* Audit 26 Nov · a lock is said on its own, not after «wrong password» · the two read as one sentence
    that contradicts itself */
-const LOCKED = 'قُفل الحساب مؤقتًا بعد محاولات دخول خاطئة متتالية'
+/* Audit 26 Nov · it's the account that's locked (the name typed), not the device · said plainly, with
+   what it doesn't touch */
+const LOCKED = 'أُوقف الدخول إلى هذا الحساب مؤقتًا بعد محاولات خاطئة متتالية · لا يتأثر الدخول بأي حساب آخر'
 const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
 export default function LoginPage() {
@@ -75,7 +77,11 @@ export default function LoginPage() {
      it used to follow the name field, so editing or clearing the name hid the countdown and the
      button looked free again */
   const [lockedFor, setLockedFor] = useState('')
-  const lockWho = user.trim() && lockLeft(user) ? user : lockedFor
+  /* the countdown stays while the same name is edited or cleared · another account's name opens the
+     button (the lock is that account's, not this screen's) */
+  const typed = user.trim().toLowerCase(), held = lockedFor.trim().toLowerCase()
+  const lockWho = typed && lockLeft(user) ? user
+    : held && (!typed || held.startsWith(typed) || typed.startsWith(held)) ? lockedFor : ''
   /* a name that is locked is held as soon as it's typed (not only after a send) */
   useEffect(() => { if (user.trim() && lockLeft(user) && user !== lockedFor) setLockedFor(user) }, [user, lockedFor])
   const lockSecs = lockWho ? lockLeft(lockWho) : 0
@@ -104,7 +110,7 @@ export default function LoginPage() {
       const left = loginFailed(user)
       /* Client 23 Oct · one message for a wrong user or password · it never says which of the two */
       if (!left) setLockedFor(user)
-      fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : LOCKED)
+      fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل إيقاف الدخول إلى هذا الحساب مؤقتًا` : LOCKED)
       setTick((t) => t + 1)
       return
     }
@@ -119,7 +125,7 @@ export default function LoginPage() {
     if (stf && staffPasswordOk(stf.login, pass) === false) {
       const left = loginFailed(user)
       if (!left) setLockedFor(user)
-      fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل قفل الحساب مؤقتًا` : LOCKED)
+      fail(left ? `${WRONG} · تبقّى ${left} ${left === 1 ? 'محاولة' : 'محاولات'} قبل إيقاف الدخول إلى هذا الحساب مؤقتًا` : LOCKED)
       setTick((t) => t + 1)
       return
     }

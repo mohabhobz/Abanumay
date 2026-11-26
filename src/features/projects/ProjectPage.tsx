@@ -1,6 +1,7 @@
 import { useLegacy } from '@/data/payments/legacy'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { NotFound } from '@/features/shared/EmptyStates'
 import { ButtonLink, GateArc, Mono, Money, Num, Person, Tabs, Tag } from '@/components/ui'
 import { DecisionBar, Crumbs } from '@/components/shell'
 import { EhsanCard, EhsanNoAgreement, RoutingCard } from '@/features/partners/parts'
@@ -135,7 +136,15 @@ function editedContent(id: string): Partial<typeof fixtures.project> {
   return out
 }
 
+/* Audit #61 · a project number that isn't in the records opens the «not found» page · it used to
+   fall back to the seeded project, so a wrong link showed somebody else's file */
 export default function ProjectPage() {
+  const { id } = useParams<{ id: string }>()
+  if (id && !projectById(id)) return <NotFound module="projects" id={id} />
+  return <ProjectPageView />
+}
+
+function ProjectPageView() {
   const { id, tab } = useParams<{ id: string; tab?: string }>()
   const navigate = useNavigate()
   const mobile = useIsMobile()

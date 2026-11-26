@@ -7,7 +7,7 @@ import { payBlock } from '@/data/entities/store'
 import { portfolioAi } from '@/data/shared/ai'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ButtonLink, FormField, FieldBox, Button, GateArc, FieldMultiSelect,
-  BackTo, DateText, DockActions, Empty, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Tabs, Tag, icons, MultiSelect } from '@/components/ui'
+  BackTo, DateText, DockActions, FieldSelect, Glass, Head, Icon, KV, Money, MoneyField, Person, SearchBox, Stat, Tabs, Tag, icons, MultiSelect } from '@/components/ui'
 import { CHART_COLORS, Legend, RankBars, StackBar, type Slice } from '@/components/charts'
 import { UploadButton } from '@/components/docs'
 import { AssistantAside } from '@/features/shared/AssistantAside'
@@ -37,6 +37,7 @@ import { OutcomeTag } from '@/features/shared/OutcomeTag'
 import { authorityFor, type Holder } from '@/data/holders'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { outcomeMatches, outcomeOptions, portfolioOutcome, subOutcome } from '@/data/shared/outcome'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* A portfolio · a strategic partner's parent record with sub-projects under it (BPD-013).
 
@@ -70,16 +71,7 @@ export default function PortfolioPage() {
   const [split, setSplit] = useState<{ key: string; amount: string }[]>([])
   const [said, setSaid] = useState<{ ok?: string; bad?: string[] }>({})
 
-  if (!pf) {
-    return (
-      <AppLayout assistantContext={assistFor.page('المحافظ')}>
-        <div className="viewstack"><div className="screen col">
-          <BackTo label="المشاريع" onClick={() => navigate(ROUTES.projects)} />
-          <Glass><Empty title="المحفظة غير موجودة." /></Glass>
-        </div></div>
-      </AppLayout>
-    )
-  }
+  if (!pf) return <NotFound module="portfolio" id={id} />
 
   const m = pfMoney(pf)
   const gate = subsGate(pf)
@@ -633,7 +625,7 @@ function SubsCard({ pf, asPartner }: { pf: PortfolioRec; asPartner: boolean }) {
             <span className="sub">{d.files.length ? d.files.join(' · ') : `مرفقات المشروع الفرعي${req.includes('files') ? '' : ' · اختياري'}`}</span>
             <UploadButton label="مرفق" onPick={(f) => setD((x) => ({ ...x, files: [...x.files, f.name] }))} />
             <Button type="button" variant="ghost" size="sm" onClick={() => { setAdding(false); setD(EMPTY) }}>إلغاء</Button>
-            <Button type="button" variant="p" size="sm" onClick={add}>احفظ مسودة</Button>
+            <Button type="button" variant="p" size="sm" onClick={add}>احفظ كمسودة</Button>
           </div>
         </div>
       )}

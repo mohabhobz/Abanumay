@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, DateText, Empty, Glass, Icon, icons, Num, Pager, SearchBox, Select, Tag } from '@/components/ui'
+import { Button, DateText, Glass, Icon, icons, Num, Pager, SearchBox, Select, Tag } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { assistFor } from '@/data/mock/assistant'
 import { exportXlsx, type Sheet } from '@/lib/export'
 import { auditRows, MODULE_SAY, type AuditModule } from '@/data/shared/audit'
 import { Who } from './parts'
 import { useAllStores } from './useAllStores'
+import { ModuleEmpty } from '@/features/shared/EmptyStates'
 
 /* The audit log · cross «سجل التدقيق».
 
@@ -82,7 +83,7 @@ export default function AuditPage() {
           </Glass>
 
           <Glass className="tblcard">
-            {rows.length === 0 ? <Empty title="لا عمليات بهذه التصفية." /> : (
+            {rows.length === 0 ? <ModuleEmpty bare filtered module="audit" /> : (
               <div className="tblwrap">
                 <table className="tbl" aria-label="سجل التدقيق">
                   <thead>

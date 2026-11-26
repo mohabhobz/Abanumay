@@ -135,14 +135,18 @@ const keep = () => {
   try { sessionStorage.setItem(OTP_KEY, JSON.stringify(current)) } catch { /* ignore */ }
 }
 
-export const OTP_LEN = 5
+/* Client 26 Nov · one code for every journey · 6 characters, digits and capital letters, without the
+   ones that read alike (0/O, 1/I/L) · typed in any case, checked in capitals */
+export const OTP_LEN = 6
+export const OTP_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+const newCode = (): string => Array.from({ length: OTP_LEN }, () => OTP_CHARS[Math.floor(Math.random() * OTP_CHARS.length)]).join('')
 
 /** Send a new code · refuses while the previous one is inside its resend wait */
 export const sendOtp = (purpose: OtpPurpose, to: string[], account?: string): OtpChallenge => {
   const t = Date.now()
   current = {
     purpose, to: to.filter(Boolean).map(mask), account,
-    code: String(Math.floor(10000 + Math.random() * 90000)),
+    code: newCode(),
     sentAt: t, expiresAt: t + ENTITY_RULES.otpMinutes * 60_000, tries: 0, dead: false,
   }
   keep()
@@ -164,7 +168,7 @@ export const verifyOtp = (code: string): OtpResult => {
   if (!current) return 'none'
   if (current.dead) return 'dead'
   if (Date.now() > current.expiresAt) return 'expired'
-  if (code === current.code) {
+  if (code.trim().toUpperCase() === current.code) {
     current.dead = true
     keep()
     return 'ok'

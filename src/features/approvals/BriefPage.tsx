@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, BackTo, Empty, Glass, Head, Icon, Money, Tag, icons } from '@/components/ui'
+import { Button, BackTo, Glass, Head, Icon, Money, Tag, icons } from '@/components/ui'
 import { AppLayout } from '@/app/layout/AppLayout'
 import { ROUTES } from '@/app/routes'
 import { assistFor } from '@/data/mock/assistant'
@@ -11,6 +11,7 @@ import { printArea } from '@/lib/export'
 import { nf } from '@/lib/format'
 import { appFlowOf, useApprovals, type Brief } from '@/data/approvals/store'
 import { closeRows } from '@/data/mock/closing'
+import { NotFound } from '@/features/shared/EmptyStates'
 
 /* v3 · 5.2.3 · 6.2.2 · 7.2.3 · «ملف العرض» · one file made when the project reached the executive
    director, the committee or the board, ready to print to PDF and send by mail · the project card,
@@ -89,14 +90,13 @@ export default function BriefPage() {
   const p = projectRows.find((x) => x.id === id)
   const b = appFlowOf(id).briefs.find((x) => x.id === brief)
   const docs = flowOf(id).docs.map((d) => d.name)
+  if (!p || !b) return <NotFound module="brief" id={brief} back={p ? { label: 'ملف الاعتماد', to: ROUTES.projectTab(id, 'approval') } : undefined} />
   return (
     <AppLayout assistantContext={assistFor.page('ملف العرض')}>
       <div className="viewstack">
         <div className="screen col">
           <BackTo label="ملف الاعتماد" onClick={() => navigate(ROUTES.projectTab(id, 'approval'))} />
-          {!p || !b ? (
-            <Glass><Empty title="ملف العرض غير موجود." /></Glass>
-          ) : (
+          {(
             <>
               <header>
                 <div>

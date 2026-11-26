@@ -1,3 +1,4 @@
+import { PASS_PATTERN_RULE, weakPattern } from '@/data/entities/validate'
 /* Client 14 Nov · staff passwords · client 16 Nov · no password is handed over.
 
    The system admin adds an account with the person's details only (Permissions → «إضافة مستخدم»);
@@ -33,6 +34,8 @@ export const INVITE_HOURS = 48
 export const STAFF_PASS_RULES: { key: string; label: string; test: (pw: string, other: string) => boolean }[] = [
   { key: 'len', label: '12 حرفًا على الأقل', test: (pw) => pw.length >= 12 },
   { key: 'mix', label: 'حروف وأرقام معًا', test: (pw) => /\p{L}/u.test(pw) && /\d/.test(pw) },
+  /* audit 26 Nov · no repeated or straight runs, no well-known password */
+  { key: 'pattern', label: PASS_PATTERN_RULE, test: (pw) => pw.length > 0 && !weakPattern(pw) },
   { key: 'new', label: 'تختلف عن كلمة المرور الحالية', test: (pw, other) => pw.length > 0 && pw !== other },
 ]
 

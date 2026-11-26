@@ -5,7 +5,9 @@ import {
 } from '@/components/assistant'
 import { useDockHeight } from '@/hooks/useDockHeight'
 import { useIsMobile } from '@/hooks/useMediaQuery'
-import { savedChats, type SavedChat } from '@/data/mock/assistant'
+import { respond, savedChats, type SavedChat } from '@/data/mock/assistant'
+import type { ChatMessage } from '@/components/assistant/types'
+import { toast } from '@/data/feedback'
 import { ChatList } from './ChatList'
 import { AbLeaf } from '@/components/soul'
 
@@ -29,6 +31,22 @@ export interface AssistantScreenProps {
   onListShut?: (shut: boolean) => void
 }
 
+/* Audit 26 Nov · kept in this browser · conversations and their messages */
+const STORE = 'ab-chats-v2'
+const readStore = (): { chats?: SavedChat[]; threads?: Record<string, ChatMessage[]> } => {
+  try { return JSON.parse(localStorage.getItem(STORE) ?? '{}') } catch { return {} }
+}
+const writeStore = (v: { chats: SavedChat[]; threads: Record<string, ChatMessage[]> }) => {
+  try { localStorage.setItem(STORE, JSON.stringify(v)) } catch { /* storage blocked · the session keeps them */ }
+}
+/** A new conversation's title · the question, one line, cut at a word near 48 characters */
+const titleOf = (q: string) => {
+  const t = q.trim().replace(/\s+/g, ' ')
+  if (t.length <= 48) return t
+  const cut = t.slice(0, 48)
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), 32))}…`
+}
+
 /**
  * The Abanumay assistant screen - one body, rendered in two places.
  *
@@ -50,8 +68,14 @@ export function AssistantScreen({
 }: AssistantScreenProps) {
   const mobile = useIsMobile()
 
-  const { msgs, send: ask, stop, reset, busy } = useAssistant()
-  const [chats, setChats] = useState<SavedChat[]>(savedChats)
+  const { msgs, send: ask, stop, reset, busy, load } = useAssistant()
+  /* Audit 26 Nov · the conversations and what's in them are kept (this browser) · a new question is
+     in the list under its own title the moment it's sent, survives a reload and reopens as it ended ·
+     the seeded ones open on their question and its answer */
+  const [chats, setChatsRaw] = useState<SavedChat[]>(() => readStore().chats ?? savedChats)
+  const [threads, setThreads] = useState<Record<string, ChatMessage[]>>(() => readStore().threads ?? {})
+  const setChats = (f: SavedChat[] | ((x: SavedChat[]) => SavedChat[])) => setChatsRaw((x) => (typeof f === 'function' ? f(x) : f))
+  useEffect(() => { writeStore({ chats, threads }) }, [chats, threads])
   const [openChat, setOpenChat] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [listOpen, setListOpen] = useState(false)
@@ -104,17 +128,54 @@ export function AssistantScreen({
      a conversation with no row of its own, so leaving it meant losing it. Now a real row is created
      under "today" titled with the question itself, and the screen opens on it. */
   const send = (text: string) => {
-    if (busy) return
+    if (busy || !text.trim()) return
     setDraft('')
     ask(text)
-    if (openChat) return
-
+    if (openChat) {
+      /* an asked conversation moves to «today», its time the newest */
+      setChats((list) => list.map((c) => (c.id === openChat ? { ...c, at: 'الآن', group: c.pinned ? c.group : 'اليوم' } : c)))
+      return
+    }
     const id = `c-${Date.now()}`
     setChats((list) => [
-      { id, title: text.trim(), snippet: text.trim(), at: 'الآن', group: 'اليوم' },
+      { id, title: titleOf(text), snippet: text.trim().slice(0, 120), at: 'الآن', group: 'اليوم' },
       ...list,
     ])
     setOpenChat(id)
+  }
+  /* what's on screen is kept under the open conversation once every answer has finished */
+  useEffect(() => {
+    if (!openChat || !msgs.length || busy) return
+    setThreads((t) => ({ ...t, [openChat]: msgs }))
+  }, [msgs, busy, openChat])
+
+  const openOne = (id: string) => {
+    if (busy) stop()
+    setOpenChat(id)
+    const kept = threads[id]
+    const c = chats.find((x) => x.id === id)
+    load(kept?.length ? kept : c ? [{ who: 'me', text: c.title }, { who: 'ai', ...respond(c.title), state: 'done', step: 0, chars: 0 }] : [])
+    setListOpen(false)
+  }
+  const removeOne = (id: string) => {
+    setChats((list) => list.filter((c) => c.id !== id))
+    setThreads((t) => { const n = { ...t }; delete n[id]; return n })
+    /* the open one leaves the screen with it */
+    if (id === openChat) { reset(); setOpenChat(null) }
+    toast('حُذفت المحادثة', 'ok')
+  }
+  const exportOne = (id: string) => {
+    const c = chats.find((x) => x.id === id)
+    if (!c) return
+    const list = id === openChat && msgs.length ? msgs : threads[id] ?? [{ who: 'me', text: c.title }, { who: 'ai', ...respond(c.title), state: 'done', step: 0, chars: 0 } as ChatMessage]
+    const body = list.map((m) => (m.who === 'me' ? `أنت:\n${m.text}` : `مساعد أبانمي:\n${(m.text ?? '').replace(/\*\*/g, '')}`)).join('\n\n')
+    const blob = new Blob([`${c.title}\n${'—'.repeat(20)}\n\n${body}\n`], { type: 'text/plain;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `${c.title.replace(/[\\/:*?"<>|]/g, '').slice(0, 60)}.txt`
+    a.click()
+    URL.revokeObjectURL(a.href)
+    toast('صُدّرت المحادثة', 'ok')
   }
 
   const newChat = () => {
@@ -157,8 +218,10 @@ export function AssistantScreen({
         chats={chats}
         onChange={setChats}
         openId={openChat}
-        onOpen={(id) => { setOpenChat(id); reset(); setListOpen(false) }}
+        onOpen={openOne}
         onNew={newChat}
+        onRemove={removeOne}
+        onExport={exportOne}
         open={listOpen}
         shut={shut}
         onShut={() => setShut(true)}
