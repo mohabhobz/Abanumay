@@ -32,7 +32,7 @@ import {
   Lock, MagnifyingGlass, MapPin, Monitor, Moon, Paperclip, PencilSimple, Plus,
   PushPin, Rows, SidebarSimple, SignOut, Signature, SlidersHorizontal, SortDescending, SquaresFour,
   ShieldCheck, Sun, ThumbsDown, ThumbsUp, Trash, UploadSimple, User, Users, Wallet,
-  WarningCircle, Info, X, Microphone,
+  WarningCircle, Info, X, Microphone, Bug, Question, Headset, ImageSquare,
   type Icon as PhIcon,
 } from '@phosphor-icons/react'
 import { AbLeafGlyph } from '@/components/soul/motifs'
@@ -131,6 +131,11 @@ export const icons = {
   users: Users,
   shield: ShieldCheck,
   link: LinkSimple,
+  /* 27 Nov · the support centre · a fault, a question, the centre itself, an attached picture */
+  bug: Bug,
+  question: Question,
+  support: Headset,
+  image: ImageSquare,
 } as const satisfies Record<string, IconGlyph>
 
 export type IconName = keyof typeof icons

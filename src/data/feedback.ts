@@ -8,8 +8,11 @@ export type ToastTone = 'ok' | 'warn' | 'bad' | 'info'
 /* Audit 26 Nov · every message in the system is this one toast, drawn by the one Toaster at the foot
    of the screen · `sticky` keeps it until it's closed or put away (an error the user must read), and
    `key` names it so its screen can take it back (`dismissToast`) or replace it */
-export interface ToastMsg { id: number; text: string; tone: ToastTone; sticky?: boolean; key?: string }
-export interface ToastOpts { sticky?: boolean; key?: string }
+/* 27 Nov · `action` · one link at the toast's end that takes the message on (an error → «أبلغ عن
+   هذه المشكلة», a support reply → «افتحه») */
+export interface ToastAction { label: string; run: () => void }
+export interface ToastMsg { id: number; text: string; tone: ToastTone; sticky?: boolean; key?: string; action?: ToastAction }
+export interface ToastOpts { sticky?: boolean; key?: string; action?: ToastAction }
 
 const EVENT = 'ab:toast'
 let seq = 0

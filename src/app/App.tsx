@@ -80,6 +80,7 @@ import SubProjectPage from '@/features/projects/SubProjectPage'
 import { AFTER_LOGIN, DEFAULT_PROJECT_TAB, ROUTES } from './routes'
 import { RequireAuth } from './RequireAuth'
 import { RouteGate } from './RouteGate'
+import { SupportCenter } from '@/features/support/SupportCenter'
 import { PortalGate } from './PortalGate'
 
 /**
@@ -91,6 +92,8 @@ export default function App() {
     <BrowserRouter>
       {/* 17 Oct · every action answers · one toaster for the whole app */}
       <Toaster />
+      {/* 27 Nov · مركز الدعم · one popup, opened from anywhere */}
+      <SupportCenter />
       <Routes>
         <Route path={ROUTES.login} element={<LoginPage />} />
         <Route path={ROUTES.forgot} element={<ForgotPage />} />

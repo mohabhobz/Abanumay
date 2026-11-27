@@ -6,6 +6,7 @@ import { Button, Icon, icons, type IconName } from '@/components/ui'
 import { NAV, ROUTES } from '@/app/routes'
 import { AccountMenu } from './AccountMenu'
 import { NotificationBell } from './Notifications'
+import { SupportButton } from './SupportButton'
 import type { CurrentUser } from '@/types/domain'
 
 export interface RailProps {
@@ -249,6 +250,7 @@ export function Rail({ user, onSignOut, permissions, shut }: RailProps) {
       <div className="railfoot">
         {/* The bell sits above the account on desktop; on mobile it moves to the top header, and the
             account becomes the last slot of the bottom bar, listing the modules that don't fit. */}
+        <SupportButton user={user} />
         <NotificationBell user={user} />
         <AccountMenu user={user} onSignOut={onSignOut} modules={allowed.filter((n) => !n.mob)} />
       </div>

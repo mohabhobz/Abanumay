@@ -15,6 +15,7 @@ import { useTrimTip } from '@/hooks/useTrimTip'
 import { useHashScroll } from '@/hooks/useHashScroll'
 import { ROUTES } from '@/app/routes'
 import { useRole } from '@/hooks/useRole'
+import { notePage } from '@/data/support'
 import { isEntitySession, sessionScope, signOut } from '@/data/session'
 import type { AssistantContext } from '@/components/assistant'
 
@@ -69,6 +70,8 @@ export function AppLayout({ children, assistantContext }: AppLayoutProps) {
   const entity = isEntitySession()
   const { pathname } = useLocation()
   useFreshVisit(pathname)
+  /* 27 Nov · the pages this person opened · «صفحة أخرى فتحتها قبل قليل» in the support centre */
+  useEffect(() => { const t = window.setTimeout(notePage, 900); return () => clearTimeout(t) }, [pathname])
   useHashScroll()
   useEvenKpis()
   useTagCols()

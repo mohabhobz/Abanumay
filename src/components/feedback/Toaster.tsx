@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Icon, icons } from '@/components/ui'
 import { onToast, onToastGone, toast, type ToastMsg, type ToastTone } from '@/data/feedback'
+import { errorCode, openSupport } from '@/data/support'
 
 /* The one place a message is drawn, for the whole system · the foot of the screen, centred, above
    the decision bar · three at most · announced to a screen reader.
@@ -40,6 +41,17 @@ export function Toaster() {
         <div key={m.id} className={`toast toast-${m.tone}`} role={m.tone === 'bad' ? 'alert' : 'status'}>
           <Icon name={ICON[m.tone]} size="sm" />
           <span>{m.text}</span>
+          {(() => {
+            /* 27 Nov · an error inside the system can be reported from its own message, with its code */
+            const act = m.action ?? (m.tone === 'bad' && document.querySelector('.rail') ? { label: 'أبلغ عن هذه المشكلة', run: () => openSupport({ error: { text: m.text, code: errorCode(m.text) } }) } : undefined)
+            if (!act) return null
+            return (
+              <>
+                {m.tone === 'bad' && !m.action && <span className="toast-code num">رمز الخطأ {errorCode(m.text)}</span>}
+                <Button plain type="button" className="toast-a" onClick={() => { act.run(); drop(m.id) }}>{act.label}</Button>
+              </>
+            )
+          })()}
           <Button plain type="button" className="toast-x" aria-label="إغلاق الرسالة" onClick={() => drop(m.id)}>
             <Icon name={icons.close} size="sm" />
           </Button>

@@ -1,4 +1,5 @@
 import { switcherOn } from '@/data/authGuard'
+import { openSupport } from '@/data/support'
 import { useEffect, useState } from 'react'
 import { useMenu } from '@/hooks/useMenu'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
@@ -206,6 +207,18 @@ export function AccountMenu({
             <Button plain role="menuitem" onClick={() => go(ROUTES.audit)}>
               <Icon name={icons.checks} size="sm" />
               سجل التدقيق
+            </Button>
+          </div>
+
+          <div className="acct-sec">
+            {/* 27 Nov · the support centre · on a phone this is its way in */}
+            <Button plain role="menuitem" onClick={() => { setOpen(false); openSupport() }}>
+              <Icon name={icons.support} size="sm" />
+              أبلغ عن مشكلة أو اطلب تعديلًا
+            </Button>
+            <Button plain role="menuitem" onClick={() => { setOpen(false); openSupport({ mine: true }) }}>
+              <Icon name={icons.chat} size="sm" />
+              بلاغاتي
             </Button>
           </div>
 
